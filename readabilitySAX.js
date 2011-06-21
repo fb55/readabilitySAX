@@ -2,8 +2,7 @@ var readability = typeof exports === "undefined" ? {} : exports;
 
 readability.process = function(parser, options){
 	//our tree (used instead of the dom)
-	var document = {name:"document", attributes: [], children: []},
-		docElements = [document],
+	var docElements = [{name:"document", attributes: [], children: []}],
 		elemLevel = 0,
 		topCandidate = null,
 		origTitle, curTitle;
