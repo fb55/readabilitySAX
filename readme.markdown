@@ -11,17 +11,17 @@ In my tests, most pages were finished within 40ms (on node). It works on [YQL](h
 
 The basic extraction algorithm was completely ported (some adjustments were made, eg. `<article>` tags are recognized and gain a higher value), the only missing features are the following:
 
--If there is only one `<h2>` within the article, readability assumes it to be the heading of the article and removes it. This port don't (for now).
--The search for links to further pages of an article is missing, the correction of links needs the insertion of a function as an option. I'll have to come up with a different approach. (I you want to fix it: Commits are welcome!)
--The extraction of the title of the document isn't finished yet. That's a pretty easy task (it can be copy & pasted right out of readability, just some names have to be changed), therefore it will be implemented soon.
+- If there is only one `<h2>` within the article, readability assumes it to be the heading of the article and removes it. This port don't (for now).
+- The search for links to further pages of an article is missing, the correction of links needs the insertion of a function as an option. I'll have to come up with a different approach. (I you want to fix it: Commits are welcome!)
+- The extraction of the title of the document isn't finished yet. That's a pretty easy task (it can be copy & pasted right out of readability, just some names have to be changed), therefore it will be implemented soon.
 
 ###TODO
 
--Links & the search for a title (see above).
--Structure code
--Add documentation & examples
--Optimise the performance:
--I started to implement simplified versions of sax.js for YQL (using E4X) and the browser (using the DOM) to increase the overall performance on those plattforms. Especially on YQL, the script requires to many instructions and fails.
+- Links & the search for a title (see above).
+- Structure code
+- Add documentation & examples
+- Optimise the performance:
+- I started to implement simplified versions of sax.js for YQL (using E4X) and the browser (using the DOM) to increase the overall performance on those plattforms. Especially on YQL, the script requires to many instructions and fails.
 
 Help is appreciated!
 
