@@ -7,48 +7,6 @@ readability.process = function(parser, options){
 		topCandidate = null,
 		origTitle, curTitle;
 	
-	//settings
-	options = options || {};
-	var settings = {
-		stripUnlikelyCandidates: typeof options.stripUnlikelyCandidates === "boolean" ? options.stripUnlikelyCandidates : true,
-		weightClasses: typeof options.weightClasses === "boolean" ? options.weightClasses : true,
-		stripAttributes: typeof options.stripAttributes === "boolean" ? options.stripAttributes : true,
-		convertLinks: typeof options.convertLinks === "function" ? options.convertLinks : function(a){return a;},
-		pageURL: typeof options.pageURL === "string" ? options.pageURL : "",
-		log : typeof options.log === "boolean" ? options.log : true
-	};
-	
-	//lists of elems for score
-	//tags
-	var tagsToSkip = ["textarea","head","script","noscript","input","select","style","link"],
-		tagsToCount = ["img","embed","audio","video"],
-		goodAttributes = ["href","src","title","alt","style"],
-		greatTags = ["div", "article"],
-		goodTags = ["pre", "td", "blockquote"],
-		badTags = ["address", "ol", "ul", "dl", "dd", "dt", "li", "form"],
-		worstTags = ["h1", "h2", "h3", "h4", "h5", "h6", "th", "body"],
-		cleanConditionaly = ["form","table","ul","div"],
-		tagsToScore = ["p","pre","td"],
-		divToPElements = ["a", "blockquote", "dl", "div", "img", "ol", "p", "pre", "table", "ul"],
-		//classes and ids
-		unlikelyCandidates = ["combx", "comment", "community", "disqus", "extra", "foot", "header", "menu", "remark", "rss", "shoutbox", "sidebar", "sponsor", "ad-break", "agegate", "pagination", "pager", "popup", "tweet", "twitter"],
-		okMaybeItsACandidate = ["and", "article", "body", "column", "main", "shadow"],
-		extraneous = ["print", "archive", "comment", "discuss", "email", "mail", "e-mail", "share", "reply", "all", "login", "sign", "single"],
-		regexps = {
-			videos:			 /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
-			skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
-			nextLink:		 /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i,
-			prevLink:		 /(prev|earl|old|new|<|«)/i,
-			
-			positive:		/article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
-			negative:		/combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-			unlikelyCandidates:/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter/,
-			okMaybeItsACandidate:  /and|article|body|column|main|shadow/,
-			
-			headers: /h[1-3]/,
-			commas : /,[\s\,]{0,}/g
-		};
-	
 	//helper functions
 	var isPartOfArray = function(arr, elem, startIndex){
 		if(!startIndex) startIndex = 0;
@@ -59,12 +17,15 @@ readability.process = function(parser, options){
 		}
 		else return false;
 	},
-	log = function(){
-		if(!settings.log) return;
-		/*global console, y*/
-		if(console && console.log) console.log.apply(this, arguments);
-		else if(y && y.log) y.log.apply(this, arguments);
-		//else if(window && window.alert) window.alert(msg);
+	mergeObjects = function(obj1, obj2){
+		for(var i in obj2)
+			if(obj2.hasOwnProperty(i))
+				if(typeof obj1[i] === "number")
+					obj1[i] += obj2[i];
+				else
+					obj1[i] = obj2[i];
+		
+		return obj1;
 	},
 	addInfo = function(node){
 		var info = node.info,
@@ -83,6 +44,7 @@ readability.process = function(parser, options){
 					info.linkLength += elem.info.linkLength;
 				}
 				info.commas += elem.info.commas;
+				info.tagCount = mergeObjects(info.tagCount, elem.info.tagCount);
 				if(info.tagCount[elem.name]) info.tagCount[elem.name]++;
 				else info.tagCount[elem.name] = 1;
 			}
@@ -122,6 +84,57 @@ readability.process = function(parser, options){
 		}
 		return ret.trim();
 	};
+	
+	//settings
+	var settings = {
+		stripUnlikelyCandidates: true,
+		weightClasses: true,
+		stripAttributes: true,
+		convertLinks: function(a){return a;},
+		pageURL: "",
+		log : options.log
+	};
+	settings = mergeObjects(settings, options);
+	
+	var log = (function(){
+		if(!settings.log) return function(){};
+		/*global console, y*/
+		if(typeof settings.log === "function") return settings.log;
+		else if(typeof console !== "undefined") return console.log;
+		else if(y && y.log) return y.log;
+		//else if(window && window.alert) window.alert(msg);
+	})();
+	
+	//lists of elems for score
+	//tags
+	var tagsToSkip = ["textarea","head","script","noscript","input","select","style","link"],
+		tagsToCount = ["img","embed","audio","video"],
+		goodAttributes = ["href","src","title","alt","style"],
+		greatTags = ["div", "article"],
+		goodTags = ["pre", "td", "blockquote"],
+		badTags = ["address", "ol", "ul", "dl", "dd", "dt", "li", "form"],
+		worstTags = ["h1", "h2", "h3", "h4", "h5", "h6", "th", "body"],
+		cleanConditionaly = ["form","table","ul","div"],
+		tagsToScore = ["p","pre","td"],
+		divToPElements = ["a", "blockquote", "dl", "div", "img", "ol", "p", "pre", "table", "ul"],
+		//classes and ids
+		unlikelyCandidates = ["combx", "comment", "community", "disqus", "extra", "foot", "header", "menu", "remark", "rss", "shoutbox", "sidebar", "sponsor", "ad-break", "agegate", "pagination", "pager", "popup", "tweet", "twitter"],
+		okMaybeItsACandidate = ["and", "article", "body", "column", "main", "shadow"],
+		extraneous = ["print", "archive", "comment", "discuss", "email", "mail", "e-mail", "share", "reply", "all", "login", "sign", "single"],
+		regexps = {
+			videos:			 /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
+			skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
+			nextLink:		 /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i,
+			prevLink:		 /(prev|earl|old|new|<|«)/i,
+			
+			positive:		/article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
+			negative:		/combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
+			unlikelyCandidates:/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter/,
+			okMaybeItsACandidate:  /and|article|body|column|main|shadow/,
+			
+			headers: /h[1-3]/,
+			commas : /,[\s\,]{0,}/g
+		};
 	
 	
 	parser.onopentag = function(tag){
@@ -280,6 +293,8 @@ readability.process = function(parser, options){
 	};
 	this.getTitle = function(){
 		var retTitle = origTitle;
+		
+		//TODO
 		
 		return retTitle;
 	};
