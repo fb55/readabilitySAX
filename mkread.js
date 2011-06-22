@@ -4,7 +4,7 @@ var sax =  require('./libs/sax'),
 	readability = require("./readabilitysax"),
 	url = require("url");
 
-var parser = sax.parser(false, {	
+var parser = sax.parser(false, {
 	trim : true,
     normalize: true,
     lowercasetags : true

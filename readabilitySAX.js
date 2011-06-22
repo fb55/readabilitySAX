@@ -24,13 +24,14 @@ readability.process = function(parser, options){
 					obj1[i] += obj2[i];
 				else
 					obj1[i] = obj2[i];
-		
 		return obj1;
 	},
 	addInfo = function(node){
 		var info = node.info,
-			childs = node.children;
-		for(var i=0, elem; (elem = childs[i]); i++){
+			childs = node.children,
+			childNum = childs.length;
+		for(var i=0, elem; i < childNum; i++){
+			elem = childs[i];
 			if(typeof childs[i] === "string"){
 				info.textLength += elem.length;
 				info.commas += elem.split(regexps.commas).length - 1;
@@ -44,13 +45,16 @@ readability.process = function(parser, options){
 					info.linkLength += elem.info.linkLength;
 				}
 				info.commas += elem.info.commas;
-				info.tagCount = mergeObjects(info.tagCount, elem.info.tagCount);
-				if(info.tagCount[elem.name]) info.tagCount[elem.name]++;
+				mergeObjects(info.tagCount, elem.info.tagCount);
+				if(info.tagCount[elem.name]) info.tagCount[elem.name] += 1;
 				else info.tagCount[elem.name] = 1;
 			}
 		}
 		info.density = info.linkLength / (info.textLength + info.linkLength);
+		if(isNaN(info.density))
+			info.density = 1; //just ensure it gets skipped
 		node.info = info;
+		return info;
 	},
 	getInnerHTML = function(elem){
 		var ret = "";
@@ -92,7 +96,7 @@ readability.process = function(parser, options){
 		stripAttributes: true,
 		convertLinks: function(a){return a;},
 		pageURL: "",
-		log : options.log
+		log : true
 	};
 	settings = mergeObjects(settings, options);
 	
@@ -101,7 +105,6 @@ readability.process = function(parser, options){
 		/*global console, y*/
 		if(typeof settings.log === "function") return settings.log;
 		else if(typeof console !== "undefined") return console.log;
-		else if(y && y.log) return y.log;
 		//else if(window && window.alert) window.alert(msg);
 	})();
 	
@@ -128,7 +131,7 @@ readability.process = function(parser, options){
 			prevLink:		 /(prev|earl|old|new|<|«)/i,
 			
 			positive:		/article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
-			negative:		/combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
+			negative:		/combx|comment|com-|contact|foot|footer|footnote|tabs|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
 			unlikelyCandidates:/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter/,
 			okMaybeItsACandidate:  /and|article|body|column|main|shadow/,
 			
@@ -211,7 +214,7 @@ readability.process = function(parser, options){
 		
 		if(elem.skip) return;
 		
-		addInfo(elem);
+		elem.info = addInfo(elem);
 		
 		var i, j, cnvrt;
 		//clean conditionally
