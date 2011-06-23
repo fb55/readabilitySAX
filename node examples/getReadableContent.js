@@ -71,7 +71,11 @@ exports.process = function(data, skipLevel, readabilitySettings){
 		parser, readable, ret;
 	
 	while(contentLength < 250 && skipLevel < 4){
-	    parser = sax.parser(false, parserSettings);
+	    parser = sax.parser(false, {	
+			trim : true,
+		    normalize: true,
+		    lowercasetags : true
+		});
 	    
 	    readabilitySettings.skipLevel = skipLevel;
 	    
@@ -83,7 +87,11 @@ exports.process = function(data, skipLevel, readabilitySettings){
 	    contentLength = ret.textLength;
 	    skipLevel += 1;
 	}
-	
-	ret.skipLevel = skipLevel - 1;
-	return ret;
-}
+	if(contentLength < 250) return {
+			title:	"Error",
+	    	text:	"Couldn't find content!",
+	    	html:	"<b>Couldn't find content!</b>",
+	    	error: true
+	};
+	else return ret;
+};
