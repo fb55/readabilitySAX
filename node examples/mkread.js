@@ -4,23 +4,21 @@ var sax =  require('../libs/sax'),
 	readability = require("../readabilitysax"),
 	url = require("url");
 
-var parser = sax.parser(false, {
-	trim : true,
-    normalize: true,
-    lowercasetags : true
-});
+
 
 var link = url.parse(process.argv[2]),
 	client = require("http").createClient(80, link.host),
 	req = client.request("GET", link.href, { 'host': link.host, 'accept':"text/html" }),
 	data = "";
 
-var readable = new readability.process(parser, {
-	convertLinks: function(a){
-		return url.resolve(link, a);
-	},
-	pageURL: url.format(link)
-});
+var parserSettings = {
+	trim : true,
+    normalize: true,
+    lowercasetags : true
+};
+var convertLinks = function(a){
+	return url.resolve(link, a);
+};
 
 req.addListener("response", function(connection){
 	connection.addListener("data", function(chunk){
@@ -29,9 +27,26 @@ req.addListener("response", function(connection){
 	});
 	connection.addListener("end", function(){
 		var conTime = Date.now();
-		parser.write(data);
-		parser.close();
-		var ret = readable.getArticle();
+		var skipLevel = 0;
+		var contentLength = 0;
+		var parser, readable, ret;
+		
+		while(contentLength < 250 && skipLevel < 4){
+			parser = sax.parser(false, parserSettings);
+			
+			readable = new readability.process(parser, {
+				convertLinks: convertLinks,
+				pageURL: url.format(link)
+			});
+	    	
+	    	parser.write(data).close();
+	    	
+	    	ret = readable.getArticle();
+	    	contentLength = ret.textLength;
+	    	skipLevel += 1;
+	    }
+		
+		ret.skipLevel = skipLevel - 1;
 		ret.duration = Date.now() - conTime;
 		console.log(ret);
 	});

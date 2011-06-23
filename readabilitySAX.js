@@ -116,7 +116,6 @@ readability.process = function(parser, options){
 		/*global console, y*/
 		if(typeof settings.log === "function") return settings.log;
 		else if(typeof console !== "undefined") return console.log;
-		//else if(window && window.alert) window.alert(msg);
 	})();
 	
 	//lists of elems for score
@@ -378,14 +377,16 @@ readability.process = function(parser, options){
 			nextPage: "" //TODO
 		};
 		if(type === "node") ret.node = topCandidate;
-		else if(type === "text") ret.text = getInnerText(topCandidate);
-		else{
-			var nodes = getCandidateSiblings();
-			ret.textLength = 0;
-			for(var i = 0, j = nodes.length; i < j; i++)
-				ret.textLength += nodes[i].info.textLength;
-			ret.html = getCleanedContent(getInnerHTML(nodes));
-		}
+		
+		var nodes = getCandidateSiblings();
+		
+		ret.textLength = 0;
+		for(var i = 0, j = nodes.length; i < j; i++)
+			ret.textLength += nodes[i].info.textLength;
+		
+		if(type === "text") ret.text = getText(nodes);
+		else ret.html = getCleanedContent(getInnerHTML(nodes));
+		
 		ret.score = topCandidate.scores.total;
 		return ret;
 	};
