@@ -228,7 +228,8 @@ readability.process = function(parser, options){
 			//check if tag is wanted (youtube or vimeo)
 			cnvrt = true;
 			for(i in elem.attributes)
-				if(regexps.videos.test(i)) cnvrt = false;
+				if(elem.hasOwnProperty(i))
+					if(regexps.videos.test(i)) cnvrt = false;
 			
 			if(cnvrt) elem.skip = true;
 		}
@@ -269,7 +270,7 @@ readability.process = function(parser, options){
 			if((elem.info.textLength + elem.info.linkLength) >= 25 && elemLevel > 0){ //elemLevel was already decrased
 				docElements[elemLevel].isCandidate = docElements[elemLevel-1].isCandidate = true;
 				var addScore = 1 + elem.info.commas + Math.min( Math.floor( (elem.info.textLength + elem.info.linkLength) / 100 ), 3);
-				docElements[elemLevel].scores.tag		+= addScore;
+				docElements[elemLevel].scores.tag	+= addScore;
 				docElements[elemLevel-1].scores.tag	+= addScore / 2;
 			}
 		}
