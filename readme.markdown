@@ -9,21 +9,22 @@ This project is based upon [SAX.js by isaacs](https://github.com/isaacs/sax-js),
 
 In my tests, most pages were finished within 40ms (on node). It works with Rhino, so it runs on [YQL](http://developer.yahoo.com/yql "Yahoo! Query Language"), which may have interesting uses. And it works within a browser.
 
+I started to implement simplified versions of sax.js for YQL (using E4X) and the browser (using the DOM) to increase the overall performance on those plattforms. Especially on YQL, sax.js requires to many instructions and fails after some ms. I opened a pull request for readabilitySAX as a YQL table, if you want to use it right now, it may be found [here](https://github.com/FB55/yql-tables/tree/master/readability).
+
 The basic extraction algorithm was completely ported (some adjustments were made, eg. `<article>` tags are recognized and gain a higher value), the only missing features are the following:
 
 - If there is only one `<h2>` within the article, readability assumes it to be the heading of the article and removes it. This port doesn't (for now).
-- Readability checks if (enough) content was found and tries again to find content with more parts of the page available. If I figure out a way to do this, it'll be added.
 - The search for links to further pages of an article is missing, the correction of links needs the insertion of a function as an option. I'll have to come up with a different approach. (If you want to fix it: Commits are welcome!)
+- I probably forgot something […]
 
 ###TODO
 
-- Links, removal of h2s and adjustment of content (see above)
-- Structure files
+- Links and removal of h2s (see above)
 - Add documentation & examples
-- Optimise the performance:
-- I started to implement simplified versions of sax.js for YQL (using E4X) and the browser (using the DOM) to increase the overall performance on those plattforms. Especially on YQL, the script requires to many instructions and fails.
-
-Help is appreciated!
+- Optimise the performance (always)
 
 ###HOWTO
-Have a look at the "node examples" directory.
+Have a look at the "node examples" directory. The `getReadableContent.js`-file is a good example of how to use readabilitySAX.
+
+*Note*
+Readability checks if (enough) content was found and tries again to find content with more parts of the page available. You may do this as well, but I built this with the idea of streaming data in mind. Therefore, it is your part to cache the content you need and to check if it's enough. See `getReadableContent.js` for an example of how to do this.

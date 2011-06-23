@@ -63,7 +63,7 @@ exports.get = function(uri, cb){
 	});
 	req.end();
 };
-exports.process = function(data, skipLevel, readabilitySettings){
+exports.process = function(data, skipLevel, readabilitySettings, type){
 	skipLevel = skipLevel || 0;
 	readabilitySettings = readabilitySettings || {};
 	
@@ -83,7 +83,7 @@ exports.process = function(data, skipLevel, readabilitySettings){
 	    
 	    parser.write(data).close();
 	    
-	    ret = readable.getArticle();
+	    ret = readable.getArticle(type);
 	    contentLength = ret.textLength;
 	    skipLevel += 1;
 	}
