@@ -4,7 +4,7 @@ readability.process = function(parser, options){
 	//our tree (used instead of the dom)
 	var docElements = [{name:"document", attributes: [], children: []}],
 		elemLevel = 0,
-		topCandidate = null,
+		topCandidate, topParent,
 		origTitle, headerTitle;
 	
 	//helper functions
@@ -135,6 +135,8 @@ readability.process = function(parser, options){
 			unlikelyCandidates:/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter/,
 			okMaybeItsACandidate:  /and|article|body|column|main|shadow/,
 			
+			badStart: /\.( |$)/,
+			
 			headers: /h[1-3]/,
 			commas : /,[\s\,]{0,}/g
 		};
@@ -171,12 +173,10 @@ readability.process = function(parser, options){
 		var id = (tag.attributes.id || "").toLowerCase(),
 			className = (tag.attributes["class"] || "").toLowerCase();
 		
-		if(settings.stripUnlikelyCandidates){
-			var matchString = id + className;
-			if(regexps.unlikelyCandidates.test(matchString) && 
-				!regexps.okMaybeItsACandidate.test(matchString)){
-					elem.skip = true; return;
-			}
+		var matchString = id + className;
+		if(regexps.unlikelyCandidates.test(matchString) && 
+			!regexps.okMaybeItsACandidate.test(matchString)){
+				elem.skip = true; return;
 		}
 		
 		//add points for the tags name
@@ -273,27 +273,66 @@ readability.process = function(parser, options){
 		
 		if(elem.isCandidate){
 			elem.scores.total = Math.floor((elem.scores.tag + elem.scores.attribute) * (1 - elem.info.density));
-			if(!topCandidate || elem.scores.total > topCandidate.scores.total) topCandidate = elem;
+			if(!topCandidate || elem.scores.total > topCandidate.scores.total){
+				topCandidate = elem;
+				if(elemLevel >= 0)
+					topParent = docElements[elemLevel-1];
+				else
+					topParent = null;
+			}
 		}
 	};
 	
-	var getCleanedNodeContent = function(node, type){
-		var content;
-		if(type === "element")
-			content = getOuterHTML(node);
-		else content = getInnerHTML(node);
-		
-		if(!content) return log(node);
-		
-		return content
+	var getCleanedContent = function(html){
+		return html
+			//remove whitespace
+			.trim().replace(/\s+/," ")
 			//kill breaks
 			.replace(/(<br\s*\/?>(\s|&nbsp;?)*){1,}/g,'<br/>')
 			//turn all double brs into ps
 			.replace(/(<br[^>]*>[ \n\r\t]*){2,}/g, '</p><p>')
+			//remove font tags
 			.replace(/<(\/?)font[^>]*>/g, '<$1span>')
 			//remove breaks in front of paragraphs
 			.replace(/<br[^>]*>\s*<p/g,"<p");
-	};
+	},
+	getCandidateSiblings = function(){
+		if(!topCandidate){
+			topCandidate = docElements[2]; //body
+			topCandidate.name = "div";
+		}	
+		//check all siblings
+		if(!topParent)
+			return [topCandidate];
+		
+		var ret = [],
+			childs = topParent.children,
+			childNum = childs.length,
+			siblingScoreThreshold = Math.max(10, topCandidate.scores.total * 0.2);
+		
+		for(var i = 0; i < childNum; i++){
+			if(typeof childs[i] === "string") continue;
+			var append = false;
+			if(childs[i] === topCandidate) append = true;
+			else{
+				var contentBonus = 0;
+				if(topCandidate.attributes["class"] && topCandidate.attributes["class"] === childs[i].attributes["class"]) 
+					contentBonus += topCandidate.scores.total * 0.2;
+				if((childs[i].scores.total + contentBonus) >= siblingScoreThreshold) append = true;
+				else if(childs[i].name === "p")
+					if(childs[i].info.textLength > 80 && childs[i].info.density < 0.25) append = true;
+					else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && getInnerText(childs[i]).search(regexps.badStart) !== -1)
+						append = true;
+			}
+			if(append){
+				if(childs[i].name !== "div" || childs[i].name !== "p")
+					childs[i].name = "div";
+				
+				ret.push(childs[i]);
+			}
+		}
+		return ret;
+	}
 	this.getTitle = function(){
 		var curTitle = origTitle;
 		
@@ -321,22 +360,21 @@ readability.process = function(parser, options){
 		return curTitle;
 	};
 	this.getArticle = function(type){
-		if(!topCandidate)
-			return {
-				title:	"Error",
-				text:	"Couldn't find content!",
-				html:	"<b>Couldn't find content!</b>",
-				error: true
-			};
 		var ret = {
 			title: this.getTitle(),
-			score: topCandidate.scores.total,
 			nextPage: "" //TODO
 		};
 		if(type === "node") ret.node = topCandidate;
 		else if(type === "text") ret.text = getInnerText(topCandidate);
-		else ret.html = getCleanedNodeContent(topCandidate, type);
-		
+		else{
+			var nodes = getCandidateSiblings(),
+				html = [];
+			for(var i = 0, j = nodes.length; i < j; i++)
+				html.push( getOuterHTML( nodes[i] ) );
+			
+			ret.html = getCleanedContent(html.join("\n"));
+		}
+		ret.score = topCandidate.scores.total;
 		return ret;
 	};
 	
