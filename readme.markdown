@@ -26,4 +26,4 @@ The basic extraction algorithm was completely ported (some adjustments were made
 Help is appreciated!
 
 ###HOWTO
-Have a look at mkreadable.js and nodeServer.js (both files require node.js).
+Have a look at the "node examples" directory.

@@ -279,7 +279,7 @@ readability.process = function(parser, options){
 			if(!topCandidate || elem.scores.total > topCandidate.scores.total){
 				topCandidate = elem;
 				if(elemLevel >= 0)
-					topParent = docElements[elemLevel-1];
+					topParent = docElements[elemLevel];
 				else
 					topParent = null;
 			}
