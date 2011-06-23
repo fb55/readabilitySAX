@@ -1,5 +1,5 @@
 #readabilitySAX
-##a fast [!!!] & platform independet readability port
+##a fast [!!!] & platform independent readability port
 
 ###History
 I recently wanted to use [readability](http://code.google.com/p/arc90labs-readability/) in a node.js project. There are plenty of ports of readability to node (using jsdom), but they are pretty slow. I don't want to wait for a second until my node instance is ready to continue. I thought I could do better. So I did.
