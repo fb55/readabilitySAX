@@ -87,7 +87,7 @@ readability.process = function(parser, options){
 		var ret = "";
 		for(var i = 0, j = nodes.length; i < j; i++){
 			if(typeof nodes[i] === "string") ret += " " + nodes[i];
-			else ret += getText(nodes[i].children);
+			else if(!nodes[i].skip) ret += getText(nodes[i].children);
 		}
 		return ret;
 	};
@@ -96,12 +96,20 @@ readability.process = function(parser, options){
 	var settings = {
 		stripUnlikelyCandidates: true,
 		weightClasses: true,
+		cleanConditionally: true,
 		stripAttributes: true,
 		convertLinks: function(a){return a;},
 		pageURL: "",
 		log : true
 	};
 	settings = mergeObjects(settings, options);
+	
+	//skipLevel is a shortcut to allow more elements of the page
+	if(options.skipLevel){
+		if(skipLevel > 0) stripUnlikelyCandidates = false;
+		if(skipLevel > 1) weightClasses = false;
+		if(skipLevel > 2) cleanConditionally = false;
+	}
 	
 	var log = (function(){
 		if(!settings.log) return function(){};
@@ -205,7 +213,6 @@ readability.process = function(parser, options){
 	parser.onclosetag = function(tagname){
 		var elem = docElements[elemLevel--];
 		if(tagname !== elem.name) log("Tagname didn't match!:" + tagname + " vs. " + elem.name);
-		
 		//prepare title
 		if(tagname === "title") origTitle = getInnerText(elem);
 		else if(tagname === "h1"){
@@ -224,7 +231,7 @@ readability.process = function(parser, options){
 		if(tagname === "p")
 			if(!elem.info.tagCount.img && !elem.info.tagCount.embed && !elem.info.tagCount.object && elem.info.linkLength === 0 && elem.info.textLength === 0)
 				elem.skip = true;
-		else if(tagname === "embed" || tagname === "object"){
+		else if(tagname === "embed" || tagname === "object" || tagname === "iframe"){ //iframe added for html5 players
 			//check if tag is wanted (youtube or vimeo)
 			cnvrt = true;
 			for(i in elem.attributes)
@@ -236,9 +243,11 @@ readability.process = function(parser, options){
 		else if(regexps.headers.test(tagname))
 			//clean headers
 			if (elem.scores.attribute < 0 || elem.info.density > 0.33) elem.skip = true;
-		else if(isPartOfArray(cleanConditionaly, tagname)){
+		
+		else if(settings.cleanConditionally && isPartOfArray(cleanConditionaly, tagname)){
 			var p = elem.info.tagCount.p || 0,
 				contentLength = elem.info.textLength + elem.info.linkLength;
+			
 			if( elem.info.tagCount.img > p ) elem.skip = true;
 			else if( (elem.info.tagCount.li - 100) > p && tagname !== "ul" && tagname !== "ol") elem.skip = true;
 			else if(elem.info.tagCount.input > Math.floor(p/3) ) elem.skip = true;
@@ -371,11 +380,10 @@ readability.process = function(parser, options){
 		if(type === "node") ret.node = topCandidate;
 		else if(type === "text") ret.text = getInnerText(topCandidate);
 		else{
-			var nodes = getCandidateSiblings(),
-				text = getText(nodes);
-			if(text.length < 250){
-				//TODO
-			}
+			var nodes = getCandidateSiblings();
+			ret.textLength = 0;
+			for(var i = 0, j = nodes.length; i < j; i++)
+				ret.textLength += nodes[i].info.textLength;
 			ret.html = getCleanedContent(getInnerHTML(nodes));
 		}
 		ret.score = topCandidate.scores.total;
