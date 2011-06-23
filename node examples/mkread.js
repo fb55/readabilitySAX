@@ -22,7 +22,7 @@ if(process.argv[2]){
 	req.end();
 }
 else
-	processContent(require("fs").readFileSync(__dirname + "/testfile.html") + "");
+	require("fs").readFile(__dirname + "/testfile.html", processContent);
 
 var processContent = function(data){
 	var conTime = Date.now();
