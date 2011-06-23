@@ -14,12 +14,10 @@ The basic extraction algorithm was completely ported (some adjustments were made
 - If there is only one `<h2>` within the article, readability assumes it to be the heading of the article and removes it. This port doesn't (for now).
 - Readability checks if (enough) content was found and tries again to find content with more parts of the page available. May be added.
 - The search for links to further pages of an article is missing, the correction of links needs the insertion of a function as an option. I'll have to come up with a different approach. (If you want to fix it: Commits are welcome!)
-- The extraction of the documents title isn't finished yet. That's a pretty easy task (it can be copy & pasted right out of readability, just some variables have to be changed), therefore it will be added soon.
 
 ###TODO
 
-- Links & the search for a title (see above)
-- Removal of h2s and adjustment of content
+- Links, removal of h2s and adjustment of content (see above)
 - Structure files
 - Add documentation & examples
 - Optimise the performance:

@@ -5,7 +5,7 @@ readability.process = function(parser, options){
 	var docElements = [{name:"document", attributes: [], children: []}],
 		elemLevel = 0,
 		topCandidate = null,
-		origTitle, curTitle;
+		origTitle, headerTitle;
 	
 	//helper functions
 	var isPartOfArray = function(arr, elem, startIndex){
@@ -207,9 +207,9 @@ readability.process = function(parser, options){
 		if(tagname === "title") origTitle = getInnerText(elem);
 		else if(tagname === "h1"){
 			elem.skip = true;
-			if(curTitle !== false)
-				if(!curTitle) curTitle = getInnerText(elem);
-				else curTitle = false;
+			if(headerTitle !== false)
+				if(!headerTitle) headerTitle = getInnerText(elem);
+				else headerTitle = false;
 		}
 		
 		if(elem.skip) return;
@@ -295,11 +295,30 @@ readability.process = function(parser, options){
 			.replace(/<br[^>]*>\s*<p/g,"<p");
 	};
 	this.getTitle = function(){
-		var retTitle = origTitle;
+		var curTitle = origTitle;
 		
-		//TODO
+		if(curTitle.match(/ [\|\-] /)){
+            curTitle = origTitle.replace(/(.*)[\|\-] .*/gi,'$1');
+            
+            if(curTitle.split(' ').length < 3)
+                curTitle = origTitle.replace(/[^\|\-]*[\|\-](.*)/gi,'$1');
+        }
+        else if(curTitle.indexOf(': ') !== -1){
+            curTitle = origTitle.replace(/.*:(.*)/gi, '$1');
+
+            if(curTitle.split(' ').length < 3)
+                curTitle = origTitle.replace(/[^:]*[:](.*)/gi,'$1');
+        }
+        else if(curTitle.length > 150 || curTitle.length < 15)
+            if(headerTitle)
+            	curTitle = headerTitle;
+
+        curTitle = curTitle.trim();
+
+        if(curTitle.split(' ').length <= 4)
+            curTitle = origTitle;
 		
-		return retTitle;
+		return curTitle;
 	};
 	this.getArticle = function(type){
 		if(!topCandidate)
