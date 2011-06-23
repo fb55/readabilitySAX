@@ -106,9 +106,9 @@ readability.process = function(parser, options){
 	
 	//skipLevel is a shortcut to allow more elements of the page
 	if(options.skipLevel){
-		if(skipLevel > 0) stripUnlikelyCandidates = false;
-		if(skipLevel > 1) weightClasses = false;
-		if(skipLevel > 2) cleanConditionally = false;
+		if(options.skipLevel > 0) stripUnlikelyCandidates = false;
+		if(options.skipLevel > 1) weightClasses = false;
+		if(options.skipLevel > 2) cleanConditionally = false;
 	}
 	
 	var log = (function(){

@@ -33,6 +33,7 @@ exports.get = function(uri, cb){
 		    normalize: true,
 		    lowercasetags : true
 		});
+		var data = "";
 		
 		var readable = new readability.process(parser, {
 			convertLinks: function(a){
@@ -43,13 +44,46 @@ exports.get = function(uri, cb){
 		
 		connection.addListener("data", function(chunk){
 			parser.write(chunk.toString("utf8"));
+			data += chunk.toString("utf8");
 		});
 		connection.addListener("end", function(){
 			parser.close();
 			var ret = readable.getArticle();
+			if(ret.textLength < 250){
+				ret = exports.process(data, 1, {
+					convertLinks: function(a){
+						return url.resolve(link, a);
+					},
+					pageURL: url.format(link)
+				});	
+			}
 			ret.link = link.href;
 			cb(ret);
 		});
 	});
 	req.end();
 };
+exports.process = function(data, skipLevel, readabilitySettings){
+	skipLevel = skipLevel || 0;
+	readabilitySettings = readabilitySettings || {};
+	
+	var contentLength = 0,
+		parser, readable, ret;
+	
+	while(contentLength < 250 && skipLevel < 4){
+	    parser = sax.parser(false, parserSettings);
+	    
+	    readabilitySettings.skipLevel = skipLevel;
+	    
+	    readable = new readability.process(parser, readabilitySettings);
+	    
+	    parser.write(data).close();
+	    
+	    ret = readable.getArticle();
+	    contentLength = ret.textLength;
+	    skipLevel += 1;
+	}
+	
+	ret.skipLevel = skipLevel - 1;
+	return ret;
+}

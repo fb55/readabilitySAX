@@ -25,7 +25,8 @@ var processContent = function(data){
 	    
 	    readable = new readability.process(parser, {
 	    	convertLinks: convertLinks,
-	    	pageURL: url.format(link)
+	    	pageURL: url.format(link),
+	    	skipLevel: skipLevel
 	    });
 	    
 	    parser.write(data).close();
