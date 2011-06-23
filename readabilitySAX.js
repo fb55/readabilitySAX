@@ -56,13 +56,13 @@ readability.process = function(parser, options){
 		node.info = info;
 		return info;
 	},
-	getInnerHTML = function(elem){
+	getInnerHTML = function(nodes){
 		var ret = "";
-		for(var i = 0, j = elem.children.length; i < j; i++){
-			if(typeof elem.children[i] === "string") ret += " " + elem.children[i];
-			else ret += " " + getOuterHTML(elem.children[i]);
+		for(var i = 0, j = nodes.length; i < j; i++){
+			if(typeof nodes[i] === "string") ret += " " + nodes[i];
+			else ret += " " + getOuterHTML(nodes[i]);
 		}
-		return ret.trim();
+		return ret;
 	},
 	getOuterHTML = function(elem){
 		if(elem.skip) return "";
@@ -76,17 +76,20 @@ readability.process = function(parser, options){
 				ret += " " + i + "=\"" + elem.attributes[i] + "\"";
 			}
 		
-		ret += ">" + getInnerHTML(elem);
+		ret += ">" + getInnerHTML(elem.children);
 		
 		return ret + "</" + elem.name + ">";
 	},
 	getInnerText = function(elem){
+		return getText(elem.children);
+	},
+	getText = function(nodes){
 		var ret = "";
-		for(var i = 0, j = elem.children.length; i < j; i++){
-			if(typeof elem.children[i] === "string") ret += " " + elem.children[i];
-			else ret += " " + getInnerText(elem.children[i]);
+		for(var i = 0, j = nodes.length; i < j; i++){
+			if(typeof nodes[i] === "string") ret += " " + nodes[i];
+			else ret += getText(nodes[i].children);
 		}
-		return ret.trim();
+		return ret;
 	};
 	
 	//settings
@@ -286,7 +289,7 @@ readability.process = function(parser, options){
 	var getCleanedContent = function(html){
 		return html
 			//remove whitespace
-			.trim().replace(/\s+/," ")
+			.trim().replace(/\s+/g," ")
 			//kill breaks
 			.replace(/(<br\s*\/?>(\s|&nbsp;?)*){1,}/g,'<br/>')
 			//turn all double brs into ps
@@ -368,11 +371,11 @@ readability.process = function(parser, options){
 		else if(type === "text") ret.text = getInnerText(topCandidate);
 		else{
 			var nodes = getCandidateSiblings(),
-				html = [];
-			for(var i = 0, j = nodes.length; i < j; i++)
-				html.push( getOuterHTML( nodes[i] ) );
-			
-			ret.html = getCleanedContent(html.join("\n"));
+				text = getText(nodes);
+			if(text.length < 250){
+				//TODO
+			}
+			ret.html = getCleanedContent(getInnerHTML(nodes));
 		}
 		ret.score = topCandidate.scores.total;
 		return ret;

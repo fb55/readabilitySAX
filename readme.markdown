@@ -1,5 +1,5 @@
 #readabilitySAX
-##a fast [!!!] readability port
+##a fast [!!!] & platform independet readability port
 
 ###History
 I recently wanted to use [readability](http://code.google.com/p/arc90labs-readability/) in a node.js project. There are plenty of ports of readability to node (using jsdom), but they are pretty slow. I don't want to wait for a second until my node instance is ready to continue. I thought I could do better. So I did.
@@ -12,7 +12,7 @@ In my tests, most pages were finished within 40ms (on node). It works with Rhino
 The basic extraction algorithm was completely ported (some adjustments were made, eg. `<article>` tags are recognized and gain a higher value), the only missing features are the following:
 
 - If there is only one `<h2>` within the article, readability assumes it to be the heading of the article and removes it. This port doesn't (for now).
-- Readability checks if (enough) content was found and tries again to find content with more parts of the page available. May be added.
+- Readability checks if (enough) content was found and tries again to find content with more parts of the page available. If I figure out a way to do this, it'll be added.
 - The search for links to further pages of an article is missing, the correction of links needs the insertion of a function as an option. I'll have to come up with a different approach. (If you want to fix it: Commits are welcome!)
 
 ###TODO
