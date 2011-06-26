@@ -133,15 +133,15 @@ readability.process = function(parser, options){
 		//classes and ids
 		unlikelyCandidates = ["combx", "comment", "community", "disqus", "extra", "foot", "header", "menu", "remark", "rss", "shoutbox", "sidebar", "sponsor", "ad-break", "agegate", "pagination", "pager", "popup", "tweet", "twitter"],
 		okMaybeItsACandidate = ["and", "article", "body", "column", "main", "shadow"],
-		extraneous = ["print", "archive", "comment", "discuss", "email", "mail", "e-mail", "share", "reply", "all", "login", "sign", "single"],
 		regexps = {
 			videos:			 /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
 			skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
 			nextLink:		 /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i,
 			prevLink:		 /(prev|earl|old|new|<|«)/i,
+			extraneous:		 /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
 			
 			positive:		/article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
-			negative:		/combx|comment|com-|contact|foot|footer|footnote|tabs|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
+			negative:		/combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
 			unlikelyCandidates:/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter/,
 			okMaybeItsACandidate:  /and|article|body|column|main|shadow/,
 			
@@ -227,22 +227,23 @@ readability.process = function(parser, options){
 		
 		var i, j, cnvrt;
 		//clean conditionally
-		if(tagname === "p")
+		if(tagname === "p"){
 			if(!elem.info.tagCount.img && !elem.info.tagCount.embed && !elem.info.tagCount.object && elem.info.linkLength === 0 && elem.info.textLength === 0)
 				elem.skip = true;
+		}
 		else if(tagname === "embed" || tagname === "object" || tagname === "iframe"){ //iframe added for html5 players
 			//check if tag is wanted (youtube or vimeo)
 			cnvrt = true;
 			for(i in elem.attributes)
 				if(elem.hasOwnProperty(i))
-					if(regexps.videos.test(i)) cnvrt = false;
+					if(regexps.videos.test(i)){ cnvrt = false; break; }
 			
 			if(cnvrt) elem.skip = true;
 		}
-		else if(regexps.headers.test(tagname))
+		else if(regexps.headers.test(tagname)){
 			//clean headers
 			if (elem.scores.attribute < 0 || elem.info.density > 0.33) elem.skip = true;
-		
+		}
 		else if(settings.cleanConditionally && isPartOfArray(cleanConditionaly, tagname)){
 			var p = elem.info.tagCount.p || 0,
 				contentLength = elem.info.textLength + elem.info.linkLength;
@@ -298,7 +299,7 @@ readability.process = function(parser, options){
 	var getCleanedContent = function(html){
 		return html
 			//remove whitespace
-			.trim().replace(/\s+/g," ")
+			.trim() //.replace(/\s+/g," ")
 			//kill breaks
 			.replace(/(<br\s*\/?>(\s|&nbsp;?)*){1,}/g,'<br/>')
 			//turn all double brs into ps
@@ -312,7 +313,7 @@ readability.process = function(parser, options){
 		if(!topCandidate){
 			topCandidate = docElements[2]; //body
 			topCandidate.name = "div";
-		}	
+		}
 		//check all siblings
 		if(!topParent)
 			return [topCandidate];
@@ -346,7 +347,7 @@ readability.process = function(parser, options){
 		return ret;
 	}
 	this.getTitle = function(){
-		var curTitle = origTitle;
+		var curTitle = origTitle || "";
 		
 		if(curTitle.match(/ [\|\-] /)){
             curTitle = origTitle.replace(/(.*)[\|\-] .*/gi,'$1');

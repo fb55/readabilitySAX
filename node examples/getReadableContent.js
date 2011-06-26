@@ -30,7 +30,6 @@ exports.get = function(uri, cb){
 			return exports.get(connection.headers.location, cb);
 		var parser = sax.parser(false, {	
 			trim : true,
-		    normalize: true,
 		    lowercasetags : true
 		});
 		var data = "";
@@ -73,7 +72,6 @@ exports.process = function(data, skipLevel, readabilitySettings, type){
 	while(contentLength < 250 && skipLevel < 4){
 	    parser = sax.parser(false, {	
 			trim : true,
-		    normalize: true,
 		    lowercasetags : true
 		});
 	    

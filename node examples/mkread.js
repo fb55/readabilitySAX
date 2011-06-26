@@ -1,10 +1,24 @@
-console.log("connecting to:", process.argv[2]);
-
 var getReadableContent = require("./getReadableContent.js"),
 	url = require("url"),
 	link = "";
 
-if(process.argv[2]){
+var processContent = function(data){
+	var conTime = Date.now();
+	
+	var ret = getReadableContent.process(data, 0, {
+		convertLinks: function(a){
+	    	return url.resolve(link, a);
+	    },
+	    pageURL: url.format(link)
+	});
+	
+	ret.duration = Date.now() - conTime;
+	console.log(ret);
+}
+
+
+if(process.argv.length > 2){
+	console.log("connecting to:", process.argv[2]);
 	var link = url.parse(process.argv[2]);
 	
 	var client = require("http").createClient(80, link.host),
@@ -22,19 +36,4 @@ if(process.argv[2]){
 	req.end();
 }
 else
-	require("fs").readFile(__dirname + "/testfile.html", processContent);
-
-var processContent = function(data){
-	var conTime = Date.now();
-	
-	var ret = getReadableContent.process(data, 0, {
-		convertLinks: function(a){
-	    	return url.resolve(link, a);
-	    },
-	    pageURL: url.format(link)
-	});
-	
-	ret.duration = Date.now() - conTime;
-	console.log(ret);
-}
-
+	require("fs").readFile(__dirname + "/testpage.html", function(a,b){processContent(b.toString("utf8"));});
