@@ -29,8 +29,9 @@ readability.process = function(parser, options){
 	addInfo = function(node){
 		var info = node.info,
 			childs = node.children,
-			childNum = childs.length;
-		for(var i=0, elem; i < childNum; i++){
+			childNum = childs.length,
+			elem;
+		for(var i=0; i < childNum; i++){
 			elem = childs[i];
 			if(typeof childs[i] === "string"){
 				info.textLength += elem.length;
@@ -57,39 +58,32 @@ readability.process = function(parser, options){
 		return info;
 	},
 	getInnerHTML = function(nodes){
-		var ret = "";
+		var ret = [];
 		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret += " " + nodes[i];
-			else ret += " " + getOuterHTML(nodes[i]);
+			if(typeof nodes[i] === "string") ret.push(nodes[i]);
+			else ret.push(getOuterHTML(nodes[i]));
 		}
-		return ret;
+		return ret.join(" ");
 	},
 	getOuterHTML = function(elem){
 		if(elem.skip) return "";
-		var ret = "<" + elem.name;
+		var ret = ["<" + elem.name];
 		for(var i in elem.attributes)
 			if(settings.stripAttributes){
-				if(isPartOfArray(goodAttributes, i)){
-					ret += " " + i + "=\"" + elem.attributes[i] + "\"";
-				}
-			} else{
-				ret += " " + i + "=\"" + elem.attributes[i] + "\"";
-			}
+				if(isPartOfArray(goodAttributes, i))
+					ret.push(i + "=\"" + elem.attributes[i] + "\"");
+			} else
+				ret.push(i + "=\"" + elem.attributes[i] + "\"");
 		
-		ret += ">" + getInnerHTML(elem.children);
-		
-		return ret + "</" + elem.name + ">";
-	},
-	getInnerText = function(elem){
-		return getText(elem.children);
+		return ret.join(" ") + ">" + getInnerHTML(elem.children) + "</" + elem.name + ">";
 	},
 	getText = function(nodes){
-		var ret = "";
+		var ret = [];
 		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret += " " + nodes[i];
+			if(typeof nodes[i] === "string") ret.push(nodes[i]);
 			else if(!nodes[i].skip) ret += getText(nodes[i].children);
 		}
-		return ret;
+		return ret.join(" ");
 	};
 	
 	//settings
@@ -106,9 +100,9 @@ readability.process = function(parser, options){
 	
 	//skipLevel is a shortcut to allow more elements of the page
 	if(options.skipLevel){
-		if(options.skipLevel > 0) stripUnlikelyCandidates = false;
-		if(options.skipLevel > 1) weightClasses = false;
-		if(options.skipLevel > 2) cleanConditionally = false;
+		if(options.skipLevel > 0) settings.stripUnlikelyCandidates = false;
+		if(options.skipLevel > 1) settings.weightClasses = false;
+		if(options.skipLevel > 2) settings.cleanConditionally = false;
 	}
 	
 	var log = (function(){
@@ -130,9 +124,6 @@ readability.process = function(parser, options){
 		cleanConditionaly = ["form","table","ul","div"],
 		tagsToScore = ["p","pre","td"],
 		divToPElements = ["a", "blockquote", "dl", "div", "img", "ol", "p", "pre", "table", "ul"],
-		//classes and ids
-		unlikelyCandidates = ["combx", "comment", "community", "disqus", "extra", "foot", "header", "menu", "remark", "rss", "shoutbox", "sidebar", "sponsor", "ad-break", "agegate", "pagination", "pager", "popup", "tweet", "twitter"],
-		okMaybeItsACandidate = ["and", "article", "body", "column", "main", "shadow"],
 		regexps = {
 			videos:			 /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
 			skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
@@ -197,14 +188,10 @@ readability.process = function(parser, options){
 		else if(isPartOfArray(worstTags, tagName)) elem.scores.tag -= 5;
 		
 		//add points for the tags id && classnames
-		if(id !== ""){
-		    if(regexps.negative.test(id)) elem.scores.attribute -= 25;
-		    else if(regexps.positive.test(id)) elem.scores.attribute += 25;
-		}
-		if(className !== ""){
-		    if(regexps.negative.test(className)) elem.scores.attribute -= 25;
-		    else if(regexps.positive.test(className)) elem.scores.attribute += 25;
-		}
+		if(regexps.negative.test(id)) elem.scores.attribute -= 25;
+		else if(regexps.positive.test(id)) elem.scores.attribute += 25;
+		if(regexps.negative.test(className)) elem.scores.attribute -= 25;
+		else if(regexps.positive.test(className)) elem.scores.attribute += 25;
 	};
 	
 	parser.ontext = function(text){ docElements[elemLevel].children.push(text); };
@@ -213,11 +200,11 @@ readability.process = function(parser, options){
 		var elem = docElements[elemLevel--];
 		if(tagname !== elem.name) log("Tagname didn't match!:" + tagname + " vs. " + elem.name);
 		//prepare title
-		if(tagname === "title") origTitle = getInnerText(elem);
+		if(tagname === "title") origTitle = getText(elem.children);
 		else if(tagname === "h1"){
 			elem.skip = true;
 			if(headerTitle !== false)
-				if(!headerTitle) headerTitle = getInnerText(elem);
+				if(!headerTitle) headerTitle = getText(elem.children);
 				else headerTitle = false;
 		}
 		
@@ -334,7 +321,7 @@ readability.process = function(parser, options){
 				if((childs[i].scores.total + contentBonus) >= siblingScoreThreshold) append = true;
 				else if(childs[i].name === "p")
 					if(childs[i].info.textLength > 80 && childs[i].info.density < 0.25) append = true;
-					else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && getInnerText(childs[i]).search(regexps.badStart) !== -1)
+					else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && getText(childs[i].children).search(regexps.badStart) !== -1)
 						append = true;
 			}
 			if(append){
