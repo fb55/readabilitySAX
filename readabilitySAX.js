@@ -68,22 +68,32 @@ readability.process = function(parser, options){
 	getOuterHTML = function(elem){
 		if(elem.skip) return "";
 		var ret = ["<" + elem.name];
-		for(var i in elem.attributes)
-			if(settings.stripAttributes){
+		if(settings.stripAttributes){
+			for(var i in elem.attributes)
 				if(isPartOfArray(goodAttributes, i))
 					ret.push(i + "=\"" + elem.attributes[i] + "\"");
-			} else
+		} else
+			for(var i in elem.attributes)
 				ret.push(i + "=\"" + elem.attributes[i] + "\"");
 		
 		return ret.join(" ") + ">" + getInnerHTML(elem.children) + "</" + elem.name + ">";
 	},
 	getText = function(nodes){
-		var ret = [];
+		var ret = [], text;
 		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret.push(nodes[i]);
-			else if(!nodes[i].skip) ret += getText(nodes[i].children);
+			if(typeof nodes[i] === "string") ret.push(nodes[i], " ");
+			else if(!nodes[i].skip){
+				text = getText(nodes[i].children);
+				
+				if(text === "") continue;
+				
+				if(isPartOfArray(newLinesBefore, nodes[i].name)) ret.push("\n");
+				
+				ret.push(text);
+				if(isPartOfArray(newLinesAfter, nodes[i].name)) ret.push("\n");
+			}
 		}
-		return ret.join(" ");
+		return ret.join("");
 	};
 	
 	//settings
@@ -107,15 +117,13 @@ readability.process = function(parser, options){
 	
 	var log = (function(){
 		if(!settings.log) return function(){};
-		/*global console, y*/
 		if(typeof settings.log === "function") return settings.log;
 		else if(typeof console !== "undefined") return console.log;
 	})();
 	
-	//lists of elems for score
-	//tags
 	var tagsToSkip = ["textarea","head","script","noscript","input","select","style","link"],
 		tagsToCount = ["img","embed","audio","video"],
+		embeds = ["embed", "object", "iframe"], //iframe added for html5 players
 		goodAttributes = ["href","src","title","alt","style"],
 		greatTags = ["div", "article"],
 		goodTags = ["pre", "td", "blockquote"],
@@ -124,6 +132,8 @@ readability.process = function(parser, options){
 		cleanConditionaly = ["form","table","ul","div"],
 		tagsToScore = ["p","pre","td"],
 		divToPElements = ["a", "blockquote", "dl", "div", "img", "ol", "p", "pre", "table", "ul"],
+		newLinesAfter = ["br","p","h2","h3","h4","h5","h6","li"], //todo
+		newLinesBefore = ["p","h2","h3","h4","h5","h6"],
 		regexps = {
 			videos:			 /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
 			skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
@@ -194,7 +204,7 @@ readability.process = function(parser, options){
 		else if(regexps.positive.test(className)) elem.scores.attribute += 25;
 	};
 	
-	parser.ontext = function(text){ docElements[elemLevel].children.push(text); };
+	parser.ontext = function(text){ if(text !== "") docElements[elemLevel].children.push(text); };
 	
 	parser.onclosetag = function(tagname){
 		var elem = docElements[elemLevel--];
@@ -218,7 +228,7 @@ readability.process = function(parser, options){
 			if(!elem.info.tagCount.img && !elem.info.tagCount.embed && !elem.info.tagCount.object && elem.info.linkLength === 0 && elem.info.textLength === 0)
 				elem.skip = true;
 		}
-		else if(tagname === "embed" || tagname === "object" || tagname === "iframe"){ //iframe added for html5 players
+		else if(isPartOfArray(embeds, tagname)){
 			//check if tag is wanted (youtube or vimeo)
 			cnvrt = true;
 			for(i in elem.attributes)
@@ -285,8 +295,6 @@ readability.process = function(parser, options){
 	
 	var getCleanedContent = function(html){
 		return html
-			//remove whitespace
-			.trim() //.replace(/\s+/g," ")
 			//kill breaks
 			.replace(/(<br\s*\/?>(\s|&nbsp;?)*){1,}/g,'<br/>')
 			//turn all double brs into ps
@@ -372,7 +380,7 @@ readability.process = function(parser, options){
 		for(var i = 0, j = nodes.length; i < j; i++)
 			ret.textLength += nodes[i].info.textLength;
 		
-		if(type === "text") ret.text = getText(nodes);
+		if(type === "text") ret.text = getText(nodes).trim();
 		else ret.html = getCleanedContent(getInnerHTML(nodes));
 		
 		ret.score = topCandidate.scores.total;
