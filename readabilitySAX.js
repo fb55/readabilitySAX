@@ -135,7 +135,7 @@ readability.process = function(parser, options){
 		newLinesAfter = ["br","p","h2","h3","h4","h5","h6","li"], //todo
 		newLinesBefore = ["p","h2","h3","h4","h5","h6"],
 		regexps = {
-			videos:			 /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
+			videos:			 /http:\/\/(www\.)?(vimeo|youtube|yahoo|flickr)\.com/i,
 			skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
 			nextLink:		 /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i,
 			prevLink:		 /(prev|earl|old|new|<|«)/i,
@@ -347,13 +347,13 @@ readability.process = function(parser, options){
 		if(curTitle.match(/ [\|\-] /)){
             curTitle = origTitle.replace(/(.*)[\|\-] .*/gi,'$1');
             
-            if(curTitle.split(' ').length < 3)
+            if(curTitle.split(' ', 3).length < 3)
                 curTitle = origTitle.replace(/[^\|\-]*[\|\-](.*)/gi,'$1');
         }
         else if(curTitle.indexOf(': ') !== -1){
             curTitle = origTitle.replace(/.*:(.*)/gi, '$1');
 
-            if(curTitle.split(' ').length < 3)
+            if(curTitle.split(' ', 3).length < 3)
                 curTitle = origTitle.replace(/[^:]*[:](.*)/gi,'$1');
         }
         else if(curTitle.length > 150 || curTitle.length < 15)
@@ -362,7 +362,7 @@ readability.process = function(parser, options){
 
         curTitle = curTitle.trim();
 
-        if(curTitle.split(' ').length <= 4)
+        if(curTitle.split(' ', 5).length < 5)
             curTitle = origTitle;
 		
 		return curTitle;
