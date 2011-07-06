@@ -67,13 +67,13 @@ readability.process = function(parser, options){
 	},
 	getOuterHTML = function(elem){
 		if(elem.skip) return "";
-		var ret = ["<" + elem.name];
+		var ret = ["<" + elem.name], i;
 		if(settings.stripAttributes){
-			for(var i in elem.attributes)
+			for(i in elem.attributes)
 				if(isPartOfArray(goodAttributes, i))
 					ret.push(i + "=\"" + elem.attributes[i] + "\"");
 		} else
-			for(var i in elem.attributes)
+			for(i in elem.attributes)
 				ret.push(i + "=\"" + elem.attributes[i] + "\"");
 		
 		return ret.join(" ") + ">" + getInnerHTML(elem.children) + "</" + elem.name + ">";
@@ -293,18 +293,7 @@ readability.process = function(parser, options){
 		}
 	};
 	
-	var getCleanedContent = function(html){
-		return html
-			//kill breaks
-			.replace(/(<br\s*\/?>(\s|&nbsp;?)*){1,}/g,'<br/>')
-			//turn all double brs into ps
-			.replace(/(<br[^>]*>[ \n\r\t]*){2,}/g, '</p><p>')
-			//remove font tags
-			.replace(/<(\/?)font[^>]*>/g, '<$1span>')
-			//remove breaks in front of paragraphs
-			.replace(/<br[^>]*>\s*<p/g,"<p");
-	},
-	getCandidateSiblings = function(){
+	var getCandidateSiblings = function(){
 		if(!topCandidate){
 			topCandidate = docElements[2]; //body
 			topCandidate.name = "div";
@@ -340,7 +329,7 @@ readability.process = function(parser, options){
 			}
 		}
 		return ret;
-	}
+	};
 	this.getTitle = function(){
 		var curTitle = origTitle || "";
 		
@@ -381,7 +370,15 @@ readability.process = function(parser, options){
 			ret.textLength += nodes[i].info.textLength;
 		
 		if(type === "text") ret.text = getText(nodes).trim();
-		else ret.html = getCleanedContent(getInnerHTML(nodes));
+		else ret.html = getInnerHTML(nodes) //=> clean it
+			//kill breaks
+			.replace(/(<br\s*\/?>(\s|&nbsp;?)*){1,}/g,'<br/>')
+			//turn all double brs into ps
+			.replace(/(<br[^>]*>[ \n\r\t]*){2,}/g, '</p><p>')
+			//remove font tags
+			.replace(/<(\/?)font[^>]*>/g, '<$1span>')
+			//remove breaks in front of paragraphs
+			.replace(/<br[^>]*>\s*<p/g,"<p");
 		
 		ret.score = topCandidate.scores.total;
 		return ret;
