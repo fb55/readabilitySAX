@@ -383,6 +383,4 @@ readability.process = function(parser, options){
 		ret.score = topCandidate.scores.total;
 		return ret;
 	};
-	
-	return this;
 };
