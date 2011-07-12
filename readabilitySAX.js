@@ -288,7 +288,7 @@ readability.process = function(parser, options){
 	
 	var getCandidateSiblings = function(){
 		if(!topCandidate){
-			topCandidate = docElements[2]; //body
+			topCandidate = docElements[0].children.pop().children.pop(); //body
 			topCandidate.name = "div";
 		}
 		//check all siblings
