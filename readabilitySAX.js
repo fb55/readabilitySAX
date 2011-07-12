@@ -8,16 +8,7 @@ readability.process = function(parser, options){
 		origTitle, headerTitle;
 	
 	//helper functions
-	var isPartOfArray = function(arr, elem, startIndex){
-		if(!startIndex) startIndex = 0;
-		var indx = arr.indexOf(elem, startIndex);
-		if(indx >= 0){
-			if(arr[indx] === elem) return true;
-			else return isPartOfArray(arr, elem, indx+1);
-		}
-		else return false;
-	},
-	mergeObjects = function(obj1, obj2){
+	var mergeObjects = function(obj1, obj2){
 		for(var i in obj2)
 			if(obj2.hasOwnProperty(i))
 				if(typeof obj1[i] === "number")
@@ -70,7 +61,7 @@ readability.process = function(parser, options){
 		var ret = ["<" + elem.name], i;
 		if(settings.stripAttributes){
 			for(i in elem.attributes)
-				if(isPartOfArray(goodAttributes, i))
+				if(goodAttributes[i])
 					ret.push(i + "=\"" + elem.attributes[i] + "\"");
 		} else
 			for(i in elem.attributes)
@@ -87,10 +78,10 @@ readability.process = function(parser, options){
 				
 				if(text === "") continue;
 				
-				if(isPartOfArray(newLinesBefore, nodes[i].name)) ret.push("\n");
+				if(newLinesBefore[ nodes[i].name ]) ret.push("\n");
 				
 				ret.push(text);
-				if(isPartOfArray(newLinesAfter, nodes[i].name)) ret.push("\n");
+				if(newLinesAfter[ nodes[i].name ]) ret.push("\n");
 			}
 		}
 		return ret.join("");
@@ -121,19 +112,19 @@ readability.process = function(parser, options){
 		else if(typeof console !== "undefined") return console.log;
 	})();
 	
-	var tagsToSkip = ["textarea","head","script","noscript","input","select","style","link"],
-		tagsToCount = ["img","embed","audio","video"],
-		embeds = ["embed", "object", "iframe"], //iframe added for html5 players
-		goodAttributes = ["href","src","title","alt","style"],
-		greatTags = ["div", "article"],
-		goodTags = ["pre", "td", "blockquote"],
-		badTags = ["address", "ol", "ul", "dl", "dd", "dt", "li", "form"],
-		worstTags = ["h1", "h2", "h3", "h4", "h5", "h6", "th", "body"],
-		cleanConditionaly = ["form","table","ul","div"],
-		tagsToScore = ["p","pre","td"],
-		divToPElements = ["a", "blockquote", "dl", "div", "img", "ol", "p", "pre", "table", "ul"],
-		newLinesAfter = ["br","p","h2","h3","h4","h5","h6","li"], //todo
-		newLinesBefore = ["p","h2","h3","h4","h5","h6"],
+	var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true},
+		tagsToCount = {img:true,embed:true,audio:true,video:true},
+		embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
+		goodAttributes = {href:true,src:true,title:true,alt:true,style:true},
+		greatTags = {div:true,article:true},
+		goodTags = {pre:true,td:true,blockquote:true},
+		badTags = {address:true,ol:true,ul:true,dl:true,dd:true,dt:true,li:true,form:true},
+		worstTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true,th:true,body:true},
+		cleanConditionaly = {form:true,table:true,ul:true,div:true},
+		tagsToScore = {p:true,pre:true,td:true},
+		divToPElements = {a:true,blockquote:true,dl:true,div:true,img:true,ol:true,p:true,pre:true,table:true,ul:true},
+		newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
+		newLinesBefore = {p:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 		regexps = {
 			videos:			 /http:\/\/(www\.)?(vimeo|youtube|yahoo|flickr)\.com/i,
 			skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
@@ -177,7 +168,7 @@ readability.process = function(parser, options){
 			elem.skip = true; return;
 		}
 		
-		if(isPartOfArray(tagsToSkip, tagName)){
+		if(tagsToSkip[tagName]){
 			elem.skip = true; return;
 		}
 		
@@ -193,9 +184,9 @@ readability.process = function(parser, options){
 		//add points for the tags name
 		if(tagName === "article") elem.scores.tag += 30;
 		else if(tagName === "div") elem.scores.tag += 5;
-		else if(isPartOfArray(goodTags, tagName)) elem.scores.tag += 3;
-		else if(isPartOfArray(badTags, tagName)) elem.scores.tag -= 3;
-		else if(isPartOfArray(worstTags, tagName)) elem.scores.tag -= 5;
+		else if(goodTags[tagName]) elem.scores.tag += 3;
+		else if(badTags[tagName]) elem.scores.tag -= 3;
+		else if(worstTags[tagName]) elem.scores.tag -= 5;
 		
 		//add points for the tags id && classnames
 		if(regexps.negative.test(id)) elem.scores.attribute -= 25;
@@ -228,7 +219,7 @@ readability.process = function(parser, options){
 			if(!elem.info.tagCount.img && !elem.info.tagCount.embed && !elem.info.tagCount.object && elem.info.linkLength === 0 && elem.info.textLength === 0)
 				elem.skip = true;
 		}
-		else if(isPartOfArray(embeds, tagname)){
+		else if(embeds[tagname]){
 			//check if tag is wanted (youtube or vimeo)
 			cnvrt = true;
 			for(i in elem.attributes)
@@ -241,7 +232,7 @@ readability.process = function(parser, options){
 			//clean headers
 			if (elem.scores.attribute < 0 || elem.info.density > 0.33) elem.skip = true;
 		}
-		else if(settings.cleanConditionally && isPartOfArray(cleanConditionaly, tagname)){
+		else if(settings.cleanConditionally && cleanConditionaly[tagname]){
 			var p = elem.info.tagCount.p || 0,
 				contentLength = elem.info.textLength + elem.info.linkLength;
 			
@@ -261,7 +252,7 @@ readability.process = function(parser, options){
 		if(elem.attributes.src)  elem.attributes.src  = settings.convertLinks(elem.attributes.src);
 		
 		//should node be scored?
-		var score = isPartOfArray(tagsToScore, tagname);
+		var score = tagsToScore[tagname];
 		if(!score && tagname === "div"){
 			cnvrt = true;
 			for(i = 0, j = divToPElements.length; i < j; i++)
