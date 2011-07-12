@@ -315,7 +315,7 @@ readability.process = function(parser, options){
 						append = true;
 			}
 			if(append){
-				if(childs[i].name !== "div" || childs[i].name !== "p")
+				if(childs[i].name !== "p")
 					childs[i].name = "div";
 				
 				ret.push(childs[i]);
