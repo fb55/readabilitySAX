@@ -3,7 +3,6 @@ var readability = typeof exports === "undefined" ? {} : exports;
 readability.process = function(parser, options){
 	//our tree (used instead of the dom)
 	var docElements = [{name:"document", attributes: [], children: []}],
-		elemLevel = 0,
 		topCandidate, topParent,
 		origTitle, headerTitle;
 	
@@ -145,10 +144,9 @@ readability.process = function(parser, options){
 	
 	
 	parser.onopentag = function(tag){
-		var parent = docElements[elemLevel++],
+		var parent = docElements[docElements.length - 1],
 			tagName = tag.name;
-		
-		var elem = parent.children[parent.children.length] = docElements[elemLevel] = { 
+		var elem = { 
 			name: tagName, attributes: tag.attributes, children: [], skip: false,
 			scores: {
 				attribute: 0,
@@ -163,6 +161,8 @@ readability.process = function(parser, options){
 				tagCount:	{}
 			}
 		};
+		parent.children.push(elem);
+		docElements.push(elem);
 		
 		if(parent.skip === true){
 			elem.skip = true; return;
@@ -195,10 +195,12 @@ readability.process = function(parser, options){
 		else if(regexps.positive.test(className)) elem.scores.attribute += 25;
 	};
 	
-	parser.ontext = function(text){ if(text !== "") docElements[elemLevel].children.push(text); };
+	parser.ontext = function(text){ if(text !== "") docElements[docElements.length-1].children.push(text); };
 	
 	parser.onclosetag = function(tagname){
-		var elem = docElements[elemLevel--];
+		var elem = docElements.pop(),
+			elemLevel = docElements.length - 1;
+		
 		if(tagname !== elem.name) log("Tagname didn't match!:" + tagname + " vs. " + elem.name);
 		//prepare title
 		if(tagname === "title") origTitle = getText(elem.children);
@@ -264,7 +266,7 @@ readability.process = function(parser, options){
 			}
 		}
 		if(score){
-			if((elem.info.textLength + elem.info.linkLength) >= 25 && elemLevel > 0){ //elemLevel was already decrased
+			if((elem.info.textLength + elem.info.linkLength) >= 25 && elemLevel > 0){
 				docElements[elemLevel].isCandidate = docElements[elemLevel-1].isCandidate = true;
 				var addScore = 1 + elem.info.commas + Math.min( Math.floor( (elem.info.textLength + elem.info.linkLength) / 100 ), 3);
 				docElements[elemLevel].scores.tag	+= addScore;
