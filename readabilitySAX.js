@@ -97,7 +97,7 @@ readability.process = function(parser, options){
 		pageURL: "",
 		log : true
 	};
-	settings = mergeObjects(settings, options);
+	mergeObjects(settings, options);
 	
 	//skipLevel is a shortcut to allow more elements of the page
 	if(options.skipLevel){
@@ -363,7 +363,7 @@ readability.process = function(parser, options){
 		if(type === "text") ret.text = getText(nodes).trim();
 		else ret.html = getInnerHTML(nodes) //=> clean it
 			//kill breaks
-			.replace(/(<br\s*\/?>(\s|&nbsp;?)*){1,}/g,'<br/>')
+			.replace(/(<\/?br\s*\/?>(\s|&nbsp;?)*)+/g,'<br/>')
 			//turn all double brs into ps
 			.replace(/(<br[^>]*>[ \n\r\t]*){2,}/g, '</p><p>')
 			//remove font tags
