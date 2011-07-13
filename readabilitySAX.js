@@ -142,25 +142,29 @@ readability.process = function(parser, options){
 			commas : /,[\s\,]{0,}/g
 		};
 	
-	
-	parser.onopentag = function(tag){
-		var parent = docElements[docElements.length - 1],
-			tagName = tag.name;
-		var elem = { 
-			name: tagName, attributes: tag.attributes, children: [], skip: false,
-			scores: {
+	var Element = function(tagName, attributes){
+			this.name = tagName;
+			this.attributes = attributes;
+			this.children = [];
+			this.skip = false;
+			this.scores = {
 				attribute: 0,
 				tag:0,
 				total: 0
-			},
-			info: {
+			};
+			this.info = {
 				textLength: 0,
 				linkLength: 0,
 				commas:		0,
 				density:	0,
 				tagCount:	{}
-			}
-		};
+			};
+	}
+	
+	parser.onopentag = function(tag){
+		var parent = docElements[docElements.length - 1],
+			tagName = tag.name;
+		var elem = new Element(tagName, tag.attributes);
 		parent.children.push(elem);
 		docElements.push(elem);
 		
