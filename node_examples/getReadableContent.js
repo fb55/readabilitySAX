@@ -1,4 +1,4 @@
-var sax =  require('../libs/sax'),
+var sax =  require("sax"),
 	readability = require("../readabilitysax"),
 	url = require("url");
 
