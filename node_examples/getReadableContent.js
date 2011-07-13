@@ -1,5 +1,5 @@
 var sax =  require("sax"),
-	readability = require("../readabilitysax"),
+	readability = require("../readabilitySAX"),
 	url = require("url");
 
 exports.get = function(uri, cb){

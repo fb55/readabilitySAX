@@ -1,4 +1,4 @@
-var readability =  require('./getreadablecontent'),
+var readability =  require("./getReadableContent.js"),
 	url = require("url"),
 	http = require("http");
 
@@ -8,4 +8,4 @@ http.createServer(function(request, response){
     response.writeHead(200, {"content-type":"application/json"});
     response.end(JSON.stringify(ret));
   });
-}).listen(80);
+}).listen(process.argv.length > 2 ? process.argv[2] : 80);
