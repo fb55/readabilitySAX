@@ -15,7 +15,7 @@ The basic extraction algorithm was completely ported (some adjustments were made
 
 - If there is only one `<h2>` within the article, readability assumes it to be the heading of the article and removes it. This port doesn't (for now).
 - The search for links to further pages of an article is missing, the correction of links needs the insertion of a function as an option. I'll have to come up with a different approach. (If you want to fix it: Commits are welcome!)
-- I probably forgot something […]
+- Readability offers to move links to the footnotes. You may do this by adding a custom function for converting links, but native support would be nice.
 
 ###TODO
 
@@ -24,7 +24,7 @@ The basic extraction algorithm was completely ported (some adjustments were made
 - Optimise the performance (always)
 
 ###HOWTO
-Have a look at the "node examples" directory. The `getReadableContent.js`-file is a good example of how to use readabilitySAX.
+Have a look at the "node_examples" directory. The `getReadableContent.js`-file is a good example of how to use readabilitySAX.
 
 *Note*
 Readability checks if (enough) content was found and tries again to find content with more parts of the page available. You may do this as well, but I built this with the idea of streaming data in mind. Therefore, it is your part to cache the content you need and to check if it's enough. See `getReadableContent.js` for an example of how to do this.
