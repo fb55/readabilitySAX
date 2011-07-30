@@ -4,57 +4,57 @@ readability.process = (function(){
 	//tags to be cached
 	var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true},
 		tagsToCount = {img:true,embed:true,audio:true,video:true},
-    	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
-    	goodAttributes = {href:true,src:true,title:true,alt:true/*,style:true*/},
-    	greatTags = {div:true,article:true},
-    	goodTags = {pre:true,td:true,blockquote:true},
-    	badTags = {address:true,ol:true,ul:true,dl:true,dd:true,dt:true,li:true,form:true},
-    	worstTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true,th:true,body:true},
-    	cleanConditionaly = {form:true,table:true,ul:true,div:true},
-    	tagsToScore = {p:true,pre:true,td:true},
-    	divToPElements = {a:true,blockquote:true,dl:true,div:true,img:true,ol:true,p:true,pre:true,table:true,ul:true},
-    	newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
-    	newLinesBefore = {p:true,h2:true,h3:true,h4:true,h5:true,h6:true},
-    	regexps = {
-    		videos:			 /http:\/\/(www\.)?(vimeo|youtube|yahoo|flickr)\.com/i,
-    		skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
-    		nextLink:		 /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i,
-    		prevLink:		 /(prev|earl|old|new|<|«)/i,
-    		extraneous:		 /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
-    		
-    		positive:		/article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
-    		negative:		/combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-    		unlikelyCandidates:/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter/,
-    		okMaybeItsACandidate:  /and|article|body|column|main|shadow/,
-    		
-    		badStart: /\.( |$)/,
-    		
-    		headers: /h[1-3]/,
-    		commas : /,[\s\,]{0,}/g
-    	};
-    
-    //the "class" for elements
-    var Element = function(tagName, attributes){
-    		this.name = tagName;
-    		this.attributes = attributes;
-    		this.children = [];
-    		this.skip = false;
-    		this.scores = {
-    			attribute: 0,
-    			tag:0,
-    			total: 0
-    		};
-    		this.info = {
-    			textLength: 0,
-    			linkLength: 0,
-    			commas:		0,
-    			density:	0,
-    			tagCount:	{}
-    		};
-    		this.isCandidate = false;
-    };
-    
-    //default settings
+		embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
+		goodAttributes = {href:true,src:true,title:true,alt:true/*,style:true*/},
+		greatTags = {div:true,article:true},
+		goodTags = {pre:true,td:true,blockquote:true},
+		badTags = {address:true,ol:true,ul:true,dl:true,dd:true,dt:true,li:true,form:true},
+		worstTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true,th:true,body:true},
+		cleanConditionaly = {form:true,table:true,ul:true,div:true},
+		tagsToScore = {p:true,pre:true,td:true},
+		divToPElements = {a:true,blockquote:true,dl:true,div:true,img:true,ol:true,p:true,pre:true,table:true,ul:true},
+		newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
+		newLinesBefore = {p:true,h2:true,h3:true,h4:true,h5:true,h6:true},
+		regexps = {
+			videos:			 /http:\/\/(www\.)?(vimeo|youtube|yahoo|flickr)\.com/i,
+			skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
+			nextLink:		 /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i,
+			prevLink:		 /(prev|earl|old|new|<|«)/i,
+			extraneous:		 /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
+			
+			positive:		/article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
+			negative:		/combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
+			unlikelyCandidates:/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter/,
+			okMaybeItsACandidate:	 /and|article|body|column|main|shadow/,
+			
+			badStart: /\.( |$)/,
+			
+			headers: /h[1-3]/,
+			commas : /,[\s\,]{0,}/g
+		};
+	
+	//the "class" for elements
+	var Element = function(tagName, attributes){
+			this.name = tagName;
+			this.attributes = attributes;
+			this.children = [];
+			this.skip = false;
+			this.scores = {
+				attribute: 0,
+				tag:0,
+				total: 0
+			};
+			this.info = {
+				textLength: 0,
+				linkLength: 0,
+				commas:		0,
+				density:	0,
+				tagCount:	{}
+			};
+			this.isCandidate = false;
+	};
+	
+	//default settings
 	var settings = {
 		stripUnlikelyCandidates: true,
 		weightClasses: true,
@@ -64,22 +64,22 @@ readability.process = (function(){
 		pageURL: "",
 		log : true
 	};
-    
-    //helper functions
+	
+	//helper functions
 	var mergeNumObjects = function(obj1, obj2){
 		for(var i in obj2)
-			if(obj2.hasOwnProperty(i))
+			//if(obj2.hasOwnProperty(i))
 				obj1[i] += obj2[i];
 		return obj1;
 	},
 	mergeObjects = function(obj1, obj2){
 		var ret = {}, i;
 		for(i in obj1){
-			if(obj1.hasOwnProperty(i))
+			//if(obj1.hasOwnProperty(i))
 				ret[i] = obj1[i];
 		}
 		for(i in obj2){
-			if(obj2.hasOwnProperty(i))
+			//if(obj2.hasOwnProperty(i))
 				ret[i] = obj2[i];
 		}
 		return ret;
@@ -270,7 +270,7 @@ readability.process = (function(){
 			
 			//fix link
 			if(elem.attributes.href) elem.attributes.href = settings.convertLinks(elem.attributes.href);
-			if(elem.attributes.src)  elem.attributes.src  = settings.convertLinks(elem.attributes.src);
+			if(elem.attributes.src)	elem.attributes.src	 = settings.convertLinks(elem.attributes.src);
 			
 			//should node be scored?
 			var score = tagsToScore[tagname];
@@ -346,25 +346,25 @@ readability.process = (function(){
 			var curTitle = origTitle || "";
 			
 			if(curTitle.match(/ [\|\-] /)){
-	            curTitle = origTitle.replace(/(.*)[\|\-] .*/gi,'$1');
-	            
-	            if(curTitle.split(' ', 3).length < 3)
-	                curTitle = origTitle.replace(/[^\|\-]*[\|\-](.*)/gi,'$1');
-	        }
-	        else if(curTitle.indexOf(': ') !== -1){
-	            curTitle = origTitle.replace(/.*:(.*)/gi, '$1');
+				 curTitle = origTitle.replace(/(.*)[\|\-] .*/gi,'$1');
+				 
+				 if(curTitle.split(' ', 3).length < 3)
+					 curTitle = origTitle.replace(/[^\|\-]*[\|\-](.*)/gi,'$1');
+			 }
+			 else if(curTitle.indexOf(': ') !== -1){
+				 curTitle = origTitle.replace(/.*:(.*)/gi, '$1');
 	
-	            if(curTitle.split(' ', 3).length < 3)
-	                curTitle = origTitle.replace(/[^:]*[:](.*)/gi,'$1');
-	        }
-	        else if(curTitle.length > 150 || curTitle.length < 15)
-	            if(headerTitle)
-	            	curTitle = headerTitle;
+				 if(curTitle.split(' ', 3).length < 3)
+					 curTitle = origTitle.replace(/[^:]*[:](.*)/gi,'$1');
+			 }
+			 else if(curTitle.length > 150 || curTitle.length < 15)
+				 if(headerTitle)
+				 	curTitle = headerTitle;
 	
-	        curTitle = curTitle.trim();
+			 curTitle = curTitle.trim();
 	
-	        if(curTitle.split(' ', 5).length < 5)
-	            curTitle = origTitle;
+			 if(curTitle.split(' ', 5).length < 5)
+				 curTitle = origTitle;
 			
 			return curTitle;
 		};
