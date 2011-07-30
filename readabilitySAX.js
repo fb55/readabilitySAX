@@ -159,6 +159,7 @@ readability.process = function(parser, options){
 				density:	0,
 				tagCount:	{}
 			};
+			this.isCandidate = false;
 	}
 	
 	parser.onopentag = function(tag){
@@ -255,7 +256,7 @@ readability.process = function(parser, options){
 		
 		//fix link
 		if(elem.attributes.href) elem.attributes.href = settings.convertLinks(elem.attributes.href);
-		if(elem.attributes.src)  elem.attributes.src  = settings.convertLinks(elem.attributes.src);
+		if(elem.attributes.src)  elem.attributes.src	= settings.convertLinks(elem.attributes.src);
 		
 		//should node be scored?
 		var score = tagsToScore[tagname];
@@ -331,25 +332,25 @@ readability.process = function(parser, options){
 		var curTitle = origTitle || "";
 		
 		if(curTitle.match(/ [\|\-] /)){
-            curTitle = origTitle.replace(/(.*)[\|\-] .*/gi,'$1');
-            
-            if(curTitle.split(' ', 3).length < 3)
-                curTitle = origTitle.replace(/[^\|\-]*[\|\-](.*)/gi,'$1');
-        }
-        else if(curTitle.indexOf(': ') !== -1){
-            curTitle = origTitle.replace(/.*:(.*)/gi, '$1');
+			curTitle = origTitle.replace(/(.*)[\|\-] .*/gi,'$1');
+			
+			if(curTitle.split(' ', 3).length < 3)
+				curTitle = origTitle.replace(/[^\|\-]*[\|\-](.*)/gi,'$1');
+		}
+		else if(curTitle.indexOf(': ') !== -1){
+			curTitle = origTitle.replace(/.*:(.*)/gi, '$1');
 
-            if(curTitle.split(' ', 3).length < 3)
-                curTitle = origTitle.replace(/[^:]*[:](.*)/gi,'$1');
-        }
-        else if(curTitle.length > 150 || curTitle.length < 15)
-            if(headerTitle)
-            	curTitle = headerTitle;
+			if(curTitle.split(' ', 3).length < 3)
+				curTitle = origTitle.replace(/[^:]*[:](.*)/gi,'$1');
+		}
+		else if(curTitle.length > 150 || curTitle.length < 15)
+			if(headerTitle)
+				curTitle = headerTitle;
 
-        curTitle = curTitle.trim();
+		curTitle = curTitle.trim();
 
-        if(curTitle.split(' ', 5).length < 5)
-            curTitle = origTitle;
+		if(curTitle.split(' ', 5).length < 5)
+			curTitle = origTitle;
 		
 		return curTitle;
 	};
