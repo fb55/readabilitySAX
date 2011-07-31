@@ -1,19 +1,74 @@
 var readability = typeof exports === "undefined" ? {} : exports;
 
 readability.process = function(parser, options){
-	//our tree (used instead of the dom)
-	var docElements = [{name:"document", attributes: [], children: []}],
-		topCandidate, topParent,
-		origTitle, headerTitle;
+//list of values
+	var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true},
+		tagsToCount = {img:true,embed:true,audio:true,video:true},
+		embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
+		goodAttributes = {href:true,src:true,title:true,alt:true/*,style:true*/},
+		greatTags = {div:true,article:true},
+		goodTags = {pre:true,td:true,blockquote:true},
+		badTags = {address:true,ol:true,ul:true,dl:true,dd:true,dt:true,li:true,form:true},
+		worstTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true,th:true,body:true},
+		cleanConditionaly = {form:true,table:true,ul:true,div:true},
+		tagsToScore = {p:true,pre:true,td:true},
+		divToPElements = {a:true,blockquote:true,dl:true,div:true,img:true,ol:true,p:true,pre:true,table:true,ul:true},
+		newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
+		newLinesBefore = {p:true,h2:true,h3:true,h4:true,h5:true,h6:true},
+		regexps = {
+			videos:			 /http:\/\/(www\.)?(vimeo|youtube|yahoo|flickr)\.com/i,
+			skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
+			nextLink:		 /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i,
+			prevLink:		 /(prev|earl|old|new|<|«)/i,
+			extraneous:		 /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
+			
+			positive:		/article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
+			negative:		/combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
+			unlikelyCandidates:/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter/,
+			okMaybeItsACandidate:  /and|article|body|column|main|shadow/,
+			
+			badStart: /\.( |$)/,
+			
+			headers: /h[1-3]/,
+			commas : /,[\s\,]{0,}/g
+		};
+	
+	//the tree element
+	var Element = function(tagName, attributes){
+			this.name = tagName;
+			this.attributes = attributes;
+			this.children = [];
+			this.skip = false;
+			this.scores = {
+				attribute: 0,
+				tag:0,
+				total: 0
+			};
+			this.info = {
+				textLength: 0,
+				linkLength: 0,
+				commas:		0,
+				density:	0,
+				tagCount:	{}
+			};
+			this.isCandidate = false;
+	};
+	
+	//settings
+	var Settings = {
+		stripUnlikelyCandidates: true,
+		weightClasses: true,
+		cleanConditionally: true,
+		stripAttributes: true,
+		convertLinks: function(a){return a;},
+		pageURL: "",
+		log : typeof console === "undefined" ? function(){} : console.log
+	};
 	
 	//helper functions
-	var mergeObjects = function(obj1, obj2){
+	var mergeNumObjects = function(obj1, obj2){
 		for(var i in obj2)
-			if(obj2.hasOwnProperty(i))
-				if(typeof obj1[i] === "number")
-					obj1[i] += obj2[i];
-				else
-					obj1[i] = obj2[i];
+			obj1[i] += obj2[i];
 		return obj1;
 	},
 	addInfo = function(node){
@@ -36,7 +91,7 @@ readability.process = function(parser, options){
 					info.linkLength += elem.info.linkLength;
 				}
 				info.commas += elem.info.commas;
-				mergeObjects(info.tagCount, elem.info.tagCount);
+				mergeNumObjects(info.tagCount, elem.info.tagCount);
 				if(info.tagCount[elem.name]) info.tagCount[elem.name] += 1;
 				else info.tagCount[elem.name] = 1;
 			}
@@ -50,7 +105,8 @@ readability.process = function(parser, options){
 	getInnerHTML = function(nodes){
 		var ret = [];
 		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret.push(nodes[i]);
+			if(typeof nodes[i] === "string") ret.push(nodes[i]) //=> convert special chars
+				.replace(/[\'\"\&\<\>]/g, function(a){ return "&#" + a.charCodeAt(0) + ";" });
 			else ret.push(getOuterHTML(nodes[i]));
 		}
 		return ret.join(" ");
@@ -85,18 +141,16 @@ readability.process = function(parser, options){
 		}
 		return ret.join("");
 	};
+
+	//our tree (used instead of the dom)
+	var docElements = [new Element("document", {})],
+		topCandidate, topParent,
+		origTitle, headerTitle,
+		settings = Object.create(Settings);
 	
-	//settings
-	var settings = {
-		stripUnlikelyCandidates: true,
-		weightClasses: true,
-		cleanConditionally: true,
-		stripAttributes: true,
-		convertLinks: function(a){return a;},
-		pageURL: "",
-		log : true
-	};
-	mergeObjects(settings, options);
+	for(var i in options)
+		if(options.hasOwnProperty(i))
+			settings[i] = options[i];
 	
 	//skipLevel is a shortcut to allow more elements of the page
 	if(options.skipLevel){
@@ -105,67 +159,15 @@ readability.process = function(parser, options){
 		if(options.skipLevel > 2) settings.cleanConditionally = false;
 	}
 	
-	var log = (function(){
-		if(!settings.log) return function(){};
-		if(typeof settings.log === "function") return settings.log;
-		else if(typeof console !== "undefined") return console.log;
-	})();
+	if(settings.log === false) settings.log = function(){};
 	
-	var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true},
-		tagsToCount = {img:true,embed:true,audio:true,video:true},
-		embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
-		goodAttributes = {href:true,src:true,title:true,alt:true/*,style:true*/},
-		greatTags = {div:true,article:true},
-		goodTags = {pre:true,td:true,blockquote:true},
-		badTags = {address:true,ol:true,ul:true,dl:true,dd:true,dt:true,li:true,form:true},
-		worstTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true,th:true,body:true},
-		cleanConditionaly = {form:true,table:true,ul:true,div:true},
-		tagsToScore = {p:true,pre:true,td:true},
-		divToPElements = {a:true,blockquote:true,dl:true,div:true,img:true,ol:true,p:true,pre:true,table:true,ul:true},
-		newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
-		newLinesBefore = {p:true,h2:true,h3:true,h4:true,h5:true,h6:true},
-		regexps = {
-			videos:			 /http:\/\/(www\.)?(vimeo|youtube|yahoo|flickr)\.com/i,
-			skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
-			nextLink:		 /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i,
-			prevLink:		 /(prev|earl|old|new|<|«)/i,
-			extraneous:		 /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
-			
-			positive:		/article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
-			negative:		/combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-			unlikelyCandidates:/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter/,
-			okMaybeItsACandidate:  /and|article|body|column|main|shadow/,
-			
-			badStart: /\.( |$)/,
-			
-			headers: /h[1-3]/,
-			commas : /,[\s\,]{0,}/g
-		};
-	
-	var Element = function(tagName, attributes){
-			this.name = tagName;
-			this.attributes = attributes;
-			this.children = [];
-			this.skip = false;
-			this.scores = {
-				attribute: 0,
-				tag:0,
-				total: 0
-			};
-			this.info = {
-				textLength: 0,
-				linkLength: 0,
-				commas:		0,
-				density:	0,
-				tagCount:	{}
-			};
-			this.isCandidate = false;
-	}
+	settings.log(settings);
 	
 	parser.onopentag = function(tag){
 		var parent = docElements[docElements.length - 1],
-			tagName = tag.name;
-		var elem = new Element(tagName, tag.attributes);
+			tagName = tag.name,
+			elem = new Element(tagName, tag.attributes);
+		
 		parent.children.push(elem);
 		docElements.push(elem);
 		
@@ -206,7 +208,7 @@ readability.process = function(parser, options){
 		var elem = docElements.pop(),
 			elemLevel = docElements.length - 1;
 		
-		if(tagname !== elem.name) log("Tagname didn't match!:" + tagname + " vs. " + elem.name);
+		if(tagname !== elem.name) settings.log("Tagname didn't match!:" + tagname + " vs. " + elem.name);
 		//prepare title
 		if(tagname === "title") origTitle = getText(elem.children);
 		else if(tagname === "h1"){
