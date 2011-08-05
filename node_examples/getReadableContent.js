@@ -40,11 +40,11 @@ exports.get = function(uri, cb){
 			pageURL: url.format(link)
 		});
 		
-		connection.addListener("data", function(chunk){
-			parser.write(chunk.toString("utf8"));
-			data += chunk.toString("utf8");
+		connection.on("data", function(chunk){
+			data += chunk = chunk.toString("utf8");
+			parser.write(chunk);
 		});
-		connection.addListener("end", function(){
+		connection.on("end", function(){
 			parser.close();
 			var ret = readable.getArticle();
 			if(ret.textLength < 250){
