@@ -28,8 +28,7 @@ exports.get = function(uri, cb){
 	req.addListener("response", function(connection){
 		if(connection.statusCode === 301 || connection.statusCode === 302)
 			return exports.get(connection.headers.location, cb);
-		var parser = sax.parser(false, {	
-			trim : true,
+		var parser = sax.parser(false, {
 		    lowercasetags : true
 		});
 		var data = "";
@@ -70,8 +69,7 @@ exports.process = function(data, skipLevel, readabilitySettings, type){
 		parser, readable, ret;
 	
 	while(contentLength < 250 && skipLevel < 4){
-	    parser = sax.parser(false, {	
-			trim : true,
+	    parser = sax.parser(false, {
 		    lowercasetags : true
 		});
 	    

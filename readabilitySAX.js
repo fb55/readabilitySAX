@@ -112,7 +112,7 @@ readability.process = function(parser, options){
 				)
 			else ret.push(getOuterHTML(nodes[i]));
 		}
-		return ret.join(" ");
+		return ret.join("");
 	},
 	getOuterHTML = function(elem){
 		if(elem.skip) return "";
@@ -130,7 +130,7 @@ readability.process = function(parser, options){
 	getText = function(nodes){
 		var ret = [], text;
 		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret.push(nodes[i], " ");
+			if(typeof nodes[i] === "string") ret.push(nodes[i]);
 			else if(!nodes[i].skip){
 				text = getText(nodes[i].children);
 				
