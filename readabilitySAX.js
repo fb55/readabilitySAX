@@ -6,7 +6,6 @@ readability.process = function(parser, options){
 		tagsToCount = {a:true,audio:true,blockquote:true,div:true,dl:true,embed:true,img:true,input:true,li:true,object:true,ol:true,p:true,pre:true,table:true,ul:true,video:true},
 		embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
 		goodAttributes = {href:true,src:true,title:true,alt:true/*,style:true*/},
-		greatTags = {div:true,article:true},
 		goodTags = {pre:true,td:true,blockquote:true},
 		badTags = {address:true,ol:true,ul:true,dl:true,dd:true,dt:true,li:true,form:true},
 		worstTags = {h2:true,h3:true,h4:true,h5:true,h6:true,th:true,body:true},
@@ -55,6 +54,81 @@ readability.process = function(parser, options){
 			this.isCandidate = false;
 	};
 	
+	Element.prototype = {
+		addInfo: function(){
+			var info = this.info,
+				childs = this.children,
+				childNum = childs.length,
+				elem;
+			for(var i=0; i < childNum; i++){
+				elem = childs[i];
+				if(typeof childs[i] === "string"){
+					info.textLength += elem.length;
+					info.commas += elem.split(regexps.commas).length - 1;
+				}
+				else if(!elem.skip){
+					if(elem.name === "a"){
+						info.linkLength += elem.info.textLength + elem.info.linkLength;
+					}
+					else{
+						info.textLength += elem.info.textLength;
+						info.linkLength += elem.info.linkLength;
+					}
+					info.commas += elem.info.commas;
+					mergeNumObjects(info.tagCount, elem.info.tagCount);
+					if(info.tagCount[elem.name]) info.tagCount[elem.name] += 1;
+					else info.tagCount[elem.name] = 1;
+				}
+			}
+			info.density = info.linkLength / (info.textLength + info.linkLength);
+			if(isNaN(info.density))
+				info.density = 1; //just ensure it gets skipped (is the case for 0/0)
+			this.info = info;
+		},
+		getOuterHTML: function(){
+			if(this.skip) return "";
+			var ret = ["<" + this.name], i;
+			if(settings.stripAttributes){
+				for(i in this.attributes)
+					if(goodAttributes[i])
+						ret.push(i + "=\"" + this.attributes[i] + "\"");
+			} else
+				for(i in elem.attributes)
+					ret.push(i + "=\"" + this.attributes[i] + "\"");
+			
+			return ret.join(" ") + ">" + this.getInnerHTML() + "</" + this.name + ">";
+		},
+		getInnerHTML: function(){
+			var nodes = this.children, ret = [];
+    		for(var i = 0, j = nodes.length; i < j; i++){
+    			if(typeof nodes[i] === "string") ret.push(
+    				nodes[i] //=> convert special chars
+    					.replace(regexps.notHTMLChars, function(a){ return "&#" + a.charCodeAt(0) + ";" })
+    				)
+    			else ret.push(nodes[i].getOuterHTML());
+    		}
+    		return ret.join("");
+		},
+		getText: function(){
+			var nodes = this.children, ret = [], text;
+			for(var i = 0, j = nodes.length; i < j; i++){
+				if(typeof nodes[i] === "string") ret.push(nodes[i]);
+				else if(!nodes[i].skip){
+					text = nodes[i].getText();
+					
+					if(text === "") continue;
+					
+					if(newLinesBefore[ nodes[i].name ]) ret.push("\n");
+					
+					ret.push(text);
+					
+					if(newLinesAfter[ nodes[i].name ]) ret.push("\n");
+				}
+			}
+			return ret.join("");
+		}
+	};
+	
 	//settings
 	var Settings = {
 		stripUnlikelyCandidates: true,
@@ -69,80 +143,10 @@ readability.process = function(parser, options){
 	//helper functions
 	var mergeNumObjects = function(obj1, obj2){
 		for(var i in obj2)
-			obj1[i] += obj2[i];
-		return obj1;
-	},
-	addInfo = function(node){
-		var info = node.info,
-			childs = node.children,
-			childNum = childs.length,
-			elem;
-		for(var i=0; i < childNum; i++){
-			elem = childs[i];
-			if(typeof childs[i] === "string"){
-				info.textLength += elem.length;
-				info.commas += elem.split(regexps.commas).length - 1;
-			}
-			else if(!elem.skip){
-				if(elem.name === "a"){
-					info.linkLength += elem.info.textLength + elem.info.linkLength;
-				}
-				else{
-					info.textLength += elem.info.textLength;
-					info.linkLength += elem.info.linkLength;
-				}
-				info.commas += elem.info.commas;
-				mergeNumObjects(info.tagCount, elem.info.tagCount);
-				if(info.tagCount[elem.name]) info.tagCount[elem.name] += 1;
-				else info.tagCount[elem.name] = 1;
-			}
-		}
-		info.density = info.linkLength / (info.textLength + info.linkLength);
-		if(isNaN(info.density))
-			info.density = 1; //just ensure it gets skipped
-		node.info = info;
-		return info;
-	},
-	getInnerHTML = function(nodes){
-		var ret = [];
-		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret.push(
-				nodes[i] //=> convert special chars
-					.replace(regexps.notHTMLChars, function(a){ return "&#" + a.charCodeAt(0) + ";" })
-				)
-			else ret.push(getOuterHTML(nodes[i]));
-		}
-		return ret.join("");
-	},
-	getOuterHTML = function(elem){
-		if(elem.skip) return "";
-		var ret = ["<" + elem.name], i;
-		if(settings.stripAttributes){
-			for(i in elem.attributes)
-				if(goodAttributes[i])
-					ret.push(i + "=\"" + elem.attributes[i] + "\"");
-		} else
-			for(i in elem.attributes)
-				ret.push(i + "=\"" + elem.attributes[i] + "\"");
-		
-		return ret.join(" ") + ">" + getInnerHTML(elem.children) + "</" + elem.name + ">";
-	},
-	getText = function(nodes){
-		var ret = [], text;
-		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret.push(nodes[i]);
-			else if(!nodes[i].skip){
-				text = getText(nodes[i].children);
-				
-				if(text === "") continue;
-				
-				if(newLinesBefore[ nodes[i].name ]) ret.push("\n");
-				
-				ret.push(text);
-				if(newLinesAfter[ nodes[i].name ]) ret.push("\n");
-			}
-		}
-		return ret.join("");
+			if(obj1[i])
+				obj1[i] += obj2[i];
+			else
+				obj1[i] = obj2[i];
 	};
 
 	//our tree (used instead of the dom)
@@ -211,17 +215,17 @@ readability.process = function(parser, options){
 		
 		if(tagname !== elem.name) settings.log("Tagname didn't match!:" + tagname + " vs. " + elem.name);
 		//prepare title
-		if(tagname === "title") origTitle = getText(elem.children);
+		if(tagname === "title") origTitle = elem.getText();
 		else if(tagname === "h1"){
 			elem.skip = true;
 			if(headerTitle !== false)
-				if(!headerTitle) headerTitle = getText(elem.children);
+				if(!headerTitle) headerTitle = elem.getText();
 				else headerTitle = false;
 		}
 		
 		if(elem.skip) return;
 		
-		elem.info = addInfo(elem);
+		elem.addInfo();
 		
 		var i, j, cnvrt;
 		//clean conditionally
@@ -250,8 +254,8 @@ readability.process = function(parser, options){
 			else if( (elem.info.tagCount.li - 100) > p && tagname !== "ul" && tagname !== "ol") elem.skip = true;
 			else if(elem.info.tagCount.input > Math.floor(p/3) ) elem.skip = true;
 			else if(contentLength < 25 && (!elem.info.tagCount.img || elem.info.tagCount.img > 2) ) elem.skip = true;
-			else if(elem.scores.attribute < 25 && elem.scores.density > 0.2) elem.skip = true;
-			else if(elem.scores.attribute >= 25 && elem.scores.density > 0.5) elem.skip = true;
+			else if(elem.scores.attribute < 25 && elem.info.density > 0.2) elem.skip = true;
+			else if(elem.scores.attribute >= 25 && elem.info.density > 0.5) elem.skip = true;
 			else if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) elem.skip = true;
 		}
 		
@@ -319,7 +323,7 @@ readability.process = function(parser, options){
 				if((childs[i].scores.total + contentBonus) >= siblingScoreThreshold) append = true;
 				else if(childs[i].name === "p")
 					if(childs[i].info.textLength > 80 && childs[i].info.density < 0.25) append = true;
-					else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && getText(childs[i].children).search(regexps.badStart) !== -1)
+					else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && childs[i].getText().search(regexps.badStart) !== -1)
 						append = true;
 			}
 			if(append){
@@ -364,14 +368,17 @@ readability.process = function(parser, options){
 		};
 		if(type === "node") ret.node = topCandidate;
 		
-		var nodes = getCandidateSiblings();
+		//create a new object so that the prototype methods are callable
+		var elem = new Element("", {});
+		elem.children = getCandidateSiblings();
+		elem.addInfo();
 		
-		ret.textLength = 0;
-		for(var i = 0, j = nodes.length; i < j; i++)
-			ret.textLength += nodes[i].info.textLength;
+		ret.textLength = elem.info.textLength;
 		
-		if(type === "text") ret.text = getText(nodes).trim();
-		else ret.html = getInnerHTML(nodes) //=> clean it
+		if(type === "text")
+			ret.text = elem.getText().trim();
+		
+		else ret.html = elem.getInnerHTML() //=> clean it
 			//kill breaks
 			.replace(/(<\/?br\s*\/?>(\s|&nbsp;?)*)+/g,'<br/>')
 			//turn all double brs into ps
@@ -382,6 +389,7 @@ readability.process = function(parser, options){
 			.replace(/<br[^>]*>\s*<p/g,"<p");
 		
 		ret.score = topCandidate.scores.total;
+		ret.count = elem.info.tagCount;
 		return ret;
 	};
 };
