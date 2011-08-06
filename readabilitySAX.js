@@ -58,11 +58,11 @@ readability.process = function(parser, options){
 		addInfo: function(){
 			var info = this.info,
 				childs = this.children,
-				childNum = childs.length,
+				childNum = this.children.length,
 				elem;
 			for(var i=0; i < childNum; i++){
 				elem = childs[i];
-				if(typeof childs[i] === "string"){
+				if(typeof elem === "string"){
 					info.textLength += elem.length;
 					info.commas += elem.split(regexps.commas).length - 1;
 				}
@@ -83,7 +83,7 @@ readability.process = function(parser, options){
 			info.density = info.linkLength / (info.textLength + info.linkLength);
 			if(isNaN(info.density))
 				info.density = 1; //just ensure it gets skipped (is the case for 0/0)
-			this.info = info;
+			return info;
 		},
 		getOuterHTML: function(){
 			if(this.skip) return "";
@@ -300,7 +300,12 @@ readability.process = function(parser, options){
 	
 	var getCandidateSiblings = function(){
 		if(!topCandidate){
-			topCandidate = docElements[0].children.pop().children.pop(); //body
+			try{
+				topCandidate = docElements[0].children.pop().children.pop(); //body
+			}
+			catch(e){
+				topCandidate = new Element("",{});
+			}
 			topCandidate.name = "div";
 		}
 		//check all siblings
@@ -389,7 +394,7 @@ readability.process = function(parser, options){
 			.replace(/<br[^>]*>\s*<p/g,"<p");
 		
 		ret.score = topCandidate.scores.total;
-		ret.count = elem.info.tagCount;
+		ret.info = elem.info;
 		return ret;
 	};
 };
