@@ -28,6 +28,10 @@ readability.process = function(parser, settings){
 			
 			badStart: /\.( |$)/,
 			
+			pageInURL: /((_|-)?p[a-z]*|(_|-))[0-9]{1,2}$/i,
+			noLetters: /[^a-z]/i,
+			justDigits: /^\d{1,2}$/,
+			
 			headers: /h[1-3]/,
 			commas : /,[\s\,]{0,}/g,
 			notHTMLChars : /[\'\"\<\>]/g
@@ -98,14 +102,14 @@ readability.process = function(parser, settings){
 		},
 		getInnerHTML: function(){
 			var nodes = this.children, ret = [];
-    		for(var i = 0, j = nodes.length; i < j; i++){
-    			if(typeof nodes[i] === "string") ret.push(
-    				nodes[i] //=> convert special chars
-    					.replace(regexps.notHTMLChars, function(a){ return "&#" + a.charCodeAt(0) + ";" })
-    				)
-    			else ret.push(nodes[i].getOuterHTML());
-    		}
-    		return ret.join("");
+			for(var i = 0, j = nodes.length; i < j; i++){
+				if(typeof nodes[i] === "string") ret.push(
+					nodes[i] //=> convert special chars
+						.replace(regexps.notHTMLChars, function(a){ return "&#" + a.charCodeAt(0) + ";" })
+					)
+				else ret.push(nodes[i].getOuterHTML());
+			}
+			return ret.join("");
 		},
 		getText: function(){
 			var nodes = this.children, ret = [], text;
@@ -148,6 +152,55 @@ readability.process = function(parser, settings){
 				obj1[i] += obj2[i];
 			else
 				obj1[i] = obj2[i];
+	}, getBaseURL = function(link){
+		var noUrlParams		= link.pathname.split("?")[0],
+			urlSlashes		= noUrlParams.split("/").reverse(),
+			cleanedSegments = [],
+			possibleType	= "",
+			i = 0, 
+			slashLen = urlSlashes.length;
+		
+		if(slashLen < 2) return link.protocol + "//" + link.host + noUrlParams; //return what we got
+		
+		//look if the first to elements get skipped
+		var first = urlSlashes[0],
+			second= urlSlashes[1];
+		
+		if((first.length < 3 && first.match(regexps.noLetters)) || first.toLowerCase() === "index" || first.match(regexps.justDigits)){
+			if(( second.length < 3 && first.match(regexps.noLetters) ) || second.match(regexps.justDigits)) i = 2;
+			else i = 1;
+		}
+		else{
+			if(first.match(regexps.pageInURL))
+			  	urlSlashes[0] = first.replace(regexps.pageInURL, "");
+			
+			//if only the second one gets skiped, start at an index of 1 and position the first element there
+			if( (second.length < 3 && first.match(regexps.noLetters)) || second.match(regexps.justDigits))
+				urlSlashes[ i = 1 ] = first;
+			
+			else if(second.match(regexps.pageInURL))
+				urlSlashes[1] = second.replace(regexps.pageInURL, "");
+		};
+		
+		var dotSplit, segment;
+		
+		while(i++ < slashLen){
+			// Split off and save anything that looks like a file type.
+			dotSplit = urlSlashes[i].split(".");
+			
+			//change from readability: ensure that segments with multiple points get skipped
+			if (dotSplit.length === 2 && !dotSplit[1].match(regexps.noLetters))
+				segment = dotSplit[0];
+			else segment = urlSlashes[i];
+			
+			if(segment.indexOf(',00') !== -1)
+				segment = segment.replace(",00", "");
+			
+			cleanedSegments.push(segment);
+		}
+
+		// This is our final, cleaned, base article URL.
+		return link.protocol + "//" + link.host + cleanedSegments.reverse().join("/");
 	};
 
 	//our tree (used instead of the dom)
@@ -178,7 +231,10 @@ readability.process = function(parser, settings){
 			settings.convertLinks = settings.url.resolve.bind(null, settings.link);
 		else settings.convertLinks = function(a){ return a; };
 	
-	//TODO: get base url
+	var baseURL;
+	if(settings.link)
+		baseURL = getBaseURL(settings.link);
+	else baseURL = "";
 	
 	parser.onopentag = function(tag){
 		var parent = docElements[docElements.length - 1],
