@@ -1,6 +1,6 @@
 var readability = typeof exports === "undefined" ? {} : exports;
 
-readability.process = function(parser, options){
+readability.process = function(parser, settings){
 //list of values
 	var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true,aside:true,header:true,nav:true,footer:true},
 		tagsToCount = {a:true,audio:true,blockquote:true,div:true,dl:true,embed:true,img:true,input:true,li:true,object:true,ol:true,p:true,pre:true,table:true,ul:true,video:true},
@@ -9,7 +9,7 @@ readability.process = function(parser, options){
 		goodTags = {pre:true,td:true,blockquote:true},
 		badTags = {address:true,ol:true,ul:true,dl:true,dd:true,dt:true,li:true,form:true},
 		worstTags = {h2:true,h3:true,h4:true,h5:true,h6:true,th:true,body:true},
-		cleanConditionaly = {form:true,table:true,ul:true,div:true},
+		cleanConditionaly = {form:true,table:true,ul:true,ol:true,div:true},
 		tagsToScore = {p:true,pre:true,td:true},
 		divToPElements = ["a","blockquote","dl","div","img","ol","p","pre","table","ul"],
 		newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
@@ -152,18 +152,17 @@ readability.process = function(parser, options){
 	//our tree (used instead of the dom)
 	var docElements = [new Element("document", {})],
 		topCandidate, topParent,
-		origTitle, headerTitle,
-		settings = Object.create(Settings);
+		origTitle, headerTitle;
 	
-	for(var i in options)
-		if(options.hasOwnProperty(i))
-			settings[i] = options[i];
+	for(var i in Settings)
+		if(typeof settings[i] === "undefined")
+			settings[i] = Settings[i];
 	
 	//skipLevel is a shortcut to allow more elements of the page
-	if(options.skipLevel){
-		if(options.skipLevel > 0) settings.stripUnlikelyCandidates = false;
-		if(options.skipLevel > 1) settings.weightClasses = false;
-		if(options.skipLevel > 2) settings.cleanConditionally = false;
+	if(settings.skipLevel){
+		if(settings.skipLevel > 0) settings.stripUnlikelyCandidates = false;
+		if(settings.skipLevel > 1) settings.weightClasses = false;
+		if(settings.skipLevel > 2) settings.cleanConditionally = false;
 	}
 	
 	if(settings.log === false) settings.log = function(){};
@@ -219,7 +218,7 @@ readability.process = function(parser, options){
 		else if(tagname === "h1"){
 			elem.skip = true;
 			if(headerTitle !== false)
-				if(!headerTitle) headerTitle = elem.getText();
+				if(!headerTitle) headerTitle = elem.getText();
 				else headerTitle = false;
 		}
 		
