@@ -6,10 +6,8 @@ var processContent = function(data){
 	var conTime = Date.now();
 	
 	var ret = getReadableContent.process(data, 0, {
-		convertLinks: function(a){
-	    	return url.resolve(link, a);
-	    },
-	    pageURL: url.format(link)
+		convertLinks: url.resolve.bind(null, link),
+	    link: link
 	});
 	
 	ret.duration = Date.now() - conTime;

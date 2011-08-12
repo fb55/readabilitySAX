@@ -49,10 +49,8 @@ exports.get = function(uri, cb){
 			var ret = readable.getArticle();
 			if(ret.textLength < 250){
 				ret = exports.process(data, 1, {
-					convertLinks: function(a){
-						return url.resolve(link, a);
-					},
-					pageURL: url.format(link)
+					convertLinks: url.resolve.bind(null, link),
+					link: link
 				});	
 			}
 			ret.link = link.href;

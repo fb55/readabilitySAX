@@ -87,13 +87,11 @@ readability.process = function(parser, settings){
 		},
 		getOuterHTML: function(){
 			if(this.skip) return "";
-			var ret = ["<" + this.name], i;
-			if(settings.stripAttributes){
-				for(i in this.attributes)
-					if(goodAttributes[i])
-						ret.push(i + "=\"" + this.attributes[i] + "\"");
-			} else
-				for(i in elem.attributes)
+			var ret = ["<" + this.name],
+				i;
+			
+			for(i in this.attributes)
+				if(goodAttributes[i])
 					ret.push(i + "=\"" + this.attributes[i] + "\"");
 			
 			return ret.join(" ") + ">" + this.getInnerHTML() + "</" + this.name + ">";
@@ -134,9 +132,12 @@ readability.process = function(parser, settings){
 		stripUnlikelyCandidates: true,
 		weightClasses: true,
 		cleanConditionally: true,
-		stripAttributes: true,
-		convertLinks: function(a){return a;},
-		pageURL: "",
+		/*
+		url: null,			//nodes URL module (or anything that provides its api)
+		pageURL: null,		//URL of the page which is parsed
+		convertLinks: null, //function to redirect links
+		link: null,			//instance of url, may be provided if url was already parsed (pageURL isn't required after that)
+		*/
 		log : typeof console === "undefined" ? function(){} : console.log
 	};
 	
@@ -154,6 +155,8 @@ readability.process = function(parser, settings){
 		topCandidate, topParent,
 		origTitle, headerTitle;
 	
+	
+	//process settings
 	for(var i in Settings)
 		if(typeof settings[i] === "undefined")
 			settings[i] = Settings[i];
@@ -166,6 +169,16 @@ readability.process = function(parser, settings){
 	}
 	
 	if(settings.log === false) settings.log = function(){};
+	
+	if(!settings.link && settings.url && settings.pageURL)
+		settings.link = settings.url.parse( settings.pageURL );
+	
+	if(!settings.convertLinks) 
+		if(settings.link)
+			settings.convertLinks = settings.url.resolve.bind(null, settings.link);
+		else settings.convertLinks = function(a){ return a; };
+	
+	//TODO: get base url
 	
 	parser.onopentag = function(tag){
 		var parent = docElements[docElements.length - 1],
