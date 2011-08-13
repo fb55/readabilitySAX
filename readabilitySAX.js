@@ -38,9 +38,9 @@ readability.process = function(parser, settings){
 		};
 	
 	//the tree element
-	var Element = function(tagName, attributes){
+	var Element = function(tagName){
 			this.name = tagName;
-			this.attributes = attributes;
+			this.attributes = {};
 			this.children = [];
 			this.skip = false;
 			this.scores = {
@@ -95,8 +95,7 @@ readability.process = function(parser, settings){
 				i;
 			
 			for(i in this.attributes)
-				if(goodAttributes[i])
-					ret.push(i + "=\"" + this.attributes[i] + "\"");
+				ret.push(i + "=\"" + this.attributes[i] + "\"");
 			
 			return ret.join(" ") + ">" + this.getInnerHTML() + "</" + this.name + ">";
 		},
@@ -136,6 +135,7 @@ readability.process = function(parser, settings){
 		stripUnlikelyCandidates: true,
 		weightClasses: true,
 		cleanConditionally: true,
+		cleanAttributes: true,
 		/*
 		url: null,			//nodes URL module (or anything that provides its api)
 		pageURL: null,		//URL of the page which is parsed
@@ -239,9 +239,8 @@ readability.process = function(parser, settings){
 	parser.onopentag = function(tag){
 		var parent = docElements[docElements.length - 1],
 			tagName = tag.name,
-			elem = new Element(tagName, tag.attributes);
+			elem = new Element(tagName);
 		
-		parent.children.push(elem);
 		docElements.push(elem);
 		
 		if(parent.skip === true){
@@ -252,14 +251,16 @@ readability.process = function(parser, settings){
 			elem.skip = true; return;
 		}
 		
-		var id = (tag.attributes.id || "").toLowerCase(),
-			className = (tag.attributes["class"] || "").toLowerCase();
-		
-		var matchString = id + className;
-		if(regexps.unlikelyCandidates.test(matchString) && 
-			!regexps.okMaybeItsACandidate.test(matchString)){
-				elem.skip = true; return;
+		if(settings.stripUnlikelyCandidates){
+			var matchString = ((tag.attributes.id || "") + (tag.attributes["class"] || "")).toLowerCase();;
+			if(regexps.unlikelyCandidates.test(matchString) && 
+				!regexps.okMaybeItsACandidate.test(matchString)){
+					elem.skip = true; return;
+			}
 		}
+		
+		//do this now, so gc can remove it after onclosetag
+		parent.children.push(elem);
 		
 		//add points for the tags name
 		if(tagName === "article") elem.scores.tag += 30;
@@ -267,13 +268,29 @@ readability.process = function(parser, settings){
 		else if(goodTags[tagName]) elem.scores.tag += 3;
 		else if(badTags[tagName]) elem.scores.tag -= 3;
 		else if(worstTags[tagName]) elem.scores.tag -= 5;
-		
-		//add points for the tags id && classnames
-		if(regexps.negative.test(id)) elem.scores.attribute -= 25;
-		else if(regexps.positive.test(id)) elem.scores.attribute += 25;
-		if(regexps.negative.test(className)) elem.scores.attribute -= 25;
-		else if(regexps.positive.test(className)) elem.scores.attribute += 25;
 	};
+	
+	parser.onattribute = function(attr){
+		var elem = docElements[docElements.length-1],
+			name = attr.name,
+			value = attr.value;
+		
+		if(elem.skip) return;
+		
+		if(name === "id" || name === "class"){
+			if(regexps.negative.test(value)) elem.scores.attribute -= 25;
+			else if(regexps.positive.test(value)) elem.scores.attribute += 25;
+		}
+		else if(name === "href" || name === "src"){
+			//fix links
+			elem.attributes[name] = settings.convertLinks(value);
+		}
+		else if(settings.cleanAttributes){
+			if(goodAttributes[name])
+				elem.attributes[name] = value;
+		}
+		else elem.attributes[name] = value;
+	}
 	
 	parser.ontext = function(text){ if(text !== "") docElements[docElements.length-1].children.push(text); };
 	
@@ -328,11 +345,7 @@ readability.process = function(parser, settings){
 		}
 		
 		if(elem.skip) return;
-		
-		//fix link
-		if(elem.attributes.href) elem.attributes.href = settings.convertLinks(elem.attributes.href);
-		if(elem.attributes.src)  elem.attributes.src	= settings.convertLinks(elem.attributes.src);
-		
+				
 		//should node be scored?
 		var score = tagsToScore[tagname];
 		if(!score && tagname === "div"){
