@@ -43,11 +43,9 @@ readability.process = function(parser, settings){
 			this.attributes = {};
 			this.children = [];
 			this.skip = false;
-			this.scores = {
-				attribute: 0,
-				tag:0,
-				total: 0
-			};
+			this.tagScore = 0;
+			this.attributeScore = 0;
+			this.totalScore = 0;
 			this.info = {
 				textLength: 0,
 				linkLength: 0,
@@ -263,11 +261,11 @@ readability.process = function(parser, settings){
 		parent.children.push(elem);
 		
 		//add points for the tags name
-		if(tagName === "article") elem.scores.tag += 30;
-		else if(tagName === "div") elem.scores.tag += 5;
-		else if(goodTags[tagName]) elem.scores.tag += 3;
-		else if(badTags[tagName]) elem.scores.tag -= 3;
-		else if(worstTags[tagName]) elem.scores.tag -= 5;
+		if(tagName === "article") elem.tagScore += 30;
+		else if(tagName === "div") elem.tagScore += 5;
+		else if(goodTags[tagName]) elem.tagScore += 3;
+		else if(badTags[tagName]) elem.tagScore -= 3;
+		else if(worstTags[tagName]) elem.tagScore -= 5;
 	};
 	
 	parser.onattribute = function(attr){
@@ -278,8 +276,8 @@ readability.process = function(parser, settings){
 		if(elem.skip) return;
 		
 		if(name === "id" || name === "class"){
-			if(regexps.negative.test(value)) elem.scores.attribute -= 25;
-			else if(regexps.positive.test(value)) elem.scores.attribute += 25;
+			if(regexps.negative.test(value)) elem.attributeScore -= 25;
+			else if(regexps.positive.test(value)) elem.attributeScore += 25;
 		}
 		else if(name === "href" || name === "src"){
 			//fix links
@@ -292,13 +290,14 @@ readability.process = function(parser, settings){
 		else elem.attributes[name] = value;
 	}
 	
-	parser.ontext = function(text){ if(text !== "") docElements[docElements.length-1].children.push(text); };
+	parser.ontext = function(text){ docElements[docElements.length-1].children.push(text); };
 	
 	parser.onclosetag = function(tagname){
 		var elem = docElements.pop(),
 			elemLevel = docElements.length - 1;
 		
-		if(tagname !== elem.name) settings.log("Tagname didn't match!:" + tagname + " vs. " + elem.name);
+		//if(tagname !== elem.name) settings.log("Tagname didn't match!:" + tagname + " vs. " + elem.name);
+		
 		//prepare title
 		if(tagname === "title") origTitle = elem.getText();
 		else if(tagname === "h1"){
@@ -329,7 +328,7 @@ readability.process = function(parser, settings){
 		}
 		else if(regexps.headers.test(tagname)){
 			//clean headers
-			if (elem.scores.attribute < 0 || elem.info.density > 0.33) elem.skip = true;
+			if (elem.attributeScore < 0 || elem.info.density > 0.33) elem.skip = true;
 		}
 		else if(settings.cleanConditionally && cleanConditionaly[tagname]){
 			var p = elem.info.tagCount.p || 0,
@@ -339,8 +338,8 @@ readability.process = function(parser, settings){
 			else if( (elem.info.tagCount.li - 100) > p && tagname !== "ul" && tagname !== "ol") elem.skip = true;
 			else if(elem.info.tagCount.input > Math.floor(p/3) ) elem.skip = true;
 			else if(contentLength < 25 && (!elem.info.tagCount.img || elem.info.tagCount.img > 2) ) elem.skip = true;
-			else if(elem.scores.attribute < 25 && elem.info.density > 0.2) elem.skip = true;
-			else if(elem.scores.attribute >= 25 && elem.info.density > 0.5) elem.skip = true;
+			else if(elem.attributeScore < 25 && elem.info.density > 0.2) elem.skip = true;
+			else if(elem.attributeScore >= 25 && elem.info.density > 0.5) elem.skip = true;
 			else if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) elem.skip = true;
 		}
 		
@@ -362,14 +361,14 @@ readability.process = function(parser, settings){
 			if((elem.info.textLength + elem.info.linkLength) >= 25 && elemLevel > 0){
 				docElements[elemLevel].isCandidate = docElements[elemLevel-1].isCandidate = true;
 				var addScore = 1 + elem.info.commas + Math.min( Math.floor( (elem.info.textLength + elem.info.linkLength) / 100 ), 3);
-				docElements[elemLevel].scores.tag	+= addScore;
-				docElements[elemLevel-1].scores.tag	+= addScore / 2;
+				docElements[elemLevel].tagScore	+= addScore;
+				docElements[elemLevel-1].tagScore	+= addScore / 2;
 			}
 		}
 		
 		if(elem.isCandidate){
-			elem.scores.total = Math.floor((elem.scores.tag + elem.scores.attribute) * (1 - elem.info.density));
-			if(!topCandidate || elem.scores.total > topCandidate.scores.total){
+			elem.totalScore = Math.floor((elem.tagScore + elem.attributeScore) * (1 - elem.info.density));
+			if(!topCandidate || elem.totalScore > topCandidate.totalScore){
 				topCandidate = elem;
 				if(elemLevel >= 0)
 					topParent = docElements[elemLevel];
@@ -396,7 +395,7 @@ readability.process = function(parser, settings){
 		var ret = [],
 			childs = topParent.children,
 			childNum = childs.length,
-			siblingScoreThreshold = Math.max(10, topCandidate.scores.total * 0.2);
+			siblingScoreThreshold = Math.max(10, topCandidate.totalScore * 0.2);
 		
 		for(var i = 0; i < childNum; i++){
 			if(typeof childs[i] === "string") continue;
@@ -405,8 +404,8 @@ readability.process = function(parser, settings){
 			else{
 				var contentBonus = 0;
 				if(topCandidate.attributes["class"] && topCandidate.attributes["class"] === childs[i].attributes["class"]) 
-					contentBonus += topCandidate.scores.total * 0.2;
-				if((childs[i].scores.total + contentBonus) >= siblingScoreThreshold) append = true;
+					contentBonus += topCandidate.totalScore * 0.2;
+				if((childs[i].totalScore + contentBonus) >= siblingScoreThreshold) append = true;
 				else if(childs[i].name === "p")
 					if(childs[i].info.textLength > 80 && childs[i].info.density < 0.25) append = true;
 					else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && childs[i].getText().search(regexps.badStart) !== -1)
@@ -474,7 +473,7 @@ readability.process = function(parser, settings){
 			//remove breaks in front of paragraphs
 			.replace(/<br[^>]*>\s*<p/g,"<p");
 		
-		ret.score = topCandidate.scores.total;
+		ret.score = topCandidate.totalScore;
 		ret.info = elem.info;
 		return ret;
 	};
