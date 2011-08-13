@@ -474,7 +474,6 @@ readability.process = function(parser, settings){
 			.replace(/<br[^>]*>\s*<p/g,"<p");
 		
 		ret.score = topCandidate.totalScore;
-		ret.info = elem.info;
 		return ret;
 	};
 };
