@@ -182,7 +182,7 @@ readability.process = function(parser, settings){
 		
 		var dotSplit, segment;
 		
-		while(i++ < slashLen){
+		for(;i < slashLen; i++){
 			// Split off and save anything that looks like a file type.
 			dotSplit = urlSlashes[i].split(".");
 			
