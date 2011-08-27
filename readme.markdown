@@ -17,14 +17,20 @@ The basic extraction algorithm was completely ported (some adjustments were made
 - The search for links to further pages of an article is missing, the correction of links needs the insertion of a function as an option. I'll have to come up with a different approach. (If you want to fix it: Commits are welcome!)
 - I probably forgot something […]
 
+###HOWTO
+####Installing this script
+This script is available on `npm` as `readabilitySAX`. Install it via `npm install readabilitySAX`.
+
+####Usage
+The easiest way of using this script is via the getReadableContent-file. Just include it via `require("readabilitySAX/node_examples/getReadableContent.js")` (which finds readabilitySAX inside of your `node_modules`-directory) and use the `.get()` and `.process()`-methods.
+
+####Notes
+readabilitySAX is based upon ordinary SAX-parsers, therefore it fails if a document is malformed XML (eg. if the author used self-closing tags as `<br>`). You may want to clean the document first (eg. with jsdom) to ensure that nothing gets lost.
+
+Readability checks if (enough) content was found and tries again to find content with more parts of the page available. This behavor is included within `getReadableContent`, otherwise you would need to code it yourself.
+
 ###TODO
 
 - Links and removal of h2s (see above)
 - Add documentation & examples
 - Optimise the performance (always)
-
-###HOWTO
-Have a look at the "node examples" directory. The `getReadableContent.js`-file is a good example of how to use readabilitySAX.
-
-*Note*
-Readability checks if (enough) content was found and tries again to find content with more parts of the page available. You may do this as well, but I built this with the idea of streaming data in mind. Therefore, it is your part to cache the content you need and to check if it's enough. See `getReadableContent.js` for an example of how to do this.
