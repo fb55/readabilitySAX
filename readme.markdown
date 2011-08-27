@@ -1,10 +1,10 @@
 #readabilitySAX
-##a fast [!!!] & platform independent readability port
+a fast [!!!] & platform independent readability port
 
-###History
+##History
 I recently wanted to use [readability](http://code.google.com/p/arc90labs-readability/) in a node.js project. There are plenty of ports of readability to node (using jsdom, eg. [here](https://github.com/arrix/node-readability)), but they are pretty slow. I don't want to wait for a second until my node instance is ready to continue. I thought I could do better. So I did.
 
-###About
+##About
 This project is based upon [SAX.js by isaacs](https://github.com/isaacs/sax-js), but it may be used with any other javascript SAX parser. (Just throw some random object into the process function, and you'll get the functions required to make this work attached.)
 
 In my tests, most pages were finished within 40ms (on node). It works with Rhino, so it runs on [YQL](http://developer.yahoo.com/yql "Yahoo! Query Language"), which may have interesting uses. And it works within a browser.
@@ -17,19 +17,22 @@ The basic extraction algorithm was completely ported (some adjustments were made
 - The search for links to further pages of an article is missing, the correction of links needs the insertion of a function as an option. I'll have to come up with a different approach. (If you want to fix it: Commits are welcome!)
 - I probably forgot something […]
 
-###HOWTO
-####Installing this script
+##HOWTO
+###Installing this script
 This script is available on `npm` as `readabilitySAX`. Install it via `npm install readabilitySAX`.
 
-####Usage
+###Usage
 The easiest way of using this script is via the getReadableContent-file. Just include it via `require("readabilitySAX/node_examples/getReadableContent.js")` (which finds readabilitySAX inside of your `node_modules`-directory) and use the `.get()` and `.process()`-methods.
 
-####Notes
-readabilitySAX is based upon ordinary SAX-parsers, therefore it fails if a document is malformed XML (eg. if the author used self-closing tags as `<br>`). You may want to clean the document first (eg. with jsdom) to ensure that nothing gets lost.
+###Notes
+readabilitySAX is based upon ordinary SAX-parsers, therefore it fails if a document is malformed XML (eg. if the author used self-closing tags, eg. `<br>`). You may want to clean the document first (eg. with jsdom) to ensure that nothing gets lost.
 
 Readability checks if (enough) content was found and tries again to find content with more parts of the page available. This behavor is included within `getReadableContent`, otherwise you would need to code it yourself.
 
-###TODO
+##Performance
+Using a (jsdom cleaned) package of 620 pages from [CleanEval](http://cleaneval.sigwac.org.uk/), readabilitySAX processed all of them in 10874ms, that's an average of 17.5387ms per page. The benchmark was done using `benchmark.js` and is probably far from perfect.
+
+##TODO
 
 - Links and removal of h2s (see above)
 - Add documentation & examples
