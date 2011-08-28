@@ -476,4 +476,6 @@ readability.process = function(parser, settings){
 		ret.score = topCandidate.totalScore;
 		return ret;
 	};
+	
+	return this;
 };
