@@ -12,8 +12,7 @@ var processContent = function(data){
 	
 	var ret = getReadableContent.process(data, {
 		skipLevel: 0,
-		readabilitySettings: settings,
-		 slowParser: true
+		readabilitySettings: settings
 	});
 	
 	ret.duration = Date.now() - conTime;
@@ -27,7 +26,6 @@ if(process.argv.length > 2){
 	
 	request({uri:link}, function(err, resp){
 		link = resp.request.uri;
-		console.log(link);
 		processContent(resp.body);
 	});
 }

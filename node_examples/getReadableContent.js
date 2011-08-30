@@ -1,49 +1,25 @@
 var readability = require("../readabilitySAX"),
 	request = require("request"),
-	url = require("url");
+	url = require("url"),
+	getParser = require("./getParser.js").getParser,
+	parser = getParser("htmlparser2");
 
-var sax, htmlparser, EventedHandler;
-try{ sax = require("sax"); } catch(e){}
-try{
-	EventedHandler = require("htmlparser2/lib/EventedHandler.js");
-	htmlparser = require("htmlparser2/lib/Parser.js");
-} catch(e){}
+function getReadability(rdOpts){
+	var cbs = {},
+		readable = readability.process(cbs, rdOpts),
+		ret = parser(cbs);
+	
+	ret.getArticle = readable.getArticle.bind(readable);
+	
+	return ret;
+}
 
-
-/*
-* function getParser abstracts the parser
-* it returns an object including readability
-* and the parsers write method
-*/
-function getParser(settings, slowParser){
-	if((slowParser && htmlparser && EventedHandler) || !sax){ //if the sax parser isn't present, don't rely on it
-		var cbs = {},
-			readable = readability.process(cbs, settings),
-			handler = new EventedHandler(cbs),
-			parser = new htmlparser(handler);
-		
-		return {
-			write: parser.parseChunk.bind(parser),
-			close: parser.done.bind(parser),
-			getArticle: readable.getArticle.bind(readable)
-		}
-	}
-	else {
-		var parser = sax.parser(false, {
-		    lowercasetags : true
-		});
-		var readable = new readability.process(parser, settings);
-		
-		return {
-			write: parser.write.bind(parser),
-			close: parser.close.bind(parser),
-			getArticle: readable.getArticle.bind(readable)
-		}
-	}
+exports.changeParser = function(prefer){
+	if(prefer) parser = getParser(prefer);
 }
 
 exports.get = function(uri, cb, options){
-	options = options || {slowParser: true};
+	options = options || {};
 	
 	function onErr(err){
 		cb({
@@ -70,7 +46,7 @@ exports.get = function(uri, cb, options){
 				link: link
 			};
 			
-			parser = getParser(settings, options.slowParser);
+			parser = getReadability(settings);
 		},
 		req = request({
 			uri: link,
@@ -86,7 +62,11 @@ exports.get = function(uri, cb, options){
 		
 		var ret = parser.getArticle();
 		if(ret.textLength < 250){
-			ret = exports.process(data, settings);	
+			ret = exports.process(data, {
+				skipLevel: 1,
+				readabilitySettings: settings,
+				parser: options.parser
+			});	
 	    }
 	    ret.link = link.href;
 	    cb(ret);
@@ -96,13 +76,15 @@ exports.process = function(data, options){
 	skipLevel = options.skipLevel || 0;
 	readabilitySettings = options.readabilitySettings || {};
 	
+	if(skipLevel > 3) skipLevel = 0;
+	
 	var contentLength = 0,
 		parser, ret;
 	
 	while(contentLength < 250 && skipLevel < 4){
 	    readabilitySettings.skipLevel = skipLevel;
 	    
-	    parser = getParser(readabilitySettings, options.slowParser);
+	    parser = getReadability(readabilitySettings);
 	    
 	    parser.write(data);
 	    parser.close();
