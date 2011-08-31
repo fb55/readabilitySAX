@@ -24,6 +24,8 @@ This script is available on `npm` as `readabilitySAX`. Install it via `npm insta
 ###Usage
 The easiest way of using this script is via the getReadableContent-file. Just include it via `require("readabilitySAX/node_examples/getReadableContent.js")` (which finds readabilitySAX inside of your `node_modules`-directory) and use the `.get()` and `.process()`-methods.
 
+A demo of how to use readabilitySAX inside a browser may be found at [jsFiddle](http://jsfiddle.net/DYE9k/embedded/). Some example files are inside the `browsers` directory.
+
 ###Notes
 readabilitySAX is based upon ordinary SAX-parsers, therefore it fails if a document is malformed XML (eg. if the author used self-closing tags, eg. `<br>`). You may want to clean the document first (eg. with jsdom) to ensure that nothing gets lost.
 
