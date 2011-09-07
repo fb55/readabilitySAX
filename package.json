@@ -1,6 +1,6 @@
 {
     "name": "readabilitySAX",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "description": "the readability script ported to a sax parser",
     "author": "Felix Boehm <me@feedic.com>",
     "main": "./readabilitySAX.js",
@@ -12,7 +12,7 @@
     "dependencies": {
         "sax": ">= 0.2.2",
         "request": ">= 2.1.1",
-        "htmlparser2": ">= 1.8.0"
+        "htmlparser2": ">= 1.0.0"
     },
     "scripts": {
     	"test": "node ./node_examples/mkread.js"
