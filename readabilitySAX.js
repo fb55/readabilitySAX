@@ -89,42 +89,41 @@ readability.process = function(parser, settings){
 		},
 		getOuterHTML: function(){
 			if(this.skip) return "";
-			var ret = ["<" + this.name],
+			var ret = "<" + this.name,
 				i;
 			
 			for(i in this.attributes)
-				ret.push(i + "=\"" + this.attributes[i] + "\"");
+				ret += " " + i + "=\"" + this.attributes[i] + "\"";
 			
-			return ret.join(" ") + ">" + this.getInnerHTML() + "</" + this.name + ">";
+			return ret + ">" + this.getInnerHTML() + "</" + this.name + ">";
 		},
 		getInnerHTML: function(){
-			var nodes = this.children, ret = [];
+			var nodes = this.children, ret = "",
+				replace = function(a){ return "&#" + a.charCodeAt(0) + ";"; }; //=> convert special chars (just the ones converted by sax.js)
+			
 			for(var i = 0, j = nodes.length; i < j; i++){
-				if(typeof nodes[i] === "string") ret.push(
-					nodes[i] //=> convert special chars
-						.replace(regexps.notHTMLChars, function(a){ return "&#" + a.charCodeAt(0) + ";" })
-					)
-				else ret.push(nodes[i].getOuterHTML());
+				if(typeof nodes[i] === "string") ret += nodes[i].replace(regexps.notHTMLChars, replace);				
+				else ret += nodes[i].getOuterHTML();
 			}
-			return ret.join("");
+			return ret;
 		},
 		getText: function(){
-			var nodes = this.children, ret = [], text;
+			var nodes = this.children, ret = "", text;
 			for(var i = 0, j = nodes.length; i < j; i++){
-				if(typeof nodes[i] === "string") ret.push(nodes[i]);
+				if(typeof nodes[i] === "string") ret += nodes[i];
 				else if(!nodes[i].skip){
 					text = nodes[i].getText();
 					
 					if(text === "") continue;
 					
-					if(newLinesBefore[ nodes[i].name ]) ret.push("\n");
+					if(newLinesBefore[ nodes[i].name ]) ret += "\n";
 					
-					ret.push(text);
+					ret += text;
 					
-					if(newLinesAfter[ nodes[i].name ]) ret.push("\n");
+					if(newLinesAfter[ nodes[i].name ]) ret +=  "\n";
 				}
 			}
-			return ret.join("");
+			return ret;
 		}
 	};
 	
@@ -178,7 +177,7 @@ readability.process = function(parser, settings){
 			
 			else if(second.match(regexps.pageInURL))
 				urlSlashes[1] = second.replace(regexps.pageInURL, "");
-		};
+		}
 		
 		var dotSplit, segment;
 		
@@ -250,7 +249,7 @@ readability.process = function(parser, settings){
 		}
 		
 		if(settings.stripUnlikelyCandidates){
-			var matchString = ((tag.attributes.id || "") + (tag.attributes["class"] || "")).toLowerCase();;
+			var matchString = ((tag.attributes.id || "") + (tag.attributes["class"] || "")).toLowerCase();
 			if(regexps.unlikelyCandidates.test(matchString) && 
 				!regexps.okMaybeItsACandidate.test(matchString)){
 					elem.skip = true; return;
@@ -288,7 +287,7 @@ readability.process = function(parser, settings){
 				elem.attributes[name] = value;
 		}
 		else elem.attributes[name] = value;
-	}
+	};
 	
 	parser.ontext = function(text){ docElements[docElements.length-1].children.push(text); };
 	
