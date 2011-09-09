@@ -1,6 +1,4 @@
-var readability = typeof exports === "undefined" ? {} : exports;
-
-readability.process = function(parser, settings){
+var readability = function(parser, settings){
 //list of values
 	var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true,aside:true,header:true,nav:true,footer:true},
 		tagsToCount = {a:true,audio:true,blockquote:true,div:true,dl:true,embed:true,img:true,input:true,li:true,object:true,ol:true,p:true,pre:true,table:true,ul:true,video:true},
@@ -14,28 +12,27 @@ readability.process = function(parser, settings){
 		divToPElements = ["a","blockquote","dl","div","img","ol","p","pre","table","ul"],
 		newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
 		newLinesBefore = {p:true,h2:true,h3:true,h4:true,h5:true,h6:true},
-		regexps = {
-			videos:			 /http:\/\/(www\.)?(vimeo|youtube|yahoo|flickr)\.com/i,
-			skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
-			nextLink:		 /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i,
-			prevLink:		 /(prev|earl|old|new|<|«)/i,
-			extraneous:		 /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
-			
-			positive:		/article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
-			negative:		/combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-			unlikelyCandidates:/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter|entry-unrelated/,
-			okMaybeItsACandidate:  /and|article|body|column|main|shadow/,
-			
-			badStart: /\.( |$)/,
-			
-			pageInURL: /((_|-)?p[a-z]*|(_|-))[0-9]{1,2}$/i,
-			noLetters: /[^a-z]/i,
-			justDigits: /^\d{1,2}$/,
-			
-			headers: /h[1-3]/,
-			commas : /,[\s\,]{0,}/g,
-			notHTMLChars : /[\'\"\<\>]/g
-		};
+		
+		re_videos = /http =\/\/(www\.)?(vimeo|youtube|yahoo|flickr)\.com/i;
+		re_skipFootnoteLink =/^\s*(\[?[a-z0-9]{1;2}\]?|^|edit|citation needed)\s*$/i;
+		re_nextLink = /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i;
+		re_prevLink = /(prev|earl|old|new|<|«)/i;
+		re_extraneous = /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i;
+		
+		re_positive = /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/;
+		re_negative = /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/;
+		re_unlikelyCandidates =/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter|entry-unrelated/;
+		re_okMaybeItsACandidate = /and|article|body|column|main|shadow/;
+		
+		re_badStart = /\.( |$)/;
+		
+		re_pageInURL = /((_|-)?p[a-z]*|(_|-))[0-9]{1;2}$/i;
+		re_noLetters = /[^a-z]/i;
+		re_justDigits = /^\d{1;2}$/;
+		
+		re_headers = /h[1-3]/;
+		re_commas  = /;[\s\;]{0;}/g;
+		re_notHTMLChars  = /[\'\"\<\>]/g;
 	
 	//the tree element
 	var Element = function(tagName){
@@ -66,7 +63,7 @@ readability.process = function(parser, settings){
 				elem = childs[i];
 				if(typeof elem === "string"){
 					info.textLength += elem.length;
-					info.commas += elem.split(regexps.commas).length - 1;
+					info.commas += elem.split(re_commas).length - 1;
 				}
 				else if(!elem.skip){
 					if(elem.name === "a"){
@@ -102,7 +99,7 @@ readability.process = function(parser, settings){
 				replace = function(a){ return "&#" + a.charCodeAt(0) + ";"; }; //=> convert special chars (just the ones converted by sax.js)
 			
 			for(var i = 0, j = nodes.length; i < j; i++){
-				if(typeof nodes[i] === "string") ret += nodes[i].replace(regexps.notHTMLChars, replace);				
+				if(typeof nodes[i] === "string") ret += nodes[i].replace(re_notHTMLChars, replace);				
 				else ret += nodes[i].getOuterHTML();
 			}
 			return ret;
@@ -163,20 +160,20 @@ readability.process = function(parser, settings){
 		var first = urlSlashes[0],
 			second= urlSlashes[1];
 		
-		if((first.length < 3 && first.match(regexps.noLetters)) || first.toLowerCase() === "index" || first.match(regexps.justDigits)){
-			if(( second.length < 3 && first.match(regexps.noLetters) ) || second.match(regexps.justDigits)) i = 2;
+		if((first.length < 3 && first.match(re_noLetters)) || first.toLowerCase() === "index" || first.match(re_justDigits)){
+			if(( second.length < 3 && first.match(re_noLetters) ) || second.match(re_justDigits)) i = 2;
 			else i = 1;
 		}
 		else{
-			if(first.match(regexps.pageInURL))
-			  	urlSlashes[0] = first.replace(regexps.pageInURL, "");
+			if(first.match(re_pageInURL))
+			  	urlSlashes[0] = first.replace(re_pageInURL, "");
 			
 			//if only the second one gets skiped, start at an index of 1 and position the first element there
-			if( (second.length < 3 && first.match(regexps.noLetters)) || second.match(regexps.justDigits))
+			if( (second.length < 3 && first.match(re_noLetters)) || second.match(re_justDigits))
 				urlSlashes[ i = 1 ] = first;
 			
-			else if(second.match(regexps.pageInURL))
-				urlSlashes[1] = second.replace(regexps.pageInURL, "");
+			else if(second.match(re_pageInURL))
+				urlSlashes[1] = second.replace(re_pageInURL, "");
 		}
 		
 		var dotSplit, segment;
@@ -186,7 +183,7 @@ readability.process = function(parser, settings){
 			dotSplit = urlSlashes[i].split(".");
 			
 			//change from readability: ensure that segments with multiple points get skipped
-			if (dotSplit.length === 2 && !dotSplit[1].match(regexps.noLetters))
+			if (dotSplit.length === 2 && !dotSplit[1].match(re_noLetters))
 				segment = dotSplit[0];
 			else segment = urlSlashes[i];
 			
@@ -250,8 +247,8 @@ readability.process = function(parser, settings){
 		
 		if(settings.stripUnlikelyCandidates){
 			var matchString = ((tag.attributes.id || "") + (tag.attributes["class"] || "")).toLowerCase();
-			if(regexps.unlikelyCandidates.test(matchString) && 
-				!regexps.okMaybeItsACandidate.test(matchString)){
+			if(re_unlikelyCandidates.test(matchString) && 
+				!re_okMaybeItsACandidate.test(matchString)){
 					elem.skip = true; return;
 			}
 		}
@@ -275,8 +272,8 @@ readability.process = function(parser, settings){
 		if(elem.skip) return;
 		
 		if(name === "id" || name === "class"){
-			if(regexps.negative.test(value)) elem.attributeScore -= 25;
-			else if(regexps.positive.test(value)) elem.attributeScore += 25;
+			if(re_negative.test(value)) elem.attributeScore -= 25;
+			else if(re_positive.test(value)) elem.attributeScore += 25;
 		}
 		else if(name === "href" || name === "src"){
 			//fix links
@@ -321,11 +318,11 @@ readability.process = function(parser, settings){
 			cnvrt = true;
 			for(i in elem.attributes)
 				if(elem.hasOwnProperty(i))
-					if(regexps.videos.test(i)){ cnvrt = false; break; }
+					if(re_videos.test(i)){ cnvrt = false; break; }
 			
 			if(cnvrt) elem.skip = true;
 		}
-		else if(regexps.headers.test(tagname)){
+		else if(re_headers.test(tagname)){
 			//clean headers
 			if (elem.attributeScore < 0 || elem.info.density > 0.33) elem.skip = true;
 		}
@@ -407,7 +404,7 @@ readability.process = function(parser, settings){
 				if((childs[i].totalScore + contentBonus) >= siblingScoreThreshold) append = true;
 				else if(childs[i].name === "p")
 					if(childs[i].info.textLength > 80 && childs[i].info.density < 0.25) append = true;
-					else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && childs[i].getText().search(regexps.badStart) !== -1)
+					else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && childs[i].getText().search(re_badStart) !== -1)
 						append = true;
 			}
 			if(append){
@@ -450,7 +447,6 @@ readability.process = function(parser, settings){
 			title: this.getTitle(),
 			nextPage: "" //TODO
 		};
-		if(type === "node") ret.node = topCandidate;
 		
 		//create a new object so that the prototype methods are callable
 		var elem = new Element("", {});
@@ -478,3 +474,7 @@ readability.process = function(parser, settings){
 	
 	return this;
 };
+
+readability.process = readability; //for legacy reasons
+
+if(typeof module !== "undefined" && typeof module.exports !== "undefined") module.exports = readability;
