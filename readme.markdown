@@ -2,10 +2,10 @@
 a fast [!!!] & platform independent readability port
 
 ##History
-I recently wanted to use [readability](http://code.google.com/p/arc90labs-readability/) in a node.js project. There are plenty of ports of readability to node (using jsdom, eg. [here](https://github.com/arrix/node-readability)), but they are pretty slow. I don't want to wait for a second until my node instance is ready to continue. I thought I could do better. So I did.
+I recently wanted to use [readability](http://code.google.com/p/arc90labs-readability/) in a node.js project. There are plenty of ports of readability to node (using jsdom, eg. [here](https://github.com/arrix/node-readability)), but they are pretty slow. I don't want to wait for more than a second until my node instance is ready to continue. I thought I could do better. So I did.
 
 ##About
-This project is based upon [SAX.js by isaacs](https://github.com/isaacs/sax-js), but it may be used with any other javascript SAX parser. (Just throw some random object into the process function, and you'll get the functions required to make this work attached.)
+This project was originally based upon [SAX.js by isaacs](https://github.com/isaacs/sax-js), but it may be used with any other javascript SAX parser. (Just throw some random object into the process function, and you'll get the functions required to make this work attached.)
 
 In my tests, most pages were finished within 40ms (on node). It works with Rhino, so it runs on [YQL](http://developer.yahoo.com/yql "Yahoo! Query Language"), which may have interesting uses. And it works within a browser.
 
@@ -18,18 +18,18 @@ The basic extraction algorithm was completely ported (some adjustments were made
 - I probably forgot something […]
 
 ##HOWTO
-###Installing this script
-This script is available on `npm` as `readabilitySAX`. Install it via `npm install readabilitySAX`.
+###Installing readabilitySAX
+This module is available on `npm` as `readabilitySAX`. Install it via `npm install readabilitySAX`.
 
 ###Usage
-The easiest way of using this script is via the getReadableContent-file. Just include it via `require("readabilitySAX/node_examples/getReadableContent.js")` (which finds readabilitySAX inside of your `node_modules`-directory) and use the `.get()` and `.process()`-methods.
+The easiest way of using this script is via the interface provided by `getReadableContent.js`. Just include it via `require("readabilitySAX/node_examples/getReadableContent.js")` (which finds readabilitySAX inside of your `node_modules`-directory) and use the `.get()` and `.process()`-methods.
 
-A demo of how to use readabilitySAX inside a browser may be found at [jsFiddle](http://jsfiddle.net/DYE9k/embedded/). Some example files are inside the `browsers` directory.
+A demo of how to use readabilitySAX inside a browser may be found at [jsFiddle](http://jsfiddle.net/DYE9k/embedded/). Some basic example files are inside the `browsers` directory.
 
 ###Notes
-readabilitySAX is based upon ordinary SAX-parsers, therefore it fails if a document is malformed XML (eg. if the author used self-closing tags, eg. `<br>`). You may want to clean the document first (eg. with jsdom) to ensure that nothing gets lost.
+Most SAX parsers (as sax.js) fail when a document is malformed XML, even if it's correct HTML. readabilitySAX should be used with `htmlparser2`, my fork of the `htmlparser`-module used by eg. `jsdom`, which corrects most faults. It's listed as a dependency, so npm should install it whith readabilitySAX.
 
-Readability checks if (enough) content was found and tries again to find content with more parts of the page available. This behavor is included within `getReadableContent`, otherwise you would need to code it yourself.
+The original Readability checks if (enough) content was found and tries again to find content with more parts of the page available. This behavor is included within `getReadableContent`, otherwise you would need to code it yourself.
 
 ##Performance
 Using a (jsdom cleaned) package of 620 pages from [CleanEval](http://cleaneval.sigwac.org.uk/), readabilitySAX processed all of them in 10874ms, that's an average of 17.5387ms per page. The benchmark was done using `benchmark.js` and is probably far from perfect.
