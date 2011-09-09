@@ -3,20 +3,19 @@ var getReadableContent = require("./getReadableContent.js"),
 	url = require("url");
 
 var processContent = function(data){
-	var conTime = Date.now();
-	
 	var settings = link ? {
 			convertLinks: url.resolve.bind(null, link),
 		 	link: link
 		 } : {};
 	
-	var ret = getReadableContent.process(data, {
-		skipLevel: 0,
-		readabilitySettings: settings
-	});
-	
-	ret.duration = Date.now() - conTime;
-	console.log(ret);
+	require("ben").async(function(done){
+		var ret = getReadableContent.process(data, {
+			skipLevel: 0,
+			readabilitySettings: settings
+		});
+		done();
+		
+	}, console.log.bind(console, "Took (ms):"));
 }
 
 if(process.argv.length > 2){
