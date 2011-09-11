@@ -13,25 +13,25 @@ var readability = function(parser, settings){
 		newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
 		newLinesBefore = {p:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 		
-		re_videos = /http =\/\/(www\.)?(vimeo|youtube|yahoo|flickr)\.com/i;
-		re_skipFootnoteLink =/^\s*(\[?[a-z0-9]{1;2}\]?|^|edit|citation needed)\s*$/i;
-		re_nextLink = /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i;
-		re_prevLink = /(prev|earl|old|new|<|«)/i;
-		re_extraneous = /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i;
+		re_videos = /http =\/\/(www\.)?(vimeo|youtube|yahoo|flickr)\.com/i,
+		re_skipFootnoteLink =/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
+		re_nextLink = /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i,
+		re_prevLink = /(prev|earl|old|new|<|«)/i,
+		re_extraneous = /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
 		
-		re_positive = /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/;
-		re_negative = /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/;
-		re_unlikelyCandidates =/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter|entry-unrelated/;
-		re_okMaybeItsACandidate = /and|article|body|column|main|shadow/;
+		re_positive = /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
+		re_negative = /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
+		re_unlikelyCandidates =/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter|entry-unrelated/,
+		re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 		
-		re_badStart = /\.( |$)/;
+		re_badStart = /\.( |$)/,
 		
-		re_pageInURL = /((_|-)?p[a-z]*|(_|-))[0-9]{1;2}$/i;
-		re_noLetters = /[^a-z]/i;
-		re_justDigits = /^\d{1;2}$/;
+		re_pageInURL = /((_|-)?p[a-z]*|(_|-))[0-9]{1,2}$/i,
+		re_noLetters = /[^a-z]/i,
+		re_justDigits = /^\d{1,2}$/,
 		
-		re_headers = /h[1-3]/;
-		re_commas  = /;[\s\;]{0;}/g;
+		re_headers = /h[1-3]/,
+		re_commas  = /,[\s\,]{0,}/g,
 		re_notHTMLChars  = /[\'\"\<\>]/g;
 	
 	//the tree element
