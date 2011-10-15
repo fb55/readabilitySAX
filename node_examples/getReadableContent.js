@@ -6,7 +6,7 @@ var readability = require("../readabilitySAX"),
 
 function getReadability(rdOpts){
 	var cbs = {},
-		readable = new readability.process(cbs, rdOpts),
+		readable = readability.process(cbs, rdOpts),
 		ret = parser(cbs);
 	
 	ret.getArticle = readable.getArticle.bind(readable);

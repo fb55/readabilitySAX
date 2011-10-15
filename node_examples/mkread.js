@@ -1,6 +1,7 @@
 var getReadableContent = require("./getReadableContent.js"),
 	request = require("request"),
-	url = require("url");
+	url = require("url"),
+	ben = require("ben");
 
 var processContent = function(data){
 	var settings = link ? {
@@ -8,7 +9,7 @@ var processContent = function(data){
 		 	link: link
 		 } : {};
 	
-	require("ben").async(function(done){
+	ben.async(function(done){
 		var ret = getReadableContent.process(data, {
 			skipLevel: 0,
 			readabilitySettings: settings

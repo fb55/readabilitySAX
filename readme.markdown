@@ -14,7 +14,7 @@ I started to implement simplified versions of sax.js for YQL (using E4X) and the
 The basic extraction algorithm was completely ported (some adjustments were made, eg. `<article>` tags are recognized and gain a higher value), the only missing features are the following:
 
 - If there is only one `<h2>` within the article, readability assumes it to be the heading of the article and removes it. This port doesn't.
-- The search for links to further pages of an article is missing, the correction of links needs the insertion of a function as an option. I'll have to come up with a different approach. (If you want to fix it: Commits are welcome!)
+- The correction of links needs the insertion of a function as an option. I'll have to come up with a different approach. (If you want to fix it: Commits are welcome!)
 - I probably forgot something […]
 
 ##HOWTO
