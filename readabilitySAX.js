@@ -5,11 +5,9 @@ var readability = function(parser, settings){
 	//list of values
 	var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true,aside:true,header:true,nav:true,footer:true},
 		tagsToCount = {a:true,audio:true,blockquote:true,div:true,dl:true,embed:true,img:true,input:true,li:true,object:true,ol:true,p:true,pre:true,table:true,ul:true,video:true},
+		tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
 		embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
 		goodAttributes = {href:true,src:true,title:true,alt:true/*,style:true*/},
-		goodTags = {pre:true,td:true,blockquote:true},
-		badTags = {address:true,ol:true,ul:true,dl:true,dd:true,dt:true,li:true,form:true},
-		worstTags = {h2:true,h3:true,h4:true,h5:true,h6:true,th:true,body:true},
 		cleanConditionaly = {form:true,table:true,ul:true,ol:true,div:true},
 		tagsToScore = {p:true,pre:true,td:true},
 		divToPElements = ["a","blockquote","dl","div","img","ol","p","pre","table","ul"],
@@ -154,7 +152,7 @@ var readability = function(parser, settings){
 	
 	//helper functions
 	var getBaseURL = function(pageURL){
-		var noUrlParams		= pageURL.split("?")[0],
+		var noUrlParams		= pageURL.split("?", 1)[0],
 			linkElements	= noUrlParams.split(re_slashes),
 			urlSlashes		= linkElements.splice(2).reverse(),
 			cleanedSegments = [],
@@ -188,7 +186,7 @@ var readability = function(parser, settings){
 		
 		for(;i < slashLen; i++){
 			// Split off and save anything that looks like a file type.
-			dotSplit = urlSlashes[i].split(".");
+			dotSplit = urlSlashes[i].split(".", 3);
 			
 			//change from readability: ensure that segments with multiple points get skipped
 			if (dotSplit.length === 2 && !re_noLetters.test(dotSplit[1]))
@@ -206,7 +204,7 @@ var readability = function(parser, settings){
 	};
 
 	//our tree (used instead of the dom)
-	var docElements = [new Element("document", {})],
+	var docElements = [new Element("document")],
 		topCandidate, topParent,
 		origTitle, headerTitle;
 	
@@ -325,53 +323,45 @@ var readability = function(parser, settings){
 		
 		docElements.push(elem);
 		
-		if(parent.skip === true){
+		if(parent.skip === true || tagsToSkip[tagName]){
 			elem.skip = true; return;
 		}
 		
-		if(tagsToSkip[tagName]){
-			elem.skip = true; return;
-		}
+		var attributes = tag.attributes, value;
 		
 		if(settings.stripUnlikelyCandidates){
-			var matchString = ((tag.attributes.id || "") + (tag.attributes["class"] || "")).toLowerCase();
-			if(re_unlikelyCandidates.test(matchString) && 
-				!re_okMaybeItsACandidate.test(matchString)){
+			value = ((attributes.id || "") + (attributes["class"] || "")).toLowerCase();
+			if(re_unlikelyCandidates.test(value) && !re_okMaybeItsACandidate.test(value)){
 					elem.skip = true; return;
 			}
 		}
 		
-		//do this now, so gc can remove it after onclosetag
-		parent.children.push(elem);
+		for(var name in attributes){
+			name = name.toLowerCase();
+			value = attributes[name];
+			
+			if(name === "id" || name === "class"){
+				if(re_negative.test(value)) elem.attributeScore -= 25;
+				else if(re_positive.test(value)) elem.attributeScore += 25;
+		
+				elem.attributes[name] = value;
+			}
+			else if(name === "href" || name === "src"){
+				//fix links
+				elem.attributes[name] = settings.convertLinks(value);
+			}
+			else if(settings.cleanAttributes){
+				if(goodAttributes[name])
+					elem.attributes[name] = value;
+			}
+			else elem.attributes[name] = value;
+		}
 		
 		//add points for the tags name
-		if(tagName === "article") elem.tagScore += 30;
-		else if(tagName === "div") elem.tagScore += 5;
-		else if(goodTags[tagName]) elem.tagScore += 3;
-		else if(badTags[tagName]) elem.tagScore -= 3;
-		else if(worstTags[tagName]) elem.tagScore -= 5;
-	};
-	
-	parser.onattribute = function(attr){
-		var elem = docElements[docElements.length-1],
-			name = attr.name.toLowerCase(),
-			value = attr.value;
+		elem.tagScore += tagCounts[tagName] || 0;
 		
-		if(name === "id" || name === "class"){
-			if(re_negative.test(value)) elem.attributeScore -= 25;
-			else if(re_positive.test(value)) elem.attributeScore += 25;
-
-			elem.attributes[name] = value;
-		}
-		else if(name === "href" || name === "src"){
-			//fix links
-			elem.attributes[name] = settings.convertLinks(value);
-		}
-		else if(settings.cleanAttributes){
-			if(goodAttributes[name])
-				elem.attributes[name] = value;
-		}
-		else elem.attributes[name] = value;
+		//do this now, so gc can remove it after onclosetag
+		parent.children.push(elem);
 	};
 	
 	parser.ontext = function(text){ docElements[docElements.length-1].children.push(text); };
