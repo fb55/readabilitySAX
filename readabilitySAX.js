@@ -34,8 +34,8 @@ var readability = function(parser, settings){
 		re_pageInURL = /((_|-)?p[a-z]*|(_|-))[0-9]{1,2}$/i,
 		re_noLetters = /[^a-z]/i,
 		re_justDigits = /^\d{1,2}$/,
+		re_slashes = /\/+/,
 		
-		re_headers = /h[1-3]/,
 		re_commas	 = /,[\s\,]{0,}/g,
 		re_notHTMLChars  = /[\'\"<\>]/g;
 	
@@ -153,15 +153,16 @@ var readability = function(parser, settings){
 	};
 	
 	//helper functions
-	var getBaseURL = function(link){
-		var noUrlParams		= link.pathname.split("?")[0],
-			urlSlashes		= noUrlParams.split("/").reverse(),
+	var getBaseURL = function(pageURL){
+		var noUrlParams		= pageURL.split("?")[0],
+			linkElements	= noUrlParams.split(re_slashes),
+			urlSlashes		= linkElements.splice(2).reverse(),
 			cleanedSegments = [],
 			possibleType	= "",
 			i = 0, 
 			slashLen = urlSlashes.length;
 		
-		if(slashLen < 2) return link.protocol + "//" + link.host + noUrlParams; //return what we got
+		if(slashLen < 2) return noUrlParams; //return what we got
 		
 		//look if the first to elements get skipped
 		var first = urlSlashes[0],
@@ -194,14 +195,14 @@ var readability = function(parser, settings){
 				segment = dotSplit[0];
 			else segment = urlSlashes[i];
 			
-			if(segment.indexOf(',00') !== -1)
+			if(segment.indexOf(",00") !== -1)
 				segment = segment.replace(",00", "");
 			
 			cleanedSegments.push(segment);
 		}
 
 		// This is our final, cleaned, base article URL.
-		return link.protocol + "//" + link.host + cleanedSegments.reverse().join("/");
+		return linkElements[0] + "//" + linkElements[1] + "/" + cleanedSegments.reverse().join("/");
 	};
 
 	//our tree (used instead of the dom)
@@ -212,7 +213,7 @@ var readability = function(parser, settings){
 	
 	//process settings
 	for(var i in Settings)
-		if(typeof settings[i] === "undefined")
+		if(!settings.hasOwnProperty(i) && Settings.hasOwnProperty(i))
 			settings[i] = Settings[i];
 	
 	//skipLevel is a shortcut to allow more elements of the page
@@ -234,13 +235,13 @@ var readability = function(parser, settings){
 		settings.pageURL = settings.pageURL.replace(/#.*$/, "").replace(/\/$/, "");
 	
 	if(!settings.convertLinks) 
-		if(settings.link)
+		if(settings.link && settings.url)
 			settings.convertLinks = settings.url.resolve.bind(null, settings.link);
 		else settings.convertLinks = function(a){ return a; };
 	
 	var baseURL;
-	if(settings.link)
-		baseURL = getBaseURL(settings.link);
+	if(settings.pageURL)
+		baseURL = getBaseURL(settings.pageURL);
 	
 	var scannedLinks = {};
 	
@@ -255,7 +256,7 @@ var readability = function(parser, settings){
 		
 		if(settings.linksToSkip[href]) return;
 		
-		if(settings.pageURL && href.split(/\/+/g, 2)[1] !== settings.pageURL.split(/\/+/g, 2)[1]) return;
+		if(settings.pageURL && href.split(re_slashes, 2)[1] !== settings.pageURL.split(re_slashes, 2)[1]) return;
 		
 		var text = elem.getText();
 		
@@ -379,7 +380,7 @@ var readability = function(parser, settings){
 		var elem = docElements.pop(),
 			elemLevel = docElements.length - 1;
 		
-		//if(tagname !== elem.name) settings.log("Tagname didn't match!:" + tagname + " vs. " + elem.name);
+		//if(tagname !== elem.name) settings.log("Tagname didn't match!:", tagname, "vs.", elem.name);
 		
 		//prepare title
 		if(tagname === "title") origTitle = elem.getText();
@@ -412,7 +413,7 @@ var readability = function(parser, settings){
 			
 			if(cnvrt) elem.skip = true;
 		}
-		else if(re_headers.test(tagname)){
+		else if(tagname === "h1" || tagname === "h2" || tagname === "h3"){
 			//clean headers
 			if (elem.attributeScore < 0 || elem.info.density > 0.33) elem.skip = true;
 		}
