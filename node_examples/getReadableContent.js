@@ -1,7 +1,6 @@
 var readability = require("../readabilitySAX"),
 	request = require("request"),
 	url = require("url"),
-	getParser = require("./getParser.js").getParser,
 	parser = require("htmlparser2");
 
 function getReadability(rdOpts){
