@@ -2,7 +2,7 @@ var readability = require("../readabilitySAX"),
 	request = require("request"),
 	url = require("url"),
 	getParser = require("./getParser.js").getParser,
-	parser = getParser("htmlparser2");
+	parser = require("htmlparser2");
 
 function getReadability(rdOpts){
 	var cbs = {},
@@ -12,10 +12,6 @@ function getReadability(rdOpts){
 	ret.getArticle = readable.getArticle.bind(readable);
 	
 	return ret;
-}
-
-exports.changeParser = function(prefer){
-	if(prefer) parser = getParser(prefer);
 }
 
 exports.get = function(uri, cb, options){
