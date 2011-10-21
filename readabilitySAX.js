@@ -34,8 +34,7 @@ var readability = function(parser, settings){
 		re_justDigits = /^\d{1,2}$/,
 		re_slashes = /\/+/,
 		
-		re_commas	 = /,[\s\,]{0,}/g,
-		re_notHTMLChars  = /[\'\"<\>]/g;
+		re_commas	 = /,[\s\,]*/g;
 	
 	//the tree element
 	var Element = function(tagName){
@@ -104,11 +103,10 @@ var readability = function(parser, settings){
 			return ret + ">" + this.getInnerHTML() + "</" + this.name + ">";
 		},
 		getInnerHTML: function(){
-			var nodes = this.children, ret = "",
-				replace = function(a){ return "&#" + a.charCodeAt(0) + ";"; }; //=> convert special chars (just the ones converted by sax.js)
+			var nodes = this.children, ret = "";
 			
 			for(var i = 0, j = nodes.length; i < j; i++){
-				if(typeof nodes[i] === "string") ret += nodes[i].replace(re_notHTMLChars, replace);				
+				if(typeof nodes[i] === "string") ret += nodes[i];
 				else ret += nodes[i].getOuterHTML();
 			}
 			return ret;
