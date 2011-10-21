@@ -403,7 +403,7 @@ var readability = function(parser, settings){
 			
 			if(cnvrt) elem.skip = true;
 		}
-		else if(tagname === "h1" || tagname === "h2" || tagname === "h3"){
+		else if(tagname === "h2" || tagname === "h3"){
 			//clean headers
 			if (elem.attributeScore < 0 || elem.info.density > 0.33) elem.skip = true;
 		}
