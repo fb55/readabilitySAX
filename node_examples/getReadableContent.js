@@ -1,16 +1,19 @@
 var readability = require("../readabilitySAX"),
 	request = require("request"),
 	url = require("url"),
-	parser = require("htmlparser2");
+	htmlparser2 = require("htmlparser2");
 
 function getReadability(rdOpts){
 	var cbs = {},
 		readable = readability.process(cbs, rdOpts),
-		ret = parser(cbs);
+		handler = new htmlparser2.EventedHandler(cbs),
+		parser = new htmlparser2.Parser(handler);
 	
-	ret.getArticle = readable.getArticle.bind(readable);
-	
-	return ret;
+	return 	{
+		write: parser.parseChunk.bind(parser),
+		close: parser.done.bind(parser),
+		getArticle: readable.getArticle.bind(readable)
+	};
 }
 
 exports.get = function(uri, cb, options){
