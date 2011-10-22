@@ -9,7 +9,7 @@ function getReadability(rdOpts){
 		handler = new htmlparser2.EventedHandler(cbs),
 		parser = new htmlparser2.Parser(handler);
 	
-	return 	{
+	return {
 		write: parser.parseChunk.bind(parser),
 		close: parser.done.bind(parser),
 		getArticle: readable.getArticle.bind(readable)
