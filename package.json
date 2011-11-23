@@ -1,6 +1,6 @@
 {
     "name": "readabilitySAX",
-    "version": "0.3.2",
+    "version": "0.3.3",
     "description": "the readability script ported to a sax parser",
     "author": "Felix Boehm <me@feedic.com>",
     "main": "./readabilitySAX.js",
