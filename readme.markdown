@@ -17,14 +17,14 @@ The basic extraction algorithm was completely ported (some adjustments were made
 - The correction of links needs the insertion of a function as an option. I'll have to come up with a different approach. (If you want to fix it: Commits are welcome!)
 - I probably forgot something […]
 
-##HOWTO
+##HowTo
 ###Installing readabilitySAX
 This module is available on `npm` as `readabilitySAX`. Install it via `npm install readabilitySAX`.
 
 ###Usage
 The easiest way of using this script is via the interface provided by `getReadableContent.js`. Just include it via `require("readabilitySAX/node_examples/getReadableContent.js")` (which finds readabilitySAX inside of your `node_modules`-directory) and use the `.get()` and `.process()`-methods.
 
-A demo of how to use readabilitySAX inside a browser may be found at [jsFiddle](http://jsfiddle.net/DYE9k/embedded/). Some basic example files are inside the `browsers` directory.
+A demo of how to use readabilitySAX inside a browser may be found at [jsFiddle](http://jsfiddle.net/DYE9k/embedded/). Some basic example files are inside the `/browsers` directory.
 
 ###Notes
 Most SAX parsers (as sax.js) fail when a document is malformed XML, even if it's correct HTML. readabilitySAX should be used with `htmlparser2`, my fork of the `htmlparser`-module used by eg. `jsdom`, which corrects most faults. It's listed as a dependency, so npm should install it whith readabilitySAX.
