@@ -213,11 +213,7 @@ var readability = function(parser, settings){
 			settings[i] = Settings[i];
 	
 	//skipLevel is a shortcut to allow more elements of the page
-	if(settings.skipLevel){
-		if(settings.skipLevel > 0) settings.stripUnlikelyCandidates = false;
-		if(settings.skipLevel > 1) settings.weightClasses = false;
-		if(settings.skipLevel > 2) settings.cleanConditionally = false;
-	}
+	if(settings.skipLevel) this.setSkipLevel(settings.skipLevel);
 	
 	if(settings.log === false) settings.log = function(){};
 	
@@ -452,6 +448,10 @@ var readability = function(parser, settings){
 			}
 		}
 	};
+	parser.onreset = function(){
+		docElements = [new Element("document")];
+		topCandidate = topParent = origTitle = headerTitle = null;
+	};
 	
 	var getCandidateSiblings = function(){
 		if(!topCandidate){
@@ -494,6 +494,11 @@ var readability = function(parser, settings){
 			}
 		}
 		return ret;
+	};
+	this.setSkipLevel = function(skipLevel){
+		if(settings.skipLevel > 0) settings.stripUnlikelyCandidates = false;
+		if(settings.skipLevel > 1) settings.weightClasses = false;
+		if(settings.skipLevel > 2) settings.cleanConditionally = false;
 	};
 	this.getTitle = function(){
 		var curTitle = origTitle || "";
@@ -567,8 +572,8 @@ var readability = function(parser, settings){
 };
 
 //for legacy reasons
-readability.process = function(a,b){
-	return new readability(a, b);
+readability.process = function(parser, settings){
+	return new readability(parser, settings);
 };
 
 if(typeof module !== "undefined" && typeof module.exports !== "undefined") module.exports = readability;
