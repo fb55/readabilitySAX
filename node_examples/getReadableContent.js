@@ -1,22 +1,9 @@
 var readability = require("../readabilitySAX"),
 	request = require("request"),
 	url = require("url"),
-	htmlparser2 = require("htmlparser2");
+	Parser = require("htmlparser2/lib/Parser.js");
 
-function getReadability(rdOpts){
-	var cbs = {},
-		readable = readability.process(cbs, rdOpts),
-		handler = new htmlparser2.EventedHandler(cbs),
-		parser = new htmlparser2.Parser(handler);
-	
-	return {
-		write: parser.parseChunk.bind(parser),
-		close: parser.done.bind(parser),
-		getArticle: readable.getArticle.bind(readable)
-	};
-}
-
-exports.get = function(uri, cb, options){
+exports.get = function(uri, cb){
 	options = options || {};
 	
 	function onErr(err){
@@ -33,7 +20,7 @@ exports.get = function(uri, cb, options){
 	}
 	
 	var link = url.parse(uri),
-		parser, data = "", settings,
+		readable, parser, data = "", settings,
 		onResponseCB = function(err, resp){
 			if(err) return onErr(err);
 			
@@ -44,7 +31,8 @@ exports.get = function(uri, cb, options){
 				link: link
 			};
 			
-			parser = getReadability(settings);
+			readable = readability.process(settings);
+			parser = new Parser(readable);
 		},
 		req = request({
 			uri: link,
@@ -58,36 +46,30 @@ exports.get = function(uri, cb, options){
 	req.on("end", function(){
 		parser.close();
 		
-		var ret = parser.getArticle();
+		var ret = readable.getArticle();
 		if(ret.textLength < 250){
-			ret = exports.process(data, {
-				skipLevel: 1,
-				readabilitySettings: settings,
-				parser: options.parser
-			});	
+			ret = exports.process(data, settings, 1);	
 	    }
 	    ret.link = link.href;
 	    cb(ret);
 	});
 };
-exports.process = function(data, options){
-	skipLevel = options.skipLevel || 0;
-	readabilitySettings = options.readabilitySettings || {};
-	
-	if(skipLevel > 3) skipLevel = 0;
+exports.process = function(data, settings, skipLevel){
+	if(!skipLevel) skipLevel = 0;
+	else if(skipLevel > 3) skipLevel = 0;
+	if(!settings) settings = {};
 	
 	var contentLength = 0,
 		parser, ret;
 	
+	var readable = new readability(settings),
+		parser = new Parser(readable);
+	
 	while(contentLength < 250 && skipLevel < 4){
-	    readabilitySettings.skipLevel = skipLevel;
+		readable.setSkipLevel(skipLevel);
+	    parser.parseComplete(data);
 	    
-	    parser = getReadability(readabilitySettings);
-	    
-	    parser.write(data);
-	    parser.close();
-	    
-	    ret = parser.getArticle(options.type);
+	    ret = readable.getArticle();
 	    contentLength = ret.textLength;
 	    skipLevel += 1;
 	}
