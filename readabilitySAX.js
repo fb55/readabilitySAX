@@ -1,5 +1,3 @@
-var readability = function(parser, settings){
-
 	"use strict";
 	
 	//list of values
@@ -186,7 +184,7 @@ var readability = function(parser, settings){
 			// Split off and save anything that looks like a file type.
 			dotSplit = urlSlashes[i].split(".", 3);
 			
-			//change from readability: ensure that segments with multiple points get skipped
+			//change from Readability: ensure that segments with multiple points get skipped
 			if (dotSplit.length === 2 && !re_noLetters.test(dotSplit[1]))
 				segment = dotSplit[0];
 			else segment = urlSlashes[i];
@@ -201,379 +199,377 @@ var readability = function(parser, settings){
 		return linkElements[0] + "//" + linkElements[1] + "/" + cleanedSegments.reverse().join("/");
 	};
 
+var Readability = function(settings){
 	//our tree (used instead of the dom)
-	var docElements = [new Element("document")],
-		topCandidate, topParent,
-		origTitle, headerTitle;
+	this._docElements = [new Element("document")];
+	this._topCandidate = this.__topParent = null;
+	this._origTitle = this._headerTitle = "";
+	this._scannedLinks = {};
+	this._settings = {};
 	
 	
-	//process settings
+	//process this._settings
 	for(var i in Settings)
-		if(!settings.hasOwnProperty(i) && Settings.hasOwnProperty(i))
-			settings[i] = Settings[i];
+		if(settings.hasOwnProperty(i))
+			this._settings[i] = settings[i];
+		else this._settings[i] = Settings[i];
 	
 	//skipLevel is a shortcut to allow more elements of the page
-	if(settings.skipLevel) this.setSkipLevel(settings.skipLevel);
+	if(settings.skipLevel) this.setSkipLevel(this._settings.skipLevel);
 	
-	if(settings.log === false) settings.log = function(){};
+	if(settings.log === false) this._settings.log = function(){};
 	
-	if(!settings.link && settings.url && settings.pageURL)
-		settings.link = settings.url.parse( settings.pageURL );
+	if(!this._settings.link && this._settings.url && this._settings.pageURL)
+		this._settings.link = this._settings.url.parse( this._settings.pageURL );
 	
-	if(!settings.pageURL && settings.link && settings.url)
-		settings.pageURL = settings.url.format(settings.link);
 	//clean pageURL for search of further pages
-	if(settings.pageURL)
-		settings.pageURL = settings.pageURL.replace(/#.*$/, "").replace(/\/$/, "");
+	if(this._settings.pageURL)
+		this._settings.pageURL = this._settings.pageURL.replace(/#.*$/, "").replace(/\/$/, "");
 	
-	if(!settings.convertLinks) 
-		if(settings.link && settings.url)
-			settings.convertLinks = settings.url.resolve.bind(null, settings.link);
-		else settings.convertLinks = function(a){ return a; };
+	if(!this._settings.convertLinks) 
+		if(this._settings.link && this._settings.url)
+			this._settings.convertLinks = this._settings.url.resolve.bind(null, this._settings.link);
+		else this._settings.convertLinks = function(a){ return a; };
 	
-	var baseURL;
-	if(settings.pageURL)
-		baseURL = getBaseURL(settings.pageURL);
-	
-	var scannedLinks = {};
-	
-	var scanLink = function(elem){
-		var href = elem.attributes.href;
-		
-		if(!href) return;
-		
-		href = href.replace(/#.*$/, "").replace(/\/$/, "");
-		
-		if(href === "" || href === baseURL || href === settings.pageURL) return;
-		
-		if(settings.linksToSkip[href]) return;
-		
-		if(settings.pageURL && href.split(re_slashes, 2)[1] !== settings.pageURL.split(re_slashes, 2)[1]) return;
-		
-		var text = elem.getText();
-		
-		if(text.length > 25 || re_extraneous.test(text)) return;
-		if(!/\d/.test(href.replace(baseURL, ""))) return;
-		
-		var score = 0,
-			linkData = text + " " + elem.attributes["class"] + " " + elem.attributes.id;
-		
-		if(re_nextLink.test(linkData)) score += 50;
-		if(re_pages.test(linkData)) score += 25;
-		
-		if(/(first|last)/i.test(linkData)){
-			if(!re_nextLink.test(text))
-				if(!(scannedLinks[href] && re_nextLink.test(scannedLinks[href].text)))
-					score -= 65;
-		}
-		
-		if(re_negative.test(linkData) || re_extraneous.test(linkData)) score -= 50;
-		if(re_prevLink.test(linkData)) score -= 200;
-		
-		if(re_pagenum.test(href) || re_pages.test(href)) score += 25;
-		if(re_extraneous.test(href)) score -= 15;
-		
-		var pos = docElements.length,
-			posMatch = true, 
-			negMatch = true, 
-			parentData = "";
-		
-		while(--pos !== 0){
-			parentData = docElements[pos].attributes["class"] + " " + docElements[pos].attributes.id;
-			if(parentData === " ") continue;
-			if(posMatch && re_pages.test(parentData)){
-				score += 25;
-				if(!negMatch) break;
-				else posMatch = false;
-			}
-			if(negMatch && re_negative.test(parentData) && !re_positive.test(parentData)){
-				score -= 25;
-				if(!posMatch) break;
-				else negMatch = false;
-			}
-		}
-		
-		var parsedNum = parseInt(text, 10);
-		if(parsedNum){
-			if(parsedNum === 1) score -= 10;
-			else score += Math.max(0, 10 - parsedNum);
-		}
-		
-		if(scannedLinks[href]){
-			scannedLinks[href].score += score;
-			scannedLinks[href].text += " | " + text;
-		}
-		else scannedLinks[href] = {
-				score: score,
-				text: text
-			};
-	};
-	
-	//parser methods
-	parser.onopentag = function(tag){
-		var parent = docElements[docElements.length - 1],
-			tagName = tag.name,
-			elem = new Element(tagName);
-		
-		docElements.push(elem);
-		
-		if(parent.skip === true || tagsToSkip[tagName]){
-			elem.skip = true; return;
-		}
-		
-		var attributes = tag.attributes, value;
-		
-		if(settings.stripUnlikelyCandidates){
-			value = ((attributes.id || "") + (attributes["class"] || "")).toLowerCase();
-			if(re_unlikelyCandidates.test(value) && !re_okMaybeItsACandidate.test(value)){
-					elem.skip = true; return;
-			}
-		}
-		
-		for(var name in attributes){
-			name = name.toLowerCase();
-			value = attributes[name];
-			
-			if(name === "id" || name === "class"){
-				if(re_negative.test(value)) elem.attributeScore -= 25;
-				else if(re_positive.test(value)) elem.attributeScore += 25;
-		
-				elem.attributes[name] = value;
-			}
-			else if(name === "href" || name === "src"){
-				//fix links
-				elem.attributes[name] = settings.convertLinks(value);
-			}
-			else if(settings.cleanAttributes){
-				if(goodAttributes[name])
-					elem.attributes[name] = value;
-			}
-			else elem.attributes[name] = value;
-		}
-		
-		//add points for the tags name
-		elem.tagScore += tagCounts[tagName] || 0;
-		
-		//do this now, so gc can remove it after onclosetag
-		parent.children.push(elem);
-	};
-	
-	parser.ontext = function(text){ docElements[docElements.length-1].children.push(text); };
-	
-	parser.onclosetag = function(tagname){
-		var elem = docElements.pop(),
-			elemLevel = docElements.length - 1;
-		
-		//if(tagname !== elem.name) settings.log("Tagname didn't match!:", tagname, "vs.", elem.name);
-		
-		//prepare title
-		if(tagname === "title") origTitle = elem.getText();
-		else if(tagname === "h1"){
-			elem.skip = true;
-			if(headerTitle !== false)
-				if(!headerTitle) headerTitle = elem.getText();
-				else headerTitle = false;
-		}
-		else if(tagname === "a" && settings.searchFurtherPages){
-			scanLink(elem);
-		}
-		
-		if(elem.skip) return;
-		
-		elem.addInfo();
-		
-		var i, j, cnvrt;
-		//clean conditionally
-		if(tagname === "p"){
-			if(!elem.info.tagCount.img && !elem.info.tagCount.embed && !elem.info.tagCount.object && elem.info.linkLength === 0 && elem.info.textLength === 0)
-				elem.skip = true;
-		}
-		else if(embeds[tagname]){
-			//check if tag is wanted (youtube or vimeo)
-			cnvrt = true;
-			for(i in elem.attributes)
-				if(elem.hasOwnProperty(i))
-					if(re_videos.test(i)){ cnvrt = false; break; }
-			
-			if(cnvrt) elem.skip = true;
-		}
-		else if(tagname === "h2" || tagname === "h3"){
-			//clean headers
-			if (elem.attributeScore < 0 || elem.info.density > 0.33) elem.skip = true;
-		}
-		else if(settings.cleanConditionally && cleanConditionaly[tagname]){
-			var p = elem.info.tagCount.p || 0,
-				contentLength = elem.info.textLength + elem.info.linkLength;
-			
-			if( elem.info.tagCount.img > p ) elem.skip = true;
-			else if( (elem.info.tagCount.li - 100) > p && tagname !== "ul" && tagname !== "ol") elem.skip = true;
-			else if(elem.info.tagCount.input > Math.floor(p/3) ) elem.skip = true;
-			else if(contentLength < 25 && (!elem.info.tagCount.img || elem.info.tagCount.img > 2) ) elem.skip = true;
-			else if(elem.attributeScore < 25 && elem.info.density > 0.2) elem.skip = true;
-			else if(elem.attributeScore >= 25 && elem.info.density > 0.5) elem.skip = true;
-			else if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) elem.skip = true;
-		}
-		
-		if(elem.skip) return;
-				
-		//should node be scored?
-		var score = tagsToScore[tagname];
-		if(!score && tagname === "div"){
-			cnvrt = true;
-			for(i = 0, j = divToPElements.length; i < j; i++)
-				if(elem.info.tagCount[divToPElements[i]]) cnvrt = false;
-			
-			if(cnvrt){
-				elem.name = "p";
-				score = true;
-			}
-		}
-		if(score){
-			if((elem.info.textLength + elem.info.linkLength) >= 25 && elemLevel > 0){
-				docElements[elemLevel].isCandidate = docElements[elemLevel-1].isCandidate = true;
-				var addScore = 1 + elem.info.commas + Math.min( Math.floor( (elem.info.textLength + elem.info.linkLength) / 100 ), 3);
-				docElements[elemLevel].tagScore	+= addScore;
-				docElements[elemLevel-1].tagScore	+= addScore / 2;
-			}
-		}
-		
-		if(elem.isCandidate){
-			elem.totalScore = Math.floor((elem.tagScore + elem.attributeScore) * (1 - elem.info.density));
-			if(!topCandidate || elem.totalScore > topCandidate.totalScore){
-				topCandidate = elem;
-				if(elemLevel >= 0)
-					topParent = docElements[elemLevel];
-				else
-					topParent = null;
-			}
-		}
-	};
-	parser.onreset = function(){
-		docElements = [new Element("document")];
-		topCandidate = topParent = origTitle = headerTitle = null;
-	};
-	
-	var getCandidateSiblings = function(){
-		if(!topCandidate){
-			try{
-				topCandidate = docElements[0].children.pop().children.pop(); //body
-			}
-			catch(e){
-				topCandidate = new Element("",{});
-			}
-			topCandidate.name = "div";
-		}
-		//check all siblings
-		if(!topParent)
-			return [topCandidate];
-		
-		var ret = [],
-			childs = topParent.children,
-			childNum = childs.length,
-			siblingScoreThreshold = Math.max(10, topCandidate.totalScore * 0.2);
-		
-		for(var i = 0; i < childNum; i++){
-			if(typeof childs[i] === "string") continue;
-			var append = false;
-			if(childs[i] === topCandidate) append = true;
-			else{
-				var contentBonus = 0;
-				if(topCandidate.attributes["class"] && topCandidate.attributes["class"] === childs[i].attributes["class"]) 
-					contentBonus += topCandidate.totalScore * 0.2;
-				if((childs[i].totalScore + contentBonus) >= siblingScoreThreshold) append = true;
-				else if(childs[i].name === "p")
-					if(childs[i].info.textLength > 80 && childs[i].info.density < 0.25) append = true;
-					else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && childs[i].getText().search(re_badStart) !== -1)
-						append = true;
-			}
-			if(append){
-				if(childs[i].name !== "p")
-					childs[i].name = "div";
-				
-				ret.push(childs[i]);
-			}
-		}
-		return ret;
-	};
-	this.setSkipLevel = function(skipLevel){
-		if(settings.skipLevel > 0) settings.stripUnlikelyCandidates = false;
-		if(settings.skipLevel > 1) settings.weightClasses = false;
-		if(settings.skipLevel > 2) settings.cleanConditionally = false;
-	};
-	this.getTitle = function(){
-		var curTitle = origTitle || "";
-		
-		if(/ [\|\-] /.test(curTitle)){
-			curTitle = origTitle.replace(/(.*)[\|\-] .*/gi,'$1');
-			
-			if(curTitle.split(' ', 3).length < 3)
-				curTitle = origTitle.replace(/[^\|\-]*[\|\-](.*)/gi,"$1");
-		}
-		else if(curTitle.indexOf(': ') !== -1){
-			curTitle = origTitle.replace(/.*:(.*)/gi, '$1');
+	this._baseURL = settings.pageURL && getBaseURL(this._settings.pageURL);
+};
 
-			if(curTitle.split(" ", 3).length < 3)
-				curTitle = origTitle.replace(/[^:]*[:](.*)/gi,'$1');
-		}
-		else if(curTitle.length > 150 || curTitle.length < 15)
-			if(headerTitle)
-				curTitle = headerTitle;
+Readability.prototype._scanLink = function(elem){
+    var href = elem.attributes.href;
+    
+    if(!href) return;
+    
+    href = href.replace(/#.*$/, "").replace(/\/$/, "");
+    
+    if(href === "" || href === this._baseURL || href === this._settings.pageURL) return;
+    
+    if(this._settings.linksToSkip[href]) return;
+    
+    if(this._settings.pageURL && href.split(re_slashes, 2)[1] !== this._settings.pageURL.split(re_slashes, 2)[1]) return;
+    
+    var text = elem.getText();
+    
+    if(text.length > 25 || re_extraneous.test(text)) return;
+    if(!/\d/.test(href.replace(this._baseURL, ""))) return;
+    
+    var score = 0,
+    	linkData = text + " " + elem.attributes["class"] + " " + elem.attributes.id;
+    
+    if(re_nextLink.test(linkData)) score += 50;
+    if(re_pages.test(linkData)) score += 25;
+    
+    if(/(first|last)/i.test(linkData)){
+    	if(!re_nextLink.test(text))
+    		if(!(this._scannedLinks[href] && re_nextLink.test(this._scannedLinks[href].text)))
+    			score -= 65;
+    }
+    
+    if(re_negative.test(linkData) || re_extraneous.test(linkData)) score -= 50;
+    if(re_prevLink.test(linkData)) score -= 200;
+    
+    if(re_pagenum.test(href) || re_pages.test(href)) score += 25;
+    if(re_extraneous.test(href)) score -= 15;
+    
+    var pos = this._docElements.length,
+    	posMatch = true, 
+    	negMatch = true, 
+    	parentData = "";
+    
+    while(--pos !== 0){
+    	parentData = this._docElements[pos].attributes["class"] + " " + this._docElements[pos].attributes.id;
+    	if(parentData === " ") continue;
+    	if(posMatch && re_pages.test(parentData)){
+    		score += 25;
+    		if(!negMatch) break;
+    		else posMatch = false;
+    	}
+    	if(negMatch && re_negative.test(parentData) && !re_positive.test(parentData)){
+    		score -= 25;
+    		if(!posMatch) break;
+    		else negMatch = false;
+    	}
+    }
+    
+    var parsedNum = parseInt(text, 10);
+    if(parsedNum){
+    	if(parsedNum === 1) score -= 10;
+    	else score += Math.max(0, 10 - parsedNum);
+    }
+    
+    if(this._scannedLinks[href]){
+    	this._scannedLinks[href].score += score;
+    	this._scannedLinks[href].text += " | " + text;
+    }
+    else this._scannedLinks[href] = {
+    		score: score,
+    		text: text
+    	};
+};
 
-		curTitle = curTitle.trim();
+//parser methods
+Readability.prototype.onopentag = function(tagName, attributes){
+    var parent = this._docElements[this._docElements.length - 1],
+    	elem = new Element(tagName);
+    
+    this._docElements.push(elem);
+    
+    if(parent.skip === true || tagsToSkip[tagName]){
+    	elem.skip = true; return;
+    }
+    
+    var value;
+    
+    if(this._settings.stripUnlikelyCandidates){
+    	value = ((attributes.id || "") + (attributes["class"] || "")).toLowerCase();
+    	if(re_unlikelyCandidates.test(value) && !re_okMaybeItsACandidate.test(value)){
+    			elem.skip = true; return;
+    	}
+    }
+    
+    for(var name in attributes){
+    	name = name.toLowerCase();
+    	value = attributes[name];
+    	
+    	if(name === "id" || name === "class"){
+    		if(re_negative.test(value)) elem.attributeScore -= 25;
+    		else if(re_positive.test(value)) elem.attributeScore += 25;
+    
+    		elem.attributes[name] = value;
+    	}
+    	else if(name === "href" || name === "src"){
+    		//fix links
+    		elem.attributes[name] = this._settings.convertLinks(value);
+    	}
+    	else if(this._settings.cleanAttributes){
+    		if(goodAttributes[name])
+    			elem.attributes[name] = value;
+    	}
+    	else elem.attributes[name] = value;
+    }
+    
+    //add points for the tags name
+    elem.tagScore += tagCounts[tagName] || 0;
+    
+    //do this now, so gc can remove it after onclosetag
+    parent.children.push(elem);
+};
 
-		if(curTitle.split(" ", 5).length < 5)
-			curTitle = origTitle;
-		
-		return curTitle;
-	};
-	this.getNextPage = function(){
-		var topScore = 49, topLink = "";
-		for(var link in scannedLinks){
-			if(scannedLinks.hasOwnProperty(link))
-				if(scannedLinks[link].score > topScore){
-					topLink = link;
-					topScore = scannedLinks[link].score;
-				}
-		}
-		
-		if(topScore !== 49) settings.log("Top link score:", topScore);
-		
-		return topLink;
-	};
-	this.getArticle = function(type){
-		var ret = {
-			title: this.getTitle(),
-			nextPage: this.getNextPage()
-		};
-		
-		//create a new object so that the prototype methods are callable
-		var elem = new Element("", {});
-		elem.children = getCandidateSiblings();
-		elem.addInfo();
-		
-		ret.textLength = elem.info.textLength;
-		
-		if(type === "text")
-			ret.text = elem.getText().trim();
-		
-		else ret.html = elem.getInnerHTML() //=> clean it
-			//kill breaks
-			.replace(/(<\/?br\s*\/?>(\s|&nbsp;?)*)+/g,'<br/>')
-			//turn all double brs into ps
-			.replace(/(<br[^>]*>[ \n\r\t]*){2,}/g, '</p><p>')
-			//remove font tags
-			.replace(/<(\/?)font[^>]*>/g, '<$1span>')
-			//remove breaks in front of paragraphs
-			.replace(/<br[^>]*>\s*<p/g,"<p");
-		
-		ret.score = topCandidate.totalScore;
-		return ret;
-	};
+Readability.prototype.ontext = function(text){ this._docElements[this._docElements.length-1].children.push(text); };
+
+Readability.prototype.onclosetag = function(tagname){
+    var elem = this._docElements.pop(),
+    	elemLevel = this._docElements.length - 1;
+    
+    //if(tagname !== elem.name) this._settings.log("Tagname didn't match!:", tagname, "vs.", elem.name);
+    
+    //prepare title
+    if(tagname === "title") this._origTitle = elem.getText();
+    else if(tagname === "h1"){
+    	elem.skip = true;
+    	if(this._headerTitle !== false)
+    		if(!this._headerTitle) this._headerTitle = elem.getText();
+    		else this._headerTitle = false;
+    }
+    else if(tagname === "a" && this._settings.searchFurtherPages){
+    	this._scanLink(elem);
+    }
+    
+    if(elem.skip) return;
+    
+    elem.addInfo();
+    
+    var i, j, cnvrt;
+    //clean conditionally
+    if(tagname === "p"){
+    	if(!elem.info.tagCount.img && !elem.info.tagCount.embed && !elem.info.tagCount.object && elem.info.linkLength === 0 && elem.info.textLength === 0)
+    		elem.skip = true;
+    }
+    else if(embeds[tagname]){
+    	//check if tag is wanted (youtube or vimeo)
+    	cnvrt = true;
+    	for(i in elem.attributes)
+    		if(elem.hasOwnProperty(i))
+    			if(re_videos.test(i)){ cnvrt = false; break; }
+    	
+    	if(cnvrt) elem.skip = true;
+    }
+    else if(tagname === "h2" || tagname === "h3"){
+    	//clean headers
+    	if (elem.attributeScore < 0 || elem.info.density > 0.33) elem.skip = true;
+    }
+    else if(this._settings.cleanConditionally && cleanConditionaly[tagname]){
+    	var p = elem.info.tagCount.p || 0,
+    		contentLength = elem.info.textLength + elem.info.linkLength;
+    	
+    	if( elem.info.tagCount.img > p ) elem.skip = true;
+    	else if( (elem.info.tagCount.li - 100) > p && tagname !== "ul" && tagname !== "ol") elem.skip = true;
+    	else if(elem.info.tagCount.input > Math.floor(p/3) ) elem.skip = true;
+    	else if(contentLength < 25 && (!elem.info.tagCount.img || elem.info.tagCount.img > 2) ) elem.skip = true;
+    	else if(elem.attributeScore < 25 && elem.info.density > 0.2) elem.skip = true;
+    	else if(elem.attributeScore >= 25 && elem.info.density > 0.5) elem.skip = true;
+    	else if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) elem.skip = true;
+    }
+    
+    if(elem.skip) return;
+    		
+    //should node be scored?
+    var score = tagsToScore[tagname];
+    if(!score && tagname === "div"){
+    	cnvrt = true;
+    	for(i = 0, j = divToPElements.length; i < j; i++)
+    		if(elem.info.tagCount[divToPElements[i]]) cnvrt = false;
+    	
+    	if(cnvrt){
+    		elem.name = "p";
+    		score = true;
+    	}
+    }
+    if(score){
+    	if((elem.info.textLength + elem.info.linkLength) >= 25 && elemLevel > 0){
+    		this._docElements[elemLevel].isCandidate = this._docElements[elemLevel-1].isCandidate = true;
+    		var addScore = 1 + elem.info.commas + Math.min( Math.floor( (elem.info.textLength + elem.info.linkLength) / 100 ), 3);
+    		this._docElements[elemLevel].tagScore	+= addScore;
+    		this._docElements[elemLevel-1].tagScore	+= addScore / 2;
+    	}
+    }
+    
+    if(elem.isCandidate){
+    	elem.totalScore = Math.floor((elem.tagScore + elem.attributeScore) * (1 - elem.info.density));
+    	if(!this._topCandidate || elem.totalScore > this._topCandidate.totalScore){
+    		this._topCandidate = elem;
+    		if(elemLevel >= 0)
+    			this.__topParent = this._docElements[elemLevel];
+    		else
+    			this.__topParent = null;
+    	}
+    }
+};
+Readability.prototype.onreset = function(){
+    this._docElements = [new Element("document")];
+    this._topCandidate = this.__topParent = this._origTitle = this._headerTitle = null;
+};
+
+Readability.prototype._getCandidateSiblings = function(){
+    if(!this._topCandidate){
+    	try{
+    		this._topCandidate = this._docElements[0].children.pop().children.pop(); //body
+    	}
+    	catch(e){
+    		this._topCandidate = new Element("",{});
+    	}
+    	this._topCandidate.name = "div";
+    }
+    //check all siblings
+    if(!this.__topParent)
+    	return [this._topCandidate];
+    
+    var ret = [],
+    	childs = this.__topParent.children,
+    	childNum = childs.length,
+    	siblingScoreThreshold = Math.max(10, this._topCandidate.totalScore * 0.2);
+    
+    for(var i = 0; i < childNum; i++){
+    	if(typeof childs[i] === "string") continue;
+    	var append = false;
+    	if(childs[i] === this._topCandidate) append = true;
+    	else{
+    		var contentBonus = 0;
+    		if(this._topCandidate.attributes["class"] && this._topCandidate.attributes["class"] === childs[i].attributes["class"]) 
+    			contentBonus += this._topCandidate.totalScore * 0.2;
+    		if((childs[i].totalScore + contentBonus) >= siblingScoreThreshold) append = true;
+    		else if(childs[i].name === "p")
+    			if(childs[i].info.textLength > 80 && childs[i].info.density < 0.25) append = true;
+    			else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && childs[i].getText().search(re_badStart) !== -1)
+    				append = true;
+    	}
+    	if(append){
+    		if(childs[i].name !== "p")
+    			childs[i].name = "div";
+    		
+    		ret.push(childs[i]);
+    	}
+    }
+    return ret;
+};
+Readability.prototype.setSkipLevel = function(skipLevel){
+    if(this._settings.skipLevel > 0) this._settings.stripUnlikelyCandidates = false;
+    if(this._settings.skipLevel > 1) this._settings.weightClasses = false;
+    if(this._settings.skipLevel > 2) this._settings.cleanConditionally = false;
+};
+Readability.prototype.getTitle = function(){
+	var origTitle = this._origTitle,
+    	curTitle = origTitle || "";
+    
+    if(/ [\|\-] /.test(curTitle)){
+    	curTitle = origTitle.replace(/(.*)[\|\-] .*/gi,'$1');
+    	
+    	if(curTitle.split(" ", 3).length < 3)
+    		curTitle = origTitle.replace(/[^\|\-]*[\|\-](.*)/gi,"$1");
+    }
+    else if(curTitle.indexOf(": ") !== -1){
+    	curTitle = origTitle.replace(/.*:(.*)/gi, '$1');
+
+    	if(curTitle.split(" ", 3).length < 3)
+    		curTitle = origTitle.replace(/[^:]*[:](.*)/gi,'$1');
+    }
+    else if(curTitle.length > 150 || curTitle.length < 15)
+    	if(this._headerTitle)
+    		curTitle = this._headerTitle;
+
+    curTitle = curTitle.trim();
+
+    if(curTitle.split(" ", 5).length < 5)
+    	curTitle = origTitle;
+    
+    return curTitle;
+};
+Readability.prototype.getNextPage = function(){
+    var topScore = 49, topLink = "";
+    for(var link in this._scannedLinks){
+    	if(this._scannedLinks.hasOwnProperty(link))
+    		if(this._scannedLinks[link].score > topScore){
+    			topLink = link;
+    			topScore = this._scannedLinks[link].score;
+    		}
+    }
+    
+    if(topScore !== 49) this._settings.log("Top link score:", topScore);
+    
+    return topLink;
+};
+Readability.prototype.getArticle = function(type){
+    var ret = {
+    	title: this.getTitle(),
+    	nextPage: this.getNextPage()
+    };
+    
+    //create a new object so that the prototype methods are callable
+    var elem = new Element("", {});
+    elem.children = this._getCandidateSiblings();
+    elem.addInfo();
+    
+    ret.textLength = elem.info.textLength;
+    
+    if(type === "text")
+    	ret.text = elem.getText().trim();
+    
+    else ret.html = elem.getInnerHTML() //=> clean it
+    	//kill breaks
+    	.replace(/(<\/?br\s*\/?>(\s|&nbsp;?)*)+/g,'<br/>')
+    	//turn all double brs into ps
+    	.replace(/(<br[^>]*>[ \n\r\t]*){2,}/g, '</p><p>')
+    	//remove font tags
+    	.replace(/<(\/?)font[^>]*>/g, '<$1span>')
+    	//remove breaks in front of paragraphs
+    	.replace(/<br[^>]*>\s*<p/g,"<p");
+    
+    ret.score = this._topCandidate.totalScore;
+    return ret;
 };
 
 //for legacy reasons
-readability.process = function(parser, settings){
-	return new readability(parser, settings);
+Readability.process = function(settings){
+	return new Readability(settings);
 };
 
-if(typeof module !== "undefined" && typeof module.exports !== "undefined") module.exports = readability;
+if(typeof module !== "undefined" && typeof module.exports !== "undefined") module.exports = Readability;
