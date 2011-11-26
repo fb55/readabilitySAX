@@ -1,5 +1,3 @@
-	"use strict";
-
 	//list of values
 	var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true,aside:true,header:true,nav:true,footer:true},
 		tagsToCount = {a:true,audio:true,blockquote:true,div:true,dl:true,embed:true,img:true,input:true,li:true,object:true,ol:true,p:true,pre:true,table:true,ul:true,video:true},
@@ -12,10 +10,10 @@
 		newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
 		newLinesBefore = {p:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 
-		re_videos = /http =\/\/(www\.)?(vimeo|youtube|yahoo|flickr)\.com/i,
+		re_videos = /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
 		re_skipFootnoteLink =/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
-		re_nextLink = /(next|weiter|continue|>([^\|]|$)|»([^\|]|$))/i,
-		re_prevLink = /(prev|earl|old|new|<|«)/i,
+		re_nextLink = /next|weiter|continue|>([^\|]|$)|»([^\|]|$)/i,
+		re_prevLink = /prev|earl|old|new|<|«/i,
 		re_extraneous = /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
 		re_pages = /pag(e|ing|inat)/i,
 		re_pagenum = /p(a|g|ag)?(e|ing|ination)?(=|\/)[0-9]{1,2}/i,
@@ -27,8 +25,8 @@
 
 		re_badStart = /\.( |$)/,
 
-		re_pageInURL = /((_|-)?p[a-z]*|(_|-))[0-9]{1,2}$/i,
-		re_noLetters = /[^a-z]/i,
+		re_pageInURL = /((_|-)?p[a-zA-Z]*|(_|-))[0-9]{1,2}$/,
+		re_noLetters = /[^a-zA-Z]/,
 		re_justDigits = /^\d{1,2}$/,
 		re_slashes = /\/+/,
 
