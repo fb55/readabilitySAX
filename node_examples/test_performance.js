@@ -4,20 +4,16 @@ var getReadableContent = require("./getReadableContent.js"),
 	ben = require("ben");
 
 var proc = function(data, settings, cb){
-	var ret = getReadableContent.process(data, {
-		skipLevel: 0,
-		readabilitySettings: settings
-	});
+	var ret = getReadableContent.process(data, settings);
 	cb(ret);
 }
 
 var processContent = function(data){
-	var settings = link ? {
-			convertLinks: url.resolve.bind(null, link),
-		 	link: link
-		 } : {};
-	
-	proc(data, settings, console.log.bind(console));
+	var settings;
+	if(link) settings = {
+		convertLinks: url.resolve.bind(null, link),
+	 	link: link
+	 };
 	
 	ben.async(proc.bind(null, data, settings), console.log.bind(console, "Took (ms):"));
 }
