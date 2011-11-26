@@ -206,31 +206,35 @@ var Readability = function(settings){
 	this._topCandidate = this.__topParent = null;
 	this._origTitle = this._headerTitle = "";
 	this._scannedLinks = {};
-	this._settings = {};
+	if(settings) this._processSettings(settings);
+};
 
-	//process this._settings
-	for(var i in Settings)
+Readability.prototype._processSettings = function(settings){
+	this._settings = this._settings || {};
+
+	for(var i in Settings){
 		if(settings.hasOwnProperty(i))
 			this._settings[i] = settings[i];
 		else this._settings[i] = Settings[i];
-
-	//skipLevel is a shortcut to allow more elements of the page
-	if(settings.skipLevel) this.setSkipLevel(this._settings.skipLevel);
+	}
 
 	if(settings.log === false) this._settings.log = function(){};
 
-	if(!this._settings.link && this._settings.url && this._settings.pageURL)
-		this._settings.link = this._settings.url.parse( this._settings.pageURL );
+	if(!settings.link && settings.url && settings.pageURL){
+		this._settings.link = settings.url.parse(settings.pageURL);
+	}
 
 	//clean pageURL for search of further pages
-	if(this._settings.pageURL)
-		this._settings.pageURL = this._settings.pageURL.replace(re_closing, "");
+	if(settings.pageURL){
+		this._settings.pageURL = settings.pageURL.replace(re_closing, "");
+	}
 
-	if(!this._settings.convertLinks)
-
-		if(this._settings.link && this._settings.url)
-			this._settings.convertLinks = this._settings.url.resolve.bind(null, this._settings.link);
+	if(!settings.convertLinks){
+		if(settings.link && settings.url)
+			this._settings.convertLinks = settings.url.resolve.bind(null, settings.link);
 		else this._settings.convertLinks = function(a){ return a; };
+	}
+	else this._settings.convertLinks = settings.convertLinks;
 
 	this._baseURL = settings.pageURL && getBaseURL(this._settings.pageURL);
 };
@@ -447,19 +451,20 @@ Readability.prototype.onclosetag = function(tagname){
 		}
 	}
 };
-Readability.prototype.onreset = function(){
-	this._docElements = [new Element("document")];
-	this._topCandidate = this.__topParent = this._origTitle = this._headerTitle = null;
-};
+
+Readability.prototype.onreset = Readability;
 
 Readability.prototype._getCandidateSiblings = function(){
+	var tmp;
 	if(!this._topCandidate){
-		try{
-			this._topCandidate = this._docElements[0].children.pop().children.pop(); //body
+		if((tmp = this._docElements) 
+			&& (tmp = tmp[0]) && (tmp = tmp.children) 
+			&& (tmp = tmp[tmp.length-1]) && (tmp = tmp.children) 
+			&& (tmp = tmp[tmp.length-1])){
+			//use body	
+			this._topCandidate = tmp;
 		}
-		catch(e){
-			this._topCandidate = new Element("",{});
-		}
+		else this._topCandidate = new Element("");
 		this._topCandidate.name = "div";
 	}
 	//check all siblings
@@ -495,11 +500,14 @@ Readability.prototype._getCandidateSiblings = function(){
 	}
 	return ret;
 };
+
+//skipLevel is a shortcut to allow more elements of the page
 Readability.prototype.setSkipLevel = function(skipLevel){
 	if(this._settings.skipLevel > 0) this._settings.stripUnlikelyCandidates = false;
 	if(this._settings.skipLevel > 1) this._settings.weightClasses = false;
 	if(this._settings.skipLevel > 2) this._settings.cleanConditionally = false;
 };
+
 Readability.prototype.getTitle = function(){
 	var origTitle = this._origTitle,
 		curTitle = origTitle || "";
@@ -526,23 +534,24 @@ Readability.prototype.getTitle = function(){
 
 	return curTitle;
 };
+
 Readability.prototype.getNextPage = function(){
-	var topScore = 49, topLink = "";
+	var topScore = 49, topLink;
 	for(var link in this._scannedLinks){
-		if(this._scannedLinks.hasOwnProperty(link))
-			if(this._scannedLinks[link].score > topScore){
-				topLink = link;
-				topScore = this._scannedLinks[link].score;
-			}
+		if(this._scannedLinks[link].score > topScore){
+			topLink = link;
+			topScore = this._scannedLinks[link].score;
+		}
 	}
 
 	if(topScore !== 49) this._settings.log("Top link score:", topScore);
 
 	return topLink;
 };
+
 Readability.prototype.getArticle = function(type){
 	//create a new object so that the prototype methods are callable
-	var elem = new Element("", {});
+	var elem = new Element("");
 	elem.children = this._getCandidateSiblings();
 	elem.addInfo();
 
@@ -567,11 +576,6 @@ Readability.prototype.getArticle = function(type){
 		.replace(/<br[^>]*>\s*<p/g,"<p");
 
 	return ret;
-};
-
-//for legacy reasons
-Readability.process = function(settings){
-	return new Readability(settings);
 };
 
 if(typeof module !== "undefined" && typeof module.exports !== "undefined") module.exports = Readability;
