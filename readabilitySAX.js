@@ -10,25 +10,28 @@
 		newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
 		newLinesBefore = {p:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 
-		re_videos = /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
-		re_skipFootnoteLink =/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
-		re_nextLink = /next|weiter|continue|>([^\|]|$)|»([^\|]|$)/i,
+		re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/i,
+		re_skipFootnoteLink =/^\s*(?:\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
+		re_nextLink = /next|weiter|continue|>(?:[^\|]|$)|»(?:[^\|]|$)/i,
 		re_prevLink = /prev|earl|old|new|<|«/i,
 		re_extraneous = /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
-		re_pages = /pag(e|ing|inat)/i,
-		re_pagenum = /p(a|g|ag)?(e|ing|ination)?(=|\/)[0-9]{1,2}/i,
+		re_pages = /pag(?:e|ing|inat)/i,
+		re_pagenum = /p(?:a|g|ag)?(?:e|ing|ination)?(?:=|\/)[0-9]{1,2}/i,
 
 		re_positive = /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
 		re_negative = /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
 		re_unlikelyCandidates =/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter|entry-unrelated/,
 		re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 
-		re_badStart = /\.( |$)/,
+		re_badStart = /\.(?: |$)/,
 
-		re_pageInURL = /((_|-)?p[a-zA-Z]*|(_|-))[0-9]{1,2}$/,
+		re_pageInURL = /(?:(?:_|-)?p[a-zA-Z]*|(?:_|-))[0-9]{1,2}$/,
 		re_noLetters = /[^a-zA-Z]/,
+		re_digits = /\d/,
 		re_justDigits = /^\d{1,2}$/,
 		re_slashes = /\/+/,
+		
+		re_closing = /\/?(?:#.*)?$/,
 
 		re_commas	 = /,[\s\,]*/g;
 
@@ -150,7 +153,6 @@
 			linkElements	= noUrlParams.split(re_slashes),
 			urlSlashes		= linkElements.splice(2).reverse(),
 			cleanedSegments = [],
-			possibleType	= "",
 			i = 0,
 
 			slashLen = urlSlashes.length;
@@ -222,7 +224,7 @@ var Readability = function(settings){
 
 	//clean pageURL for search of further pages
 	if(this._settings.pageURL)
-		this._settings.pageURL = this._settings.pageURL.replace(/#.*$/, "").replace(/\/$/, "");
+		this._settings.pageURL = this._settings.pageURL.replace(re_closing, "");
 
 	if(!this._settings.convertLinks)
 
@@ -238,7 +240,7 @@ Readability.prototype._scanLink = function(elem){
 
 	if(!href) return;
 
-	href = href.replace(/#.*$/, "").replace(/\/$/, "");
+	href = href.replace(re_closing, "");
 
 	if(href === "" || href === this._baseURL || href === this._settings.pageURL) return;
 
@@ -249,7 +251,7 @@ Readability.prototype._scanLink = function(elem){
 	var text = elem.getText();
 
 	if(text.length > 25 || re_extraneous.test(text)) return;
-	if(!/\d/.test(href.replace(this._baseURL, ""))) return;
+	if(!re_digits.test(href.replace(this._baseURL, ""))) return;
 
 	var score = 0,
 		linkData = text + " " + elem.attributes["class"] + " " + elem.attributes.id;
@@ -503,20 +505,19 @@ Readability.prototype.getTitle = function(){
 		curTitle = origTitle || "";
 
 	if(/ [\|\-] /.test(curTitle)){
-		curTitle = origTitle.replace(/(.*)[\|\-] .*/gi,'$1');
+		curTitle = origTitle.replace(/(.*)[\|\-] .*/g,"$1");
 
 		if(curTitle.split(" ", 3).length < 3)
-			curTitle = origTitle.replace(/[^\|\-]*[\|\-](.*)/gi,"$1");
+			curTitle = origTitle.replace(/[^\|\-]*[\|\-](.*)/g,"$1");
 	}
 	else if(curTitle.indexOf(": ") !== -1){
-		curTitle = origTitle.replace(/.*:(.*)/gi, '$1');
+		curTitle = origTitle.replace(/.*:(.*)/g,"$1");
 
 		if(curTitle.split(" ", 3).length < 3)
-			curTitle = origTitle.replace(/[^:]*[:](.*)/gi,'$1');
+			curTitle = origTitle.replace(/[^:]*[:](.*)/g,"$1");
 	}
 	else if(curTitle.length > 150 || curTitle.length < 15)
-		if(this._headerTitle)
-			curTitle = this._headerTitle;
+		if(this._headerTitle) curTitle = this._headerTitle;
 
 	curTitle = curTitle.trim();
 
@@ -557,9 +558,9 @@ Readability.prototype.getArticle = function(type){
 
 	else ret.html = elem.getInnerHTML() //=> clean it
 		//kill breaks
-		.replace(/(<\/?br\s*\/?>(\s|&nbsp;?)*)+/g,'<br/>')
+		.replace(/(?:<\/?br\s*\/?>(?:\s|&nbsp;?)*)+/g,'<br/>')
 		//turn all double brs into ps
-		.replace(/(<br[^>]*>[ \n\r\t]*){2,}/g, '</p><p>')
+		.replace(/(?:<br[^>]*>[ \n\r\t]*){2,}/g, '</p><p>')
 		//remove font tags
 		.replace(/<(\/?)font[^>]*>/g, '<$1span>')
 		//remove breaks in front of paragraphs
