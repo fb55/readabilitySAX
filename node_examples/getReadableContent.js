@@ -4,8 +4,6 @@ var readability = require("../readabilitySAX"),
 	Parser = require("htmlparser2/lib/Parser.js");
 
 exports.get = function(uri, cb){
-	options = options || {};
-	
 	function onErr(err){
 		cb({
 			title:	"Error",
@@ -44,7 +42,7 @@ exports.get = function(uri, cb){
 	req.on("data", function(chunk){ chunk = chunk.toString("utf8"); parser.write(chunk); data += chunk; })
 	
 	req.on("end", function(){
-		parser.close();
+		parser.done();
 		
 		var ret = readable.getArticle();
 		if(ret.textLength < 250){
