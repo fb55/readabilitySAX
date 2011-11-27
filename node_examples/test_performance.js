@@ -1,31 +1,48 @@
 var getReadableContent = require("./getReadableContent.js"),
+	Parser = require("htmlparser2/lib/Parser.js"),
+	Readability = require("../readabilitySAX.js"),
 	request = require("request"),
 	url = require("url"),
-	ben = require("ben");
+	ben = require("ben"),
+	link;
 
-var proc = function(data, settings, cb){
-	var ret = getReadableContent.process(data, settings);
-	cb(ret);
-}
+var getSettings = function(link){
+	return link ? {
+		convertLinks: url.resolve.bind(null, link),
+		link: link
+	} : {};
+};
 
 var processContent = function(data){
-	var settings;
-	if(link) settings = {
-		convertLinks: url.resolve.bind(null, link),
-	 	link: link
-	 };
+	var settings = getSettings(link),
+		readable = new Readability(settings),
+		parser = new Parser(readable);
 	
-	ben.async(proc.bind(null, data, settings), console.log.bind(console, "Took (ms):"));
-}
+	console.log("parsing took (ms):", ben(1e3, function(){ parser.parseComplete(data); }));
+	console.log("getArticle took (ms):", ben(1e3,function(){ readable.getArticle(); }));
+	console.log("Whole parsing took (ms):",ben(500, function(){ getReadableContent.process(data, settings); }));
+};
+
+function debug(data){
+	var readable = new Readability(getSettings(link)),
+		parser = new Parser(readable);
+	
+	parser.parseComplete(data);
+	
+	var data = readable.getArticle("text");
+	
+	data.text = data.text.substr(0, 200).replace(/[\\\']/g, "");
+	
+	console.log(data);
+	console.log("Found links:", Object.keys(readable._scannedLinks).length);
+};
 
 if(process.argv.length > 2){
 	console.log("connecting to:", process.argv[2]);
 	
-	var link = url.parse(process.argv[2]);
-	
-	request({uri:link}, function(err, resp){
+	request(process.argv[2], function(err, resp, body){
 		link = resp.request.uri;
-		processContent(resp.body);
+		processContent(body);
 	});
 }
 else
