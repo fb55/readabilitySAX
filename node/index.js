@@ -29,7 +29,7 @@ exports.get = function(uri, cb){
 				link: link
 			};
 			
-			readable = Readability.process(settings);
+			readable = new Readability(settings);
 			parser = new Parser(readable);
 		},
 		req = request({
