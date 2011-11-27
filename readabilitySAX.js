@@ -1,209 +1,210 @@
-	//list of values
-	var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true,aside:true,header:true,nav:true,footer:true},
-		tagsToCount = {a:true,audio:true,blockquote:true,div:true,dl:true,embed:true,img:true,input:true,li:true,object:true,ol:true,p:true,pre:true,table:true,ul:true,video:true},
-		tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
-		embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
-		goodAttributes = {href:true,src:true,title:true,alt:true/*,style:true*/},
-		cleanConditionaly = {form:true,table:true,ul:true,ol:true,div:true},
-		tagsToScore = {p:true,pre:true,td:true},
-		divToPElements = ["a","blockquote","dl","div","img","ol","p","pre","table","ul"],
-		newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
-		newLinesBefore = {p:true,h2:true,h3:true,h4:true,h5:true,h6:true},
+//list of values
+var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true,aside:true,header:true,nav:true,footer:true},
+	tagsToCount = {a:true,audio:true,blockquote:true,div:true,dl:true,embed:true,img:true,input:true,li:true,object:true,ol:true,p:true,pre:true,table:true,ul:true,video:true},
+	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
+	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
+	goodAttributes = {href:true,src:true,title:true,alt:true/*,style:true*/},
+	cleanConditionaly = {form:true,table:true,ul:true,ol:true,div:true},
+	tagsToScore = {p:true,pre:true,td:true},
+	newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
+	newLinesBefore = {p:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 
-		re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/i,
-		re_skipFootnoteLink =/^\s*(?:\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
-		re_nextLink = /next|weiter|continue|>(?:[^\|]|$)|»(?:[^\|]|$)/i,
-		re_prevLink = /prev|earl|old|new|<|«/i,
-		re_extraneous = /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
-		re_pages = /pag(?:e|ing|inat)/i,
-		re_pagenum = /p(?:a|g|ag)?(?:e|ing|ination)?(?:=|\/)[0-9]{1,2}/i,
+	divToPElements = ["a","blockquote","dl","div","img","ol","p","pre","table","ul"],
 
-		re_positive = /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
-		re_negative = /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-		re_unlikelyCandidates =/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter|entry-unrelated/,
-		re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
+	re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/i,
+	re_skipFootnoteLink =/^\s*(?:\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
+	re_nextLink = /next|weiter|continue|>(?:[^\|]|$)|»(?:[^\|]|$)/i,
+	re_prevLink = /prev|earl|old|new|<|«/i,
+	re_extraneous = /print|archive|comment|discuss|e-?mail|share|reply|all|login|sign|single/i,
+	re_pages = /pag(?:e|ing|inat)/i,
+	re_pagenum = /p(?:a|g|ag)?(?:e|ing|ination)?(?:=|\/)[0-9]{1,2}/i,
 
-		re_badStart = /\.(?: |$)/,
+	re_positive = /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
+	re_negative = /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
+	re_unlikelyCandidates =/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter|entry-unrelated/,
+	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 
-		re_pageInURL = /(?:(?:_|-)?p[a-zA-Z]*|(?:_|-))[0-9]{1,2}$/,
-		re_noLetters = /[^a-zA-Z]/,
-		re_digits = /\d/,
-		re_justDigits = /^\d{1,2}$/,
-		re_slashes = /\/+/,
-		
-		re_closing = /\/?(?:#.*)?$/,
+	re_badStart = /\.(?: |$)/,
 
-		re_commas	 = /,[\s\,]*/g;
+	re_pageInURL = /(?:(?:_|-)?p[a-zA-Z]*|(?:_|-))[0-9]{1,2}$/,
+	re_noLetters = /[^a-zA-Z]/,
+	re_digits = /\d/,
+	re_justDigits = /^\d{1,2}$/,
+	re_slashes = /\/+/,
+	
+	re_closing = /\/?(?:#.*)?$/,
 
-	//the tree element
-	var Element = function(tagName){
-			this.name = tagName;
-			this.attributes = {};
-			this.children = [];
-			this.skip = false;
-			this.tagScore = 0;
-			this.attributeScore = 0;
-			this.totalScore = 0;
-			this.info = {
-				textLength: 0,
-				linkLength: 0,
-				commas:		0,
-				density:	0,
-				tagCount:	{}
-			};
-			this.isCandidate = false;
-	};
+	re_commas	 = /,[\s\,]*/g;
 
-	Element.prototype = {
-		addInfo: function(){
-			var info = this.info,
-				childs = this.children,
-				childNum = this.children.length,
-				elem;
-			for(var i=0; i < childNum; i++){
-				elem = childs[i];
-				if(typeof elem === "string"){
-					info.textLength += elem.length;
-					info.commas += elem.split(re_commas).length - 1;
-				}
-				else if(!elem.skip){
-					if(elem.name === "a"){
-						info.linkLength += elem.info.textLength + elem.info.linkLength;
-					}
-					else{
-						info.textLength += elem.info.textLength;
-						info.linkLength += elem.info.linkLength;
-					}
-					info.commas += elem.info.commas;
+//the tree element
+var Element = function(tagName){
+		this.name = tagName;
+		this.attributes = {};
+		this.children = [];
+		this.skip = false;
+		this.tagScore = 0;
+		this.attributeScore = 0;
+		this.totalScore = 0;
+		this.info = {
+			textLength: 0,
+			linkLength: 0,
+			commas:		0,
+			density:	0,
+			tagCount:	{}
+		};
+		this.isCandidate = false;
+};
 
-					for(var j in elem.info.tagCount){
-						if(info.tagCount[j]) info.tagCount[j] += elem.info.tagCount[j];
-						else info.tagCount[j] = elem.info.tagCount[j];
-					}
-
-					if(info.tagCount[elem.name]) info.tagCount[elem.name] += 1;
-					else info.tagCount[elem.name] = 1;
-				}
+Element.prototype = {
+	addInfo: function(){
+		var info = this.info,
+			childs = this.children,
+			childNum = this.children.length,
+			elem;
+		for(var i=0; i < childNum; i++){
+			elem = childs[i];
+			if(typeof elem === "string"){
+				info.textLength += elem.length;
+				info.commas += elem.split(re_commas).length - 1;
 			}
-			info.density = info.linkLength / (info.textLength + info.linkLength);
-			if(isNaN(info.density))
-				info.density = 1; //just ensure it gets skipped (is the case for 0/0)
-			return info;
-		},
-		getOuterHTML: function(){
-			if(this.skip) return "";
-			var ret = "<" + this.name,
-				i;
-
-			for(i in this.attributes)
-				if(this.attributes.hasOwnProperty(i))
-					ret += " " + i + "=\"" + this.attributes[i] + "\"";
-
-			return ret + ">" + this.getInnerHTML() + "</" + this.name + ">";
-		},
-		getInnerHTML: function(){
-			var nodes = this.children, ret = "";
-
-			for(var i = 0, j = nodes.length; i < j; i++){
-				if(typeof nodes[i] === "string") ret += nodes[i];
-				else ret += nodes[i].getOuterHTML();
-			}
-			return ret;
-		},
-		getText: function(){
-			var nodes = this.children, ret = "", text;
-			for(var i = 0, j = nodes.length; i < j; i++){
-				if(typeof nodes[i] === "string") ret += nodes[i];
-				else if(!nodes[i].skip){
-					text = nodes[i].getText();
-
-					if(text === "") continue;
-
-					if(newLinesBefore[ nodes[i].name ]) ret += "\n";
-
-					ret += text;
-
-					if(newLinesAfter[ nodes[i].name ]) ret +=	"\n";
+			else if(!elem.skip){
+				if(elem.name === "a"){
+					info.linkLength += elem.info.textLength + elem.info.linkLength;
 				}
+				else{
+					info.textLength += elem.info.textLength;
+					info.linkLength += elem.info.linkLength;
+				}
+				info.commas += elem.info.commas;
+
+				for(var j in elem.info.tagCount){
+					if(info.tagCount[j]) info.tagCount[j] += elem.info.tagCount[j];
+					else info.tagCount[j] = elem.info.tagCount[j];
+				}
+
+				if(info.tagCount[elem.name]) info.tagCount[elem.name] += 1;
+				else info.tagCount[elem.name] = 1;
 			}
-			return ret;
 		}
-	};
+		info.density = info.linkLength / (info.textLength + info.linkLength);
+		if(isNaN(info.density))
+			info.density = 1; //just ensure it gets skipped (is the case for 0/0)
+		return info;
+	},
+	getOuterHTML: function(){
+		if(this.skip) return "";
+		var ret = "<" + this.name,
+			i;
 
-	//settings
-	var Settings = {
-		stripUnlikelyCandidates: true,
-		weightClasses: true,
-		cleanConditionally: true,
-		cleanAttributes: true,
-		searchFurtherPages: true,
-		linksToSkip: {},	//pages that are already parsed
-		/*
-		url: null,			//nodes URL module (or anything that provides its api)
-		pageURL: null,		//URL of the page which is parsed
-		convertLinks: null, //function to redirect links
-		link: null,			//instance of url, may be provided if url was already parsed (pageURL isn't required after that)
-		*/
-		log : typeof console === "undefined" ? function(){} : console.log
-	};
+		for(i in this.attributes)
+			if(this.attributes.hasOwnProperty(i))
+				ret += " " + i + "=\"" + this.attributes[i] + "\"";
 
-	//helper functions
-	var getBaseURL = function(pageURL){
-		var noUrlParams		= pageURL.split("?", 1)[0],
-			linkElements	= noUrlParams.split(re_slashes),
-			urlSlashes		= linkElements.splice(2).reverse(),
-			cleanedSegments = [],
-			i = 0,
+		return ret + ">" + this.getInnerHTML() + "</" + this.name + ">";
+	},
+	getInnerHTML: function(){
+		var nodes = this.children, ret = "";
 
-			slashLen = urlSlashes.length;
-
-		if(slashLen < 2) return noUrlParams; //return what we got
-
-		//look if the first to elements get skipped
-		var first = urlSlashes[0],
-			second= urlSlashes[1];
-
-		if((first.length < 3 && re_noLetters.test(first)) || first.toLowerCase() === "index" || re_justDigits.test(first)){
-			if(( second.length < 3 && re_noLetters.test(first) ) || re_justDigits.test(second)) i = 2;
-			else i = 1;
+		for(var i = 0, j = nodes.length; i < j; i++){
+			if(typeof nodes[i] === "string") ret += nodes[i];
+			else ret += nodes[i].getOuterHTML();
 		}
-		else{
-			if(re_pageInURL.test(first))
-				urlSlashes[0] = first.replace(re_pageInURL, "");
+		return ret;
+	},
+	getText: function(){
+		var nodes = this.children, ret = "", text;
+		for(var i = 0, j = nodes.length; i < j; i++){
+			if(typeof nodes[i] === "string") ret += nodes[i];
+			else if(!nodes[i].skip){
+				text = nodes[i].getText();
 
-			//if only the second one gets skiped, start at an index of 1 and position the first element there
-			if( (second.length < 3 && re_noLetters.test(first)) || re_justDigits.test(second))
-				urlSlashes[ i = 1 ] = first;
+				if(text === "") continue;
 
-			else if(re_pageInURL.test(second))
-				urlSlashes[1] = second.replace(re_pageInURL, "");
+				if(newLinesBefore[ nodes[i].name ]) ret += "\n";
+
+				ret += text;
+
+				if(newLinesAfter[ nodes[i].name ]) ret +=	"\n";
+			}
 		}
+		return ret;
+	}
+};
 
-		var dotSplit, segment;
+//settings
+var Settings = {
+	stripUnlikelyCandidates: true,
+	weightClasses: true,
+	cleanConditionally: true,
+	cleanAttributes: true,
+	searchFurtherPages: true,
+	linksToSkip: {},	//pages that are already parsed
+	/*
+	url: null,			//nodes URL module (or anything that provides its api)
+	pageURL: null,		//URL of the page which is parsed
+	convertLinks: null, //function to redirect links
+	link: null,			//instance of url, may be provided if url was already parsed (pageURL isn't required after that)
+	*/
+	log : typeof console === "undefined" ? function(){} : console.log
+};
 
-		for(;i < slashLen; i++){
-			// Split off and save anything that looks like a file type.
-			dotSplit = urlSlashes[i].split(".", 3);
+//helper functions
+var getBaseURL = function(pageURL){
+	var noUrlParams		= pageURL.split("?", 1)[0],
+		linkElements	= noUrlParams.split(re_slashes),
+		urlSlashes		= linkElements.splice(2).reverse(),
+		cleanedSegments = [],
+		i = 0,
 
-			//change from Readability: ensure that segments with multiple points get skipped
-			if (dotSplit.length === 2 && !re_noLetters.test(dotSplit[1]))
-				segment = dotSplit[0];
-			else segment = urlSlashes[i];
+		slashLen = urlSlashes.length;
 
-			if(segment.indexOf(",00") !== -1)
-				segment = segment.replace(",00", "");
+	if(slashLen < 2) return noUrlParams; //return what we got
 
-			cleanedSegments.push(segment);
-		}
+	//look if the first to elements get skipped
+	var first = urlSlashes[0],
+		second= urlSlashes[1];
 
-		// This is our final, cleaned, base article URL.
-		return linkElements[0] + "//" + linkElements[1] + "/" + cleanedSegments.reverse().join("/");
-	};
+	if((first.length < 3 && re_noLetters.test(first)) || first.toLowerCase() === "index" || re_justDigits.test(first)){
+		if(( second.length < 3 && re_noLetters.test(first) ) || re_justDigits.test(second)) i = 2;
+		else i = 1;
+	}
+	else{
+		if(re_pageInURL.test(first))
+			urlSlashes[0] = first.replace(re_pageInURL, "");
+
+		//if only the second one gets skiped, start at an index of 1 and position the first element there
+		if( (second.length < 3 && re_noLetters.test(first)) || re_justDigits.test(second))
+			urlSlashes[ i = 1 ] = first;
+
+		else if(re_pageInURL.test(second))
+			urlSlashes[1] = second.replace(re_pageInURL, "");
+	}
+
+	var dotSplit, segment;
+
+	for(;i < slashLen; i++){
+		// Split off and save anything that looks like a file type.
+		dotSplit = urlSlashes[i].split(".", 3);
+
+		//change from Readability: ensure that segments with multiple points get skipped
+		if (dotSplit.length === 2 && !re_noLetters.test(dotSplit[1]))
+			segment = dotSplit[0];
+		else segment = urlSlashes[i];
+
+		if(segment.indexOf(",00") !== -1)
+			segment = segment.replace(",00", "");
+
+		cleanedSegments.push(segment);
+	}
+
+	// This is our final, cleaned, base article URL.
+	return linkElements[0] + "//" + linkElements[1] + "/" + cleanedSegments.reverse().join("/");
+};
 
 var Readability = function(settings){
 	//our tree (used instead of the dom)
 	this._docElements = [new Element("document")];
-	this._topCandidate = this.__topParent = null;
+	this._topCandidate = this._topParent = null;
 	this._origTitle = this._headerTitle = "";
 	this._scannedLinks = {};
 	if(settings) this._processSettings(settings);
@@ -231,12 +232,14 @@ Readability.prototype._processSettings = function(settings){
 
 	if(!settings.convertLinks){
 		if(settings.link && settings.url)
-			this._settings.convertLinks = settings.url.resolve.bind(null, settings.link);
-		else this._settings.convertLinks = function(a){ return a; };
+			this._convertLinks = function(url){ 
+				settings.url.resolve(settings.link, url);
+			};
+		else this._convertLinks = function(url){ return url; };
 	}
-	else this._settings.convertLinks = settings.convertLinks;
+	else this._convertLinks = settings.convertLinks;
 
-	this._baseURL = settings.pageURL && getBaseURL(this._settings.pageURL);
+	this._baseURL = settings.pageURL && getBaseURL(settings.pageURL);
 };
 
 Readability.prototype._scanLink = function(elem){
@@ -244,9 +247,9 @@ Readability.prototype._scanLink = function(elem){
 
 	if(!href) return;
 
-	href = href.replace(re_closing, "");
+	href = this._convertLinks(href.replace(re_closing, ""));
 
-	if(href === "" || href === this._baseURL || href === this._settings.pageURL) return;
+	if(href === this._baseURL || href === this._settings.pageURL) return;
 
 	if(this._settings.linksToSkip[href]) return;
 
@@ -263,7 +266,7 @@ Readability.prototype._scanLink = function(elem){
 	if(re_nextLink.test(linkData)) score += 50;
 	if(re_pages.test(linkData)) score += 25;
 
-	if(/(first|last)/i.test(linkData)){
+	if(/first|last/i.test(linkData)){
 		if(!re_nextLink.test(text))
 			if(!(this._scannedLinks[href] && re_nextLink.test(this._scannedLinks[href].text)))
 				score -= 65;
@@ -277,9 +280,7 @@ Readability.prototype._scanLink = function(elem){
 
 	var pos = this._docElements.length,
 		posMatch = true,
-
 		negMatch = true,
-
 		parentData = "";
 
 	while(--pos !== 0){
@@ -321,7 +322,9 @@ Readability.prototype.onopentag = function(tagName, attributes){
 	this._docElements.push(elem);
 
 	if(parent.skip === true || tagsToSkip[tagName]){
-		elem.skip = true; return;
+		elem.attributes = attributes;
+		elem.skip = true;
+		return;
 	}
 
 	var value;
@@ -334,7 +337,6 @@ Readability.prototype.onopentag = function(tagName, attributes){
 	}
 
 	for(var name in attributes){
-		name = name.toLowerCase();
 		value = attributes[name];
 
 		if(name === "id" || name === "class"){
@@ -345,7 +347,7 @@ Readability.prototype.onopentag = function(tagName, attributes){
 		}
 		else if(name === "href" || name === "src"){
 			//fix links
-			elem.attributes[name] = this._settings.convertLinks(value);
+			elem.attributes[name] = this._convertLinks(value);
 		}
 		else if(this._settings.cleanAttributes){
 			if(goodAttributes[name])
@@ -370,15 +372,15 @@ Readability.prototype.onclosetag = function(tagname){
 	//if(tagname !== elem.name) this._settings.log("Tagname didn't match!:", tagname, "vs.", elem.name);
 
 	//prepare title
-	if(tagname === "title") this._origTitle = elem.getText();
+	if(this._settings.searchFurtherPages && tagname === "a"){
+		this._scanLink(elem);
+	}
+	else if(tagname === "title") this._origTitle = elem.getText();
 	else if(tagname === "h1"){
 		elem.skip = true;
 		if(this._headerTitle !== false)
 			if(!this._headerTitle) this._headerTitle = elem.getText();
 			else this._headerTitle = false;
-	}
-	else if(tagname === "a" && this._settings.searchFurtherPages){
-		this._scanLink(elem);
 	}
 
 	if(elem.skip) return;
@@ -388,8 +390,9 @@ Readability.prototype.onclosetag = function(tagname){
 	var i, j, cnvrt;
 	//clean conditionally
 	if(tagname === "p"){
-		if(!elem.info.tagCount.img && !elem.info.tagCount.embed && !elem.info.tagCount.object && elem.info.linkLength === 0 && elem.info.textLength === 0)
-			elem.skip = true;
+		if(!elem.info.tagCount.img && !elem.info.tagCount.embed && !elem.info.tagCount.object 
+			&& elem.info.linkLength === 0 && elem.info.textLength === 0)
+				elem.skip = true;
 	}
 	else if(embeds[tagname]){
 		//check if tag is wanted (youtube or vimeo)
@@ -445,9 +448,9 @@ Readability.prototype.onclosetag = function(tagname){
 		if(!this._topCandidate || elem.totalScore > this._topCandidate.totalScore){
 			this._topCandidate = elem;
 			if(elemLevel >= 0)
-				this.__topParent = this._docElements[elemLevel];
+				this._topParent = this._docElements[elemLevel];
 			else
-				this.__topParent = null;
+				this._topParent = null;
 		}
 	}
 };
@@ -468,11 +471,11 @@ Readability.prototype._getCandidateSiblings = function(){
 		this._topCandidate.name = "div";
 	}
 	//check all siblings
-	if(!this.__topParent)
+	if(!this._topParent)
 		return [this._topCandidate];
 
 	var ret = [],
-		childs = this.__topParent.children,
+		childs = this._topParent.children,
 		childNum = childs.length,
 		siblingScoreThreshold = Math.max(10, this._topCandidate.totalScore * 0.2);
 
