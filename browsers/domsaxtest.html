@@ -22,7 +22,7 @@
 <script>
 	var readable = new Readability();
 	readable.setSkipLevel(3);
-	saxParser(document.getElementsByTagName("html")[0], readable);
+	saxParser(document.childNodes[document.childNodes.length-1], readable);
 	article = readable.getArticle();
 	console.log(article);
 	function makeReadable(){
