@@ -1,6 +1,6 @@
 //list of values
 var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true,aside:true,header:true,nav:true,footer:true},
-	tagsToCount = {a:true,audio:true,blockquote:true,div:true,dl:true,embed:true,img:true,input:true,li:true,object:true,ol:true,p:true,pre:true,table:true,ul:true,video:true},
+	tagsToCount = {a:true,audio:true,blockquote:true,div:true,dl:true,embed:true,h2:true,img:true,input:true,li:true,object:true,ol:true,p:true,pre:true,table:true,ul:true,video:true},
 	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
 	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
 	goodAttributes = {href:true,src:true,title:true,alt:true/*,style:true*/},
@@ -59,7 +59,7 @@ Element.prototype = {
 	addInfo: function(){
 		var info = this.info,
 			childs = this.children,
-			childNum = this.children.length,
+			childNum = childs.length,
 			elem;
 		for(var i=0; i < childNum; i++){
 			elem = childs[i];
@@ -539,7 +539,7 @@ Readability.prototype.getTitle = function(){
 };
 
 Readability.prototype.getNextPage = function(){
-	var topScore = 49, topLink;
+	var topScore = 49, topLink = "";
 	for(var link in this._scannedLinks){
 		if(this._scannedLinks[link].score > topScore){
 			topLink = link;
@@ -564,6 +564,8 @@ Readability.prototype.getArticle = function(type){
 		textLength: elem.info.textLength,
 		score: this._topCandidate.totalScore
 	};
+	
+	//if(elem.info.tagCount.h2 === 1){}
 
 	if(type === "text")
 		ret.text = elem.getText().trim();
