@@ -31,7 +31,7 @@ Just run `require("readabilitySAX")`. You'll get three methods:
 
 #####Browsers
 
-A demo of how to use readabilitySAX inside a browser may be found at [jsFiddle](http://jsfiddle.net/DYE9k/embedded/). Some basic example files are inside the `/browsers` directory.
+A demo of how to use readabilitySAX inside a browser may be found at [jsFiddle](http://jsfiddle.net/pXqYR/embedded/). Some basic example files are inside the `/browsers` directory.
 
 #####YQL
 
