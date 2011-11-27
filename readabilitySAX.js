@@ -1,6 +1,5 @@
 //list of values
 var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true,aside:true,header:true,nav:true,footer:true},
-	tagsToCount = {a:true,audio:true,blockquote:true,div:true,dl:true,embed:true,h2:true,img:true,input:true,li:true,object:true,ol:true,p:true,pre:true,table:true,ul:true,video:true},
 	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
 	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
 	goodAttributes = {href:true,src:true,title:true,alt:true/*,style:true*/},
@@ -19,7 +18,7 @@ var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,s
 	re_pages = /pag(?:e|ing|inat)/i,
 	re_pagenum = /p(?:a|g|ag)?(?:e|ing|ination)?(?:=|\/)[0-9]{1,2}/i,
 
-	re_positive = /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,
+	re_positive = /article|body|content|entry|main|page|pagination|post|text|blog|story|hentry|instapaper_body/,
 	re_negative = /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
 	re_unlikelyCandidates =/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter|entry-unrelated/,
 	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
@@ -131,23 +130,6 @@ Element.prototype = {
 	}
 };
 
-//settings
-var Settings = {
-	stripUnlikelyCandidates: true,
-	weightClasses: true,
-	cleanConditionally: true,
-	cleanAttributes: true,
-	searchFurtherPages: true,
-	linksToSkip: {},	//pages that are already parsed
-	/*
-	url: null,			//nodes URL module (or anything that provides its api)
-	pageURL: null,		//URL of the page which is parsed
-	convertLinks: null, //function to redirect links
-	link: null,			//instance of url, may be provided if url was already parsed (pageURL isn't required after that)
-	*/
-	log : typeof console === "undefined" ? function(){} : console.log
-};
-
 //helper functions
 var getBaseURL = function(pageURL){
 	var noUrlParams		= pageURL.split("?", 1)[0],
@@ -210,11 +192,30 @@ var Readability = function(settings){
 	if(settings) this._processSettings(settings);
 };
 
+Readability.prototype._settings = {
+	stripUnlikelyCandidates: true,
+	weightClasses: true,
+	cleanConditionally: true,
+	cleanAttributes: true,
+	searchFurtherPages: true,
+	linksToSkip: {},	//pages that are already parsed
+	/*
+	url: null,			//nodes URL module (or anything that provides its api)
+	pageURL: null,		//URL of the page which is parsed
+	convertLinks: null, //function to redirect links
+	link: null,			//instance of url, may be provided if url was already parsed (pageURL isn't required after that)
+	*/
+	log : typeof console === "undefined" ? function(){} : console.log
+};
+
+Readability.prototype._convertLinks = function(a){return a;};
+
 Readability.prototype._processSettings = function(settings){
-	this._settings = this._settings || {};
+	var Settings = this._settings;
+	this._settings = {};
 
 	for(var i in Settings){
-		if(settings.hasOwnProperty(i))
+		if(typeof settings[i] !== "undefined")
 			this._settings[i] = settings[i];
 		else this._settings[i] = Settings[i];
 	}
@@ -230,12 +231,10 @@ Readability.prototype._processSettings = function(settings){
 		this._settings.pageURL = settings.pageURL.replace(re_closing, "");
 	}
 
-	if(!settings.convertLinks){
-		if(settings.link && settings.url)
-			this._convertLinks = function(url){ 
-				settings.url.resolve(settings.link, url);
-			};
-		else this._convertLinks = function(url){ return url; };
+	if(!settings.convertLinks && settings.link && settings.url){
+		this._convertLinks = function(url){ 
+			settings.url.resolve(settings.link, url);
+		};
 	}
 	else this._convertLinks = settings.convertLinks;
 
@@ -357,7 +356,7 @@ Readability.prototype.onopentag = function(tagName, attributes){
 	}
 
 	//add points for the tags name
-	elem.tagScore += tagCounts[tagName] || 0;
+	if(tagCounts[tagName]) elem.tagScore += tagCounts[tagName];
 
 	//do this now, so gc can remove it after onclosetag
 	parent.children.push(elem);
@@ -397,9 +396,12 @@ Readability.prototype.onclosetag = function(tagname){
 	else if(embeds[tagname]){
 		//check if tag is wanted (youtube or vimeo)
 		cnvrt = true;
-		for(i in elem.attributes)
-			if(elem.hasOwnProperty(i))
-				if(re_videos.test(i)){ cnvrt = false; break; }
+		for(i in elem.attributes){
+			if(re_videos.test(elem.attributes[i])){
+				cnvrt = false;
+				break;
+			}
+		}
 
 		if(cnvrt) elem.skip = true;
 	}
@@ -547,7 +549,7 @@ Readability.prototype.getNextPage = function(){
 		}
 	}
 
-	if(topScore !== 49) this._settings.log("Top link score:", topScore);
+	//if(topScore !== 49) this._settings.log("Top link score:", topScore);
 
 	return topLink;
 };
