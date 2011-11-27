@@ -1,4 +1,4 @@
-var getReadableContent = require("./getReadableContent.js"),
+var getReadableContent = require("../"),
 	Parser = require("htmlparser2/lib/Parser.js"),
 	Readability = require("../readabilitySAX.js"),
 	request = require("request"),
@@ -20,7 +20,7 @@ var processContent = function(data){
 	
 	console.log("parsing took (ms):", ben(1e3, function(){ parser.parseComplete(data); }));
 	console.log("getArticle took (ms):", ben(1e3,function(){ readable.getArticle(); }));
-	console.log("Whole parsing took (ms):",ben(500, function(){ getReadableContent.process(data, settings); }));
+	console.log("Whole parsing took (ms):", ben(500, function(){ getReadableContent.process(data, settings); }));
 };
 
 function debug(data){

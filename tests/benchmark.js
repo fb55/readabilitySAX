@@ -1,6 +1,6 @@
-var getReadableContent = require("./getReadableContent"),
+var getReadableContent = require("../"),
 	fs = require("fs"),
-	dir = "/Users/felix/Downloads/output/"
+	dir = "/path/to/files/"
 	files = fs.readdirSync(dir),
 	time = 0, total = files.length, skipped = 0, min = 1/0, 
 	max = -1/0;
