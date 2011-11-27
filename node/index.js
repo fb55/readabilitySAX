@@ -1,4 +1,4 @@
-var readability = require("../readabilitySAX"),
+var Readability = require("../ReadabilitySAX"),
 	request = require("request"),
 	url = require("url"),
 	Parser = require("htmlparser2/lib/Parser.js");
@@ -29,7 +29,7 @@ exports.get = function(uri, cb){
 				link: link
 			};
 			
-			readable = readability.process(settings);
+			readable = Readability.process(settings);
 			parser = new Parser(readable);
 		},
 		req = request({
@@ -60,7 +60,7 @@ exports.process = function(data, settings, skipLevel){
 	var contentLength = 0,
 		parser, ret;
 	
-	var readable = new readability(settings),
+	var readable = new Readability(settings),
 		parser = new Parser(readable);
 	
 	while(contentLength < 250 && skipLevel < 4){
@@ -81,3 +81,5 @@ exports.process = function(data, settings, skipLevel){
 	*/
 	return ret;
 };
+
+exports.Readability = Readability;
