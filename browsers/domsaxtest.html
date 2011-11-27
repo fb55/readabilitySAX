@@ -4,44 +4,28 @@
 	<div id=s>
 		<article class=hentry>
 			<h1>Just a random test for the good of some nation!</h1>
-			<p>asd asdf asdf asdf, asdf asdf ,asdf asdf asdf asdf, asdf asdf, asdf</p>
-			<p>asdfas asdf asdf asdf adsf</p>
+			<p>asd, asdf asdf asdf, asdf asdf ,asdf asdf asdf aasdfasdfasdfasdfasdfadsfasdfsdafasdfsdf, asdf asdf, asdfasdfasdfasdfasdfasdf</p>
+			<p>asdfas, asdf asdf, asdf adsf</p>
 		</article>
-		<p id=ad style="background:green"> This is trash!</p>
+		<p id=sponsor style="background:green"> This is trash!</p>
 		<aside> and this doesn't matter</aside>
 		<div class=hentry><p>This is more text, so make it readable!</p>
 		<p>
 			<a href="#" onclick="makeReadable(); return false;">Boom!</a>
 		</p></div>
+		<a href="/page/2">next</a>
 	</div>
 	
-<!--<script src="./DOMasSAX.js"></script>
+<script src="./DOMasSAX.js"></script>
 <script src="../readabilitySAX.js"></script>
 <script>
-	var cbs,
-		readable = new readability.process(cbs = {}, {});
-	saxParser(document.getElementsByTagName("html")[0], cbs);
-	readable = readable.getArticle();
-	document.body.innerHTML = "<h1>" + readable.title + "</h1>" +
-		readable.html;
-</script>
--->
-<script>
-	function makeReadable(){var p,m=new {process:function(v,d){var m={textarea:!0,head:!0,script:!0,noscript:!0,input:!0,select:!0,style:!0,link:!0,aside:!0,header:!0,nav:!0,footer:!0},r={embed:!0,object:!0,iframe:!0},w={href:!0,src:!0,title:!0,alt:!0},x={pre:!0,td:!0,blockquote:!0},y={address:!0,ol:!0,ul:!0,dl:!0,dd:!0,dt:!0,li:!0,form:!0},z={h2:!0,h3:!0,h4:!0,h5:!0,h6:!0,th:!0,body:!0},A={form:!0,table:!0,ul:!0,div:!0},D={p:!0,pre:!0,td:!0},i=["a","blockquote","dl","div","img","ol","p","pre","table","ul"],o={br:!0,
-p:!0,h2:!0,h3:!0,h4:!0,h5:!0,h6:!0,li:!0},j={p:!0,h2:!0,h3:!0,h4:!0,h5:!0,h6:!0},n={videos:/http:\/\/(www\.)?(vimeo|youtube|yahoo|flickr)\.com/i,skipFootnoteLink:/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,nextLink:/(next|weiter|continue|>([^\|]|$)|\u00bb([^\|]|$))/i,prevLink:/(prev|earl|old|new|<|\u00ab)/i,extraneous:/print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,positive:/article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/,negative:/combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-unlikelyCandidates:/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter|entry-unrelated/,okMaybeItsACandidate:/and|article|body|column|main|shadow/,badStart:/\.( |$)/,headers:/h[1-3]/,commas:/,[\s\,]{0,}/g,notHTMLChars:/[\'\"\<\>]/g},s=function(b,a){this.name=b;this.attributes=a;this.children=[];this.skip=!1;this.scores={attribute:0,tag:0,total:0};this.info={textLength:0,linkLength:0,commas:0,density:0,tagCount:{}};
-this.isCandidate=!1};s.prototype={addInfo:function(){for(var b=this.info,a=this.children,e=this.children.length,c,B=0;B<e;B++)if(c=a[B],typeof c==="string")b.textLength+=c.length,b.commas+=c.split(n.commas).length-1;else if(!c.skip){c.name==="a"?b.linkLength+=c.info.textLength+c.info.linkLength:(b.textLength+=c.info.textLength,b.linkLength+=c.info.linkLength);b.commas+=c.info.commas;var f=b.tagCount,g=c.info.tagCount,d=void 0;for(d in g)f[d]?f[d]+=g[d]:f[d]=g[d];b.tagCount[c.name]?b.tagCount[c.name]+=
-1:b.tagCount[c.name]=1}b.density=b.linkLength/(b.textLength+b.linkLength);if(isNaN(b.density))b.density=1;return b},getOuterHTML:function(){if(this.skip)return"";var b=["<"+this.name],a;if(k.stripAttributes)for(a in this.attributes)w[a]&&b.push(a+'="'+this.attributes[a]+'"');else for(a in elem.attributes)b.push(a+'="'+this.attributes[a]+'"');return b.join(" ")+">"+this.getInnerHTML()+"</"+this.name+">"},getInnerHTML:function(){for(var b=this.children,a=[],e=0,c=b.length;e<c;e++)typeof b[e]==="string"?
-a.push(b[e].replace(n.notHTMLChars,function(a){return"&#"+a.charCodeAt(0)+";"})):a.push(b[e].getOuterHTML());return a.join("")},getText:function(){for(var b=this.children,a=[],e,c=0,d=b.length;c<d;c++)typeof b[c]==="string"?a.push(b[c]):b[c].skip||(e=b[c].getText(),e!==""&&(j[b[c].name]&&a.push("\n"),a.push(e),o[b[c].name]&&a.push("\n")));return a.join("")}};var p={stripUnlikelyCandidates:!0,weightClasses:!0,cleanConditionally:!0,stripAttributes:!0,convertLinks:function(b){return b},pageURL:"",log:typeof console===
-"undefined"?function(){}:console.log},l=[new s("document",{})],g,C,q,t,k=Object.create(p),u;for(u in d)d.hasOwnProperty(u)&&(k[u]=d[u]);if(d.skipLevel){if(d.skipLevel>0)k.stripUnlikelyCandidates=!1;if(d.skipLevel>1)k.weightClasses=!1;if(d.skipLevel>2)k.cleanConditionally=!1}if(k.log===!1)k.log=function(){};v.onopentag=function(b){var a=l[l.length-1],e=b.name,c=new s(e,b.attributes);a.children.push(c);l.push(c);if(a.skip===!0)c.skip=!0;else if(m[e])c.skip=!0;else{var a=(b.attributes.id||"").toLowerCase(),
-b=(b.attributes["class"]||"").toLowerCase(),d=a+b;n.unlikelyCandidates.test(d)&&!n.okMaybeItsACandidate.test(d)?c.skip=!0:(e==="article"?c.scores.tag+=30:e==="div"?c.scores.tag+=5:x[e]?c.scores.tag+=3:y[e]?c.scores.tag-=3:z[e]&&(c.scores.tag-=5),n.negative.test(a)?c.scores.attribute-=25:n.positive.test(a)&&(c.scores.attribute+=25),n.negative.test(b)?c.scores.attribute-=25:n.positive.test(b)&&(c.scores.attribute+=25))}};v.ontext=function(b){b!==""&&l[l.length-1].children.push(b)};v.onclosetag=function(b){var a=
-l.pop(),e=l.length-1;b!==a.name&&k.log("Tagname didn't match!:"+b+" vs. "+a.name);if(b==="title")q=a.getText();else if(b==="h1")a.skip=!0,t!==!1&&(t=t?!1:a.getText());if(!a.skip){a.addInfo();var c,d;if(b==="p"){if(!a.info.tagCount.img&&!a.info.tagCount.embed&&!a.info.tagCount.object&&a.info.linkLength===0&&a.info.textLength===0)a.skip=!0}else if(r[b]){d=!0;for(c in a.attributes)if(a.hasOwnProperty(c)&&n.videos.test(c)){d=!1;break}if(d)a.skip=!0}else if(n.headers.test(b)){if(a.scores.attribute<0||
-a.info.density>0.33)a.skip=!0}else if(k.cleanConditionally&&A[b])if(c=a.info.tagCount.p||0,d=a.info.textLength+a.info.linkLength,a.info.tagCount.img>c)a.skip=!0;else if(a.info.tagCount.li-100>c&&b!=="ul"&&b!=="ol")a.skip=!0;else if(a.info.tagCount.input>Math.floor(c/3))a.skip=!0;else if(d<25&&(!a.info.tagCount.img||a.info.tagCount.img>2))a.skip=!0;else if(a.scores.attribute<25&&a.info.density>0.2)a.skip=!0;else if(a.scores.attribute>=25&&a.info.density>0.5)a.skip=!0;else if(a.info.tagCount.embed===
-1&&d<75||a.info.tagCount.embed>1)a.skip=!0;if(!a.skip){if(a.attributes.href)a.attributes.href=k.convertLinks(a.attributes.href);if(a.attributes.src)a.attributes.src=k.convertLinks(a.attributes.src);var f=D[b];if(!f&&b==="div"){d=!0;c=0;for(b=i.length;c<b;c++)a.info.tagCount[i[c]]&&(d=!1);if(d)a.name="p",f=!0}if(f&&a.info.textLength+a.info.linkLength>=25&&e>0)l[e].isCandidate=l[e-1].isCandidate=!0,b=1+a.info.commas+Math.min(Math.floor((a.info.textLength+a.info.linkLength)/100),3),l[e].scores.tag+=
-b,l[e-1].scores.tag+=b/2;if(a.isCandidate&&(a.scores.total=Math.floor((a.scores.tag+a.scores.attribute)*(1-a.info.density)),!g||a.scores.total>g.scores.total))g=a,C=e>=0?l[e]:null}}};this.getTitle=function(){var b=q||"";if(b.match(/ [\|\-] /))b=q.replace(/(.*)[\|\-] .*/gi,"$1"),b.split(" ",3).length<3&&(b=q.replace(/[^\|\-]*[\|\-](.*)/gi,"$1"));else if(b.indexOf(": ")!==-1)b=q.replace(/.*:(.*)/gi,"$1"),b.split(" ",3).length<3&&(b=q.replace(/[^:]*[:](.*)/gi,"$1"));else if(b.length>150||b.length<15)t&&
-(b=t);b=b.trim();b.split(" ",5).length<5&&(b=q);return b};this.getArticle=function(b){var a={title:this.getTitle(),nextPage:""};if(b==="node")a.node=g;var d=new s("",{}),c;if(!g){try{g=l[0].children.pop().children.pop()}catch(j){g=new s("",{})}g.name="div"}if(C){c=[];for(var f=C.children,A=f.length,k=Math.max(10,g.scores.total*0.2),h=0;h<A;h++)if(typeof f[h]!=="string"){var i=!1;if(f[h]===g)i=!0;else{var o=0;g.attributes["class"]&&g.attributes["class"]===f[h].attributes["class"]&&(o+=g.scores.total*
-0.2);f[h].scores.total+o>=k?i=!0:f[h].name==="p"&&(f[h].info.textLength>80&&f[h].info.density<0.25?i=!0:f[h].info.textLength<80&&f[h].info.density===0&&f[h].getText().search(n.badStart)!==-1&&(i=!0))}if(i){if(f[h].name!=="p")f[h].name="div";c.push(f[h])}}}else c=[g];d.children=c;d.addInfo();a.textLength=d.info.textLength;b==="text"?a.text=d.getText().trim():a.html=d.getInnerHTML().replace(/(<\/?br\s*\/?>(\s|&nbsp;?)*)+/g,"<br/>").replace(/(<br[^>]*>[ \n\r\t]*){2,}/g,"</p><p>").replace(/<(\/?)font[^>]*>/g,
-"<$1span>").replace(/<br[^>]*>\s*<p/g,"<p");a.score=g.scores.total;a.info=d.info;return a}}}.process(p={},{});(function(m,d){function p(d){for(var m={name:d.tagName.toLowerCase(),attributes:{}},i=d.attributes,o=i.length,j=0;j<o;j++)m.attributes[i[j].name+""]=i[j].value;w(m);d=d.childNodes;i=d.length;for(j=0;j<i;j++)o=d[j].nodeType,o===3?y(d[j].textContent):o===1?p(d[j]):o===8&&z(d[j].toString());x(m.name)}if(typeof d!=="object")throw"please provide callbacks!";var r=function(){},w=d.onopentag||r,
-x=d.onclosetag||r,y=d.ontext||r,z=d.oncomment||r;p(m)})(document.getElementsByTagName("html")[0],p);m=m.getArticle();document.body.innerHTML="<h1>"+m.title+"</h1>"+m.html};
+	var readable = new Readability();
+	readable.setSkipLevel(3);
+	saxParser(document.getElementsByTagName("html")[0], readable);
+	article = readable.getArticle();
+	console.log(article);
+	function makeReadable(){
+		document.body.innerHTML = "<h1>" + article.title + "</h1>" + article.html;
+	}
 </script>
 </body>
