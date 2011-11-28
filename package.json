@@ -14,6 +14,6 @@
         "htmlparser2": ">= 1.9.0"
     },
     "scripts": {
-    	"test": "node ./node_examples/mkread.js"
+    	"test": "node ./tests/test_output.js"
     }
 }
