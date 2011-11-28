@@ -3,19 +3,10 @@ var getReadableContent = require("../"),
 	Readability = require("../readabilitySAX.js"),
 	request = require("request"),
 	url = require("url"),
-	ben = require("ben"),
-	link;
+	ben = require("ben");
 
-var getSettings = function(link){
-	return link ? {
-		convertLinks: url.resolve.bind(null, link),
-		link: link
-	} : {};
-};
-
-var processContent = function(data){
-	var settings = getSettings(link),
-		readable = new Readability(settings),
+var processContent = function(data, settings){
+	var readable = new Readability(settings),
 		parser = new Parser(readable);
 	
 	console.log("parsing took (ms):", ben(1e3, function(){ parser.parseComplete(data); }));
@@ -23,27 +14,15 @@ var processContent = function(data){
 	console.log("Whole parsing took (ms):", ben(500, function(){ getReadableContent.process(data, settings); }));
 };
 
-function debug(data){
-	var readable = new Readability(getSettings(link)),
-		parser = new Parser(readable);
-	
-	parser.parseComplete(data);
-	
-	var data = readable.getArticle("text");
-	
-	data.text = data.text.substr(0, 200).replace(/[\\\']/g, "");
-	
-	console.log(data);
-	console.log("Found links:", Object.keys(readable._scannedLinks).length);
-};
-
 if(process.argv.length > 2){
 	console.log("connecting to:", process.argv[2]);
 	
 	request(process.argv[2], function(err, resp, body){
-		link = resp.request.uri;
-		processContent(body);
+		processContent(body, {
+			convertLinks: function(link){ url.resolve(resp.request.uri, link); },
+			link: resp.request.uri
+		});
 	});
 }
 else
-	require("fs").readFile(__dirname + "/testpage.html", function(a,b){processContent(b.toString("utf8"));});
+	require("fs").readFile(__dirname + "/testpage.html", function(a,b){processContent(b.toString("utf8"), {});});
