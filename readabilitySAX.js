@@ -213,6 +213,8 @@ Readability.prototype._convertLinks = function(a){return a;};
 Readability.prototype._processSettings = function(settings){
 	var Settings = this._settings;
 	this._settings = {};
+	
+	var link;
 
 	for(var i in Settings){
 		if(typeof settings[i] !== "undefined")
@@ -222,8 +224,9 @@ Readability.prototype._processSettings = function(settings){
 
 	if(settings.log === false) this._settings.log = function(){};
 
-	if(!settings.link && settings.url && settings.pageURL){
-		this._settings.link = settings.url.parse(settings.pageURL);
+	if(settings.link) link = settings.link;
+	else if(settings.url && settings.pageURL){
+		link = settings.url.parse(settings.pageURL);
 	}
 
 	//clean pageURL for search of further pages
@@ -231,12 +234,14 @@ Readability.prototype._processSettings = function(settings){
 		this._settings.pageURL = settings.pageURL.replace(re_closing, "");
 	}
 
-	if(!settings.convertLinks && settings.link && settings.url){
+	if(settings.convertLinks){
+		this._convertLinks = settings.convertLinks;
+	}
+	else if(link && settings.url){
 		this._convertLinks = function(url){ 
 			settings.url.resolve(settings.link, url);
 		};
 	}
-	else this._convertLinks = settings.convertLinks;
 
 	this._baseURL = settings.pageURL && getBaseURL(settings.pageURL);
 };
