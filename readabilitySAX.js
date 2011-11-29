@@ -26,6 +26,7 @@ var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,s
 	re_badStart = /\.(?: |$)/,
 
 	re_pageInURL = /(?:[_-]?p[a-zA-Z]*|[_-])\d{1,2}$/,
+	re_badFirst = /^(?:(?:[^a-zA-Z]{0,3})|(?:index)|(?:\d+))$/,
 	re_noLetters = /[^a-zA-Z]/,
 	re_digits = /\d/,
 	re_justDigits = /^\d{1,2}$/,
@@ -134,57 +135,6 @@ Element.prototype = {
 };
 
 //helper functions
-var getBaseURL = function(pageURL){
-	var noUrlParams		= pageURL.replace(/\?.*/, ""),
-		linkElements	= noUrlParams.split(re_slashes),
-		urlSlashes		= linkElements.slice(2).reverse(),
-		cleanedSegments = [],
-		i = 0,
-
-		slashLen = urlSlashes.length;
-
-	if(slashLen < 2) return noUrlParams; //return what we got
-
-	//look if the first to elements get skipped
-	var first = urlSlashes[0],
-		second= urlSlashes[1];
-
-	if((first.length < 3 && re_noLetters.test(first)) || first.toLowerCase() === "index" || re_justDigits.test(first)){
-		if(( second.length < 3 && re_noLetters.test(first) ) || re_justDigits.test(second)) i = 2;
-		else i = 1;
-	}
-	else{
-		if(re_pageInURL.test(first))
-			urlSlashes[0] = first.replace(re_pageInURL, "");
-
-		//if only the second one gets skiped, start at an index of 1 and position the first element there
-		if( (second.length < 3 && re_noLetters.test(first)) || re_justDigits.test(second))
-			urlSlashes[ i = 1 ] = first;
-
-		else if(re_pageInURL.test(second))
-			urlSlashes[1] = second.replace(re_pageInURL, "");
-	}
-
-	var dotSplit, segment;
-
-	for(;i < slashLen; i++){
-		// Split off and save anything that looks like a file type.
-		dotSplit = urlSlashes[i].split(".", 3);
-
-		//change from Readability: ensure that segments with multiple points get skipped
-		if (dotSplit.length === 2 && !re_noLetters.test(dotSplit[1]))
-			segment = dotSplit[0];
-		else segment = urlSlashes[i];
-
-		if(segment.indexOf(",00") !== -1)
-			segment = segment.replace(",00", "");
-
-		cleanedSegments.push(segment);
-	}
-
-	// This is our final, cleaned, base article URL.
-	return linkElements[0] + "//" + linkElements[1] + "/" + cleanedSegments.reverse().join("/");
-};
 
 var Readability = function(settings){
 	//our tree (used instead of the dom)
@@ -245,6 +195,56 @@ Readability.prototype._convertLinks = function(path){
 	return this._url.protocol + "//" + this._url.domain + "/" + path;
 };
 
+Readability.prototype._getBaseURL = function(){
+	var noUrlParams		= this._url.full.replace(/\?.*/, ""),
+		urlSlashes		= noUrlParams.split(re_slashes).slice(2).reverse(),
+		slashLen		= urlSlashes.length,
+		cleanedSegments = [],
+		i = 0;
+
+	if(this._url.path < 2) return noUrlParams; //return what we got
+
+	//look if the first to elements get skipped
+	var first = urlSlashes[0],
+		second= urlSlashes[1];
+
+	if(re_badFirst.test(first)){
+		if(( second.length < 3 && re_noLetters.test(first) ) || re_justDigits.test(second)) i = 2;
+		else i = 1;
+	}
+	else{
+		if(re_pageInURL.test(first))
+			urlSlashes[0] = first.replace(re_pageInURL, "");
+
+		//if only the second one gets skiped, start at an index of 1 and position the first element there
+		if( (second.length < 3 && re_noLetters.test(first)) || re_justDigits.test(second))
+			urlSlashes[ i = 1 ] = first;
+
+		else if(re_pageInURL.test(second))
+			urlSlashes[1] = second.replace(re_pageInURL, "");
+	}
+
+	var dotSplit, segment;
+
+	for(;i < slashLen; i++){
+		// Split off and save anything that looks like a file type.
+		dotSplit = urlSlashes[i].split(".", 3);
+
+		//change from Readability: ensure that segments with multiple points get skipped
+		if (dotSplit.length === 2 && !re_noLetters.test(dotSplit[1]))
+			segment = dotSplit[0];
+		else segment = urlSlashes[i];
+
+		if(segment.indexOf(",00") !== -1)
+			segment = segment.replace(",00", "");
+
+		cleanedSegments.push(segment);
+	}
+
+	// This is our final, cleaned, base article URL.
+	return this._url.protocol + "//" + this._url.domain + "/" + cleanedSegments.reverse().join("/");
+};
+
 Readability.prototype._processSettings = function(settings){
 	var Settings = this._settings;
 	this._settings = {};
@@ -266,10 +266,9 @@ Readability.prototype._processSettings = function(settings){
 			protocol: path[0],
 			domain: path[1],
 			path: path.slice(2, -1),
-			full: settings.pageURL
+			full: settings.pageURL.replace(re_closing,"")
 		};
-		this._settings.pageURL = settings.pageURL.replace(re_closing, "");
-		this._baseURL = getBaseURL(settings.pageURL);
+		this._baseURL = this._getBaseURL();
 	}
 };
 
@@ -280,11 +279,11 @@ Readability.prototype._scanLink = function(elem){
 
 	href = this._convertLinks(href.replace(re_closing, ""));
 
-	if(href === this._baseURL || href === this._settings.pageURL) return;
+	if(href === this._baseURL || href === this._url.full) return;
 
 	if(this._settings.linksToSkip[href]) return;
 
-	if(this._settings.pageURL && href.split(re_slashes, 2)[1] !== this._settings.pageURL.split(re_slashes, 2)[1]) return;
+	if(this._url.full && href.split(re_slashes, 2)[1] !== this._url.full.split(re_slashes, 2)[1]) return;
 
 	var text = elem.getText();
 
