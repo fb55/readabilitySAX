@@ -5,7 +5,10 @@ var getReadableContent = require("../"),
 	Readability = require("../readabilitySAX.js");
 
 function debug(data){
-	var readable = new Readability(),
+	var readable = new Readability({
+		pageURL: "http://howtonode.org/heat-tracer",
+		resolvePaths: true
+	}),
 		parser = new Parser(readable);
 	
 	parser.parseComplete(data);
