@@ -19,10 +19,10 @@ if(process.argv.length > 2){
 	
 	request(process.argv[2], function(err, resp, body){
 		processContent(body, {
-			convertLinks: function(link){ url.resolve(resp.request.uri, link); },
-			link: resp.request.uri
+			pageURL: url.format(resp.request.uri)
 		});
 	});
 }
-else
-	require("fs").readFile(__dirname + "/testpage.html", function(a,b){processContent(b.toString("utf8"), {});});
+else require("fs").readFile(__dirname + "/testpage.html", function(a,b){
+	processContent(b.toString("utf8"), {pageURL: "http://howtonode.org/heat-tracer"});
+});
