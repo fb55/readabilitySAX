@@ -5,10 +5,11 @@ var Readability = require("../ReadabilitySAX"),
 
 exports.get = function(uri, cb){
 	function onErr(err){
+		err = err.toString();
 		cb({
 			title:	"Error",
-	    	text:	err.toString(),
-	    	html:	"<b>" + err.toString() + "</b>",
+	    	text:	err,
+	    	html:	"<b>" + err + "</b>",
 	    	error: true
 	    });
 	}
@@ -22,12 +23,7 @@ exports.get = function(uri, cb){
 		onResponseCB = function(err, resp){
 			if(err) return onErr(err);
 			
-			link = resp.request.uri;
-			
-			settings = {
-				convertLinks: url.resolve.bind(null, link),
-				link: link
-			};
+			settings = { pageURL: url.format(resp.request.uri) };
 			
 			readable = new Readability(settings);
 			parser = new Parser(readable);
