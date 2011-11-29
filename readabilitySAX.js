@@ -11,12 +11,12 @@ var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,s
 	divToPElements = ["a","blockquote","dl","div","img","ol","p","pre","table","ul"],
 
 	re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/i,
-	re_skipFootnoteLink =/^\s*(?:\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i,
-	re_nextLink = /next|weiter|continue|>(?:[^\|]|$)|»(?:[^\|]|$)/i,
+	re_skipFootnoteLink =/^\s*(?:\[?[a-z\d]{1,2}\]?|^|edit|citation needed)\s*$/i,
+	re_nextLink = /next|weiter|continue|[>»](?:[^\|]|$)/i,
 	re_prevLink = /prev|earl|old|new|<|«/i,
 	re_extraneous = /print|archive|comment|discuss|e-?mail|share|reply|all|login|sign|single/i,
 	re_pages = /pag(?:e|ing|inat)/i,
-	re_pagenum = /p(?:a|g|ag)?(?:e|ing|ination)?(?:=|\/)[0-9]{1,2}/i,
+	re_pagenum = /p(?:a|g|ag)?(?:e|ing|ination)?(?:=|\/)\d{1,2}/i,
 
 	re_positive = /article|body|content|entry|main|page|pagination|post|text|blog|story|hentry|instapaper_body/,
 	re_negative = /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
@@ -25,11 +25,14 @@ var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,s
 
 	re_badStart = /\.(?: |$)/,
 
-	re_pageInURL = /(?:(?:_|-)?p[a-zA-Z]*|(?:_|-))[0-9]{1,2}$/,
+	re_pageInURL = /(?:[_-]?p[a-zA-Z]*|[_-])\d{1,2}$/,
 	re_noLetters = /[^a-zA-Z]/,
 	re_digits = /\d/,
 	re_justDigits = /^\d{1,2}$/,
 	re_slashes = /\/+/,
+
+	re_protocol = /^\w+\:/,
+	re_cleanPaths = /\/\.(?!\.)|\/[^\/]*\/\.\./g,
 	
 	re_closing = /\/?(?:#.*)?$/,
 
@@ -132,9 +135,9 @@ Element.prototype = {
 
 //helper functions
 var getBaseURL = function(pageURL){
-	var noUrlParams		= pageURL.split("?", 1)[0],
+	var noUrlParams		= pageURL.replace(/\?.*/, ""),
 		linkElements	= noUrlParams.split(re_slashes),
-		urlSlashes		= linkElements.splice(2).reverse(),
+		urlSlashes		= linkElements.slice(2).reverse(),
 		cleanedSegments = [],
 		i = 0,
 
@@ -200,15 +203,47 @@ Readability.prototype._settings = {
 	searchFurtherPages: true,
 	linksToSkip: {},	//pages that are already parsed
 	/*
-	url: null,			//nodes URL module (or anything that provides its api)
 	pageURL: null,		//URL of the page which is parsed
-	convertLinks: null, //function to redirect links
-	link: null,			//instance of url, may be provided if url was already parsed (pageURL isn't required after that)
 	*/
+	resolvePaths: false,//indicates wheter ".." and "." inside paths should be eliminated
 	log : typeof console === "undefined" ? function(){} : console.log
 };
 
-Readability.prototype._convertLinks = function(a){return a;};
+Readability.prototype._convertLinks = function(path){
+	if(!this._url) return path;
+	if(!path) return this._url.full;
+
+	//Fix javascript:, mailto: links
+	if(re_protocol.test(path)) return path;
+
+	var path_split = path.split("/");
+
+	//special cases
+	if(path_split[1] === ""){
+		//paths starting with "//"
+		if(path_split[0] === ""){
+			return this._url.protocol + path;
+		}
+		//full domain (if not caught before)
+		if(path_split[0].substr(-1) === ":"){
+			return path;
+		}
+	}
+
+	if(path_split[0] === ""){ //starting with "/"
+		path.shift();
+	}
+	else path_split = this._url.path.concat(path_split);
+
+	path = path_split.join("/");
+	
+	if(this._settings.resolvePaths){
+		//this will delete most constructs, but not any
+		path = path.replace(re_cleanPaths, "");
+	}
+
+	return this._url.protocol + "//" + this._url.domain + "/" + path;
+};
 
 Readability.prototype._processSettings = function(settings){
 	var Settings = this._settings;
@@ -223,27 +258,19 @@ Readability.prototype._processSettings = function(settings){
 	}
 
 	if(settings.log === false) this._settings.log = function(){};
-
-	if(settings.link) link = settings.link;
-	else if(settings.url && settings.pageURL){
-		link = settings.url.parse(settings.pageURL);
-	}
-
-	//clean pageURL for search of further pages
+	
+	var path;
 	if(settings.pageURL){
-		this._settings.pageURL = settings.pageURL.replace(re_closing, "");
-	}
-
-	if(settings.convertLinks){
-		this._convertLinks = settings.convertLinks;
-	}
-	else if(link && settings.url){
-		this._convertLinks = function(url){ 
-			settings.url.resolve(settings.link, url);
+		path = settings.pageURL.split(re_slashes);
+		this._url = {
+			protocol: path[0],
+			domain: path[1],
+			path: path.slice(2, -1),
+			full: settings.pageURL
 		};
+		this._settings.pageURL = settings.pageURL.replace(re_closing, "");
+		this._baseURL = getBaseURL(settings.pageURL);
 	}
-
-	this._baseURL = settings.pageURL && getBaseURL(settings.pageURL);
 };
 
 Readability.prototype._scanLink = function(elem){
@@ -498,7 +525,7 @@ Readability.prototype._getCandidateSiblings = function(){
 			if((childs[i].totalScore + contentBonus) >= siblingScoreThreshold) append = true;
 			else if(childs[i].name === "p")
 				if(childs[i].info.textLength > 80 && childs[i].info.density < 0.25) append = true;
-				else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && childs[i].getText().search(re_badStart) !== -1)
+				else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && re_badStart.test(childs[i].getText()))
 					append = true;
 		}
 		if(append){
@@ -513,6 +540,11 @@ Readability.prototype._getCandidateSiblings = function(){
 
 //skipLevel is a shortcut to allow more elements of the page
 Readability.prototype.setSkipLevel = function(skipLevel){
+	//if the prototype is still used for settings
+	if(this._settings === Readability.prototype._settings){
+		this._processSettings({});
+	}
+
 	if(this._settings.skipLevel > 0) this._settings.stripUnlikelyCandidates = false;
 	if(this._settings.skipLevel > 1) this._settings.weightClasses = false;
 	if(this._settings.skipLevel > 2) this._settings.cleanConditionally = false;
