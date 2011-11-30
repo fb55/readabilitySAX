@@ -23,7 +23,7 @@ var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,s
 
 	re_positive = /article|body|content|entry|main|pag(?:e|ination)|post|text|blog|story/,
 	re_negative = /com(?:bx|ment|-)|contact|foot(?:ter|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-	re_unlikelyCandidates = /ad-break|agegate|com(?:bx|disqus|er)|extra|foot|header|ment|menu|munity)|pag(?:ination|popup|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/,
+	re_unlikelyCandidates =/ad-break|agegate|com(?:bx|ment|munity)|disqus|extra|foot|header|menu|pag(?:er|ination)|popup|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/
 	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 
 	re_badStart = /\.(?: |$)/,
