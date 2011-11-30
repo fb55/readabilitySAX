@@ -10,23 +10,26 @@ var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,s
 
 	divToPElements = ["a","blockquote","dl","div","img","ol","p","pre","table","ul"],
 
-	re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/i,
+	re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/,
 	re_skipFootnoteLink =/^\s*(?:\[?[a-z\d]{1,2}\]?|^|edit|citation needed)\s*$/i,
-	re_nextLink = /next|weiter|continue|[>»](?:[^\|]|$)/i,
-	re_prevLink = /prev|earl|old|new|<|«/i,
-	re_extraneous = /print|archive|comment|discuss|e-?mail|share|reply|all|login|sign|single/i,
+	re_nextLink = /[>»]|continue|next|weiter(?:[^\|]|$)/i,
+	re_prevLink = /[<«]|earl|new|old|prev/i,
+	re_extraneous = /all|archive|comment|discuss|e-?mail|login|print|reply|share|sign|single/i,
 	re_pages = /pag(?:e|ing|inat)/i,
 	re_pagenum = /p(?:a|g|ag)?(?:e|ing|ination)?(?:=|\/)\d{1,2}/i,
+	
+	re_safe = /hentry|instapaper_body/,
+	re_final = /first|last/i,
 
-	re_positive = /article|body|content|entry|main|page|pagination|post|text|blog|story|hentry|instapaper_body/,
-	re_negative = /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-	re_unlikelyCandidates =/combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter|entry-unrelated/,
+	re_positive = /article|body|content|entry|main|pag(?:e|ination)|post|text|blog|story/,
+	re_negative = /com(?:bx|ment|-)|contact|foot(?:ter|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
+	re_unlikelyCandidates = /ad-break|agegate|com(?:bx|disqus|er)|extra|foot|header|ment|menu|munity)|pag(?:ination|popup|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/,
 	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 
 	re_badStart = /\.(?: |$)/,
 
 	re_pageInURL = /(?:[_-]?p[a-zA-Z]*|[_-])\d{1,2}$/,
-	re_badFirst = /^(?:(?:[^a-zA-Z]{0,3})|(?:index)|(?:\d+))$/i,
+	re_badFirst = /^(?:[^a-zA-Z]{0,3}|index|\d+)$/i,
 	re_noLetters = /[^a-zA-Z]/,
 	re_digits = /\d/,
 	re_justDigits = /^\d{1,2}$/,
@@ -297,7 +300,7 @@ Readability.prototype._scanLink = function(elem){
 	if(re_nextLink.test(linkData)) score += 50;
 	if(re_pages.test(linkData)) score += 25;
 
-	if(/first|last/i.test(linkData)){
+	if(re_final.test(linkData)){
 		if(!re_nextLink.test(text))
 			if(!(this._scannedLinks[href] && re_nextLink.test(this._scannedLinks[href].text)))
 				score -= 65;
@@ -371,7 +374,9 @@ Readability.prototype.onopentag = function(tagName, attributes){
 		value = attributes[name];
 
 		if(name === "id" || name === "class"){
-			if(re_negative.test(value)) elem.attributeScore -= 25;
+			value = value.toLowerCase();
+			if(re_safe.test(value)) elem.attributeScore += 300;
+			else if(re_negative.test(value)) elem.attributeScore -= 25;
 			else if(re_positive.test(value)) elem.attributeScore += 25;
 
 			elem.attributes[name] = value;
