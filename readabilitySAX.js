@@ -16,20 +16,20 @@ var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,s
 	re_prevLink = /[<«]|earl|new|old|prev/i,
 	re_extraneous = /all|archive|comment|discuss|e-?mail|login|print|reply|share|sign|single/i,
 	re_pages = /pag(?:e|ing|inat)/i,
-	re_pagenum = /p(?:a|g|ag)?(?:e|ing|ination)?(?:=|\/)\d{1,2}/i,
+	re_pagenum = /p[ag]{0,2}(?:e|ing|ination)?[=\/]\d{1,2}/i,
 	
 	re_safe = /hentry|instapaper_body/,
 	re_final = /first|last/i,
 
 	re_positive = /article|body|content|entry|main|pag(?:e|ination)|post|text|blog|story/,
 	re_negative = /com(?:bx|ment|-)|contact|foot(?:ter|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-	re_unlikelyCandidates =/ad-break|agegate|com(?:bx|ment|munity)|disqus|extra|foot|header|menu|pag(?:er|ination)|popup|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/
+	re_unlikelyCandidates = /ad-break|agegate|com(?:bx|ment|munity)|disqus|extra|foot|header|menu|pag(?:er|ination)|popup|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/,
 	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 
 	re_badStart = /\.(?: |$)/,
 
 	re_pageInURL = /(?:[_-]?p[a-zA-Z]*|[_-])\d{1,2}$/,
-	re_badFirst = /^(?:[^a-zA-Z]{0,3}|index|\d+)$/i,
+	re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i,
 	re_noLetters = /[^a-zA-Z]/,
 	re_digits = /\d/,
 	re_justDigits = /^\d{1,2}$/,
