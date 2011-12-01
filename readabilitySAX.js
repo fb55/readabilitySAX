@@ -40,7 +40,7 @@ var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,s
 	
 	re_closing = /\/?(?:#.*)?$/,
 
-	re_commas	 = /,[\s\,]*/g;
+	re_commas = /,[\s\,]*/g;
 
 //the tree element
 var Element = function(tagName){
@@ -375,7 +375,10 @@ Readability.prototype.onopentag = function(tagName, attributes){
 
 		if(name === "id" || name === "class"){
 			value = value.toLowerCase();
-			if(re_safe.test(value)) elem.attributeScore += 300;
+			if(re_safe.test(value)){
+				elem.attributeScore += 300;
+				elem.isCandidate = true;
+			}
 			else if(re_negative.test(value)) elem.attributeScore -= 25;
 			else if(re_positive.test(value)) elem.attributeScore += 25;
 
