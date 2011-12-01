@@ -15,16 +15,21 @@ function debug(data){
 	
 	var data = readable.getArticle();
 	
-	if(JSON.stringify(data) !== JSON.stringify(expected_data)){
-		console.log(data);throw Error("Didn't got expected output!");
-		}
+	test(JSON.stringify(data), JSON.stringify(expected_data),
+		"Didn't got expected output!");
+	test(require("util").inspect(readable._currentElement,false,1/0).length, 1052396, 
+		"tree had false size!");
+	test(Object.keys(readable._scannedLinks).length, expected_links, 
+		"lost some links!");
 
-	if(JSON.stringify(readable._docElements[0]).length !== 264886)
-		throw Error("tree had false size!");
-
-	if(Object.keys(readable._scannedLinks).length !== expected_links)
-		throw Error("lost some links!");
 	console.log("Passed!");
+};
+
+function test(got, expected, message){
+	if(got !== expected){
+		console.log(got);
+		throw Error(message);
+	}
 };
 
 var expected_links = 2;
