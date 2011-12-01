@@ -26,7 +26,7 @@ var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,s
 	re_unlikelyCandidates = /ad-break|agegate|com(?:bx|ment|munity)|disqus|extra|foot|header|menu|pag(?:er|ination)|popup|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/,
 	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 
-	re_badStart = /\.(?: |$)/,
+	re_sentence = /\.(?: |$)/,
 
 	re_pageInURL = /(?:[_-]?p[a-zA-Z]*|[_-])\d{1,2}$/,
 	re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i,
@@ -43,8 +43,9 @@ var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,s
 	re_commas = /,[\s\,]*/g;
 
 //the tree element
-var Element = function(tagName){
+var Element = function(tagName, parent){
 		this.name = tagName;
+		this.parent = parent;
 		this.attributes = {};
 		this.children = [];
 		this.skip = false;
@@ -73,7 +74,7 @@ Element.prototype = {
 				info.textLength += elem.length;
 				info.commas += elem.split(re_commas).length - 1;
 			}
-			else if(!elem.skip){
+			else {
 				if(elem.name === "a"){
 					info.linkLength += elem.info.textLength + elem.info.linkLength;
 				}
@@ -98,13 +99,10 @@ Element.prototype = {
 		return info;
 	},
 	getOuterHTML: function(){
-		if(this.skip) return "";
-		var ret = "<" + this.name,
-			i;
+		var ret = "<" + this.name;
 
-		for(i in this.attributes)
-			if(this.attributes.hasOwnProperty(i))
-				ret += " " + i + "=\"" + this.attributes[i] + "\"";
+		for(var i in this.attributes)
+			ret += " " + i + "=\"" + this.attributes[i] + "\"";
 
 		return ret + ">" + this.getInnerHTML() + "</" + this.name + ">";
 	},
@@ -121,7 +119,7 @@ Element.prototype = {
 		var nodes = this.children, ret = "", text;
 		for(var i = 0, j = nodes.length; i < j; i++){
 			if(typeof nodes[i] === "string") ret += nodes[i];
-			else if(!nodes[i].skip){
+			else {
 				text = nodes[i].getText();
 
 				if(text === "") continue;
@@ -141,8 +139,8 @@ Element.prototype = {
 
 var Readability = function(settings){
 	//our tree (used instead of the dom)
-	this._docElements = [new Element("document")];
-	this._topCandidate = this._topParent = null;
+	this._currentElement = new Element("document");
+	this._topCandidate = null;
 	this._origTitle = this._headerTitle = "";
 	this._scannedLinks = {};
 	if(settings) this._processSettings(settings);
@@ -312,13 +310,13 @@ Readability.prototype._scanLink = function(elem){
 	if(re_pagenum.test(href) || re_pages.test(href)) score += 25;
 	if(re_extraneous.test(href)) score -= 15;
 
-	var pos = this._docElements.length,
+	var pos = elem,
 		posMatch = true,
 		negMatch = true,
 		parentData = "";
 
-	while(--pos !== 0){
-		parentData = this._docElements[pos].attributes["class"] + " " + this._docElements[pos].attributes.id;
+	while(pos = pos.parent){
+		parentData = pos.attributes["class"] + " " + pos.attributes.id;
 		if(parentData === " ") continue;
 		if(posMatch && re_pages.test(parentData)){
 			score += 25;
@@ -343,17 +341,17 @@ Readability.prototype._scanLink = function(elem){
 		this._scannedLinks[href].text += " | " + text;
 	}
 	else this._scannedLinks[href] = {
-			score: score,
-			text: text
-		};
+		score: score,
+		text: text
+	};
 };
 
 //parser methods
 Readability.prototype.onopentag = function(tagName, attributes){
-	var parent = this._docElements[this._docElements.length - 1],
-		elem = new Element(tagName);
+	var parent = this._currentElement,
+		elem = new Element(tagName, parent);
 
-	this._docElements.push(elem);
+	this._currentElement = elem;
 
 	if(parent.skip === true || tagsToSkip[tagName]){
 		elem.attributes = attributes;
@@ -397,16 +395,16 @@ Readability.prototype.onopentag = function(tagName, attributes){
 
 	//add points for the tags name
 	if(tagCounts[tagName]) elem.tagScore += tagCounts[tagName];
-
-	//do this now, so gc can remove it after onclosetag
-	parent.children.push(elem);
 };
 
-Readability.prototype.ontext = function(text){ this._docElements[this._docElements.length-1].children.push(text); };
+Readability.prototype.ontext = function(text){
+	this._currentElement.children.push(text);
+};
 
 Readability.prototype.onclosetag = function(tagname){
-	var elem = this._docElements.pop(),
-		elemLevel = this._docElements.length - 1;
+	var elem = this._currentElement;
+	
+	this._currentElement = elem.parent;
 
 	//if(tagname !== elem.name) this._settings.log("Tagname didn't match!:", tagname, "vs.", elem.name);
 
@@ -464,6 +462,8 @@ Readability.prototype.onclosetag = function(tagname){
 
 	if(elem.skip) return;
 
+	elem.parent.children.push(elem);
+
 	//should node be scored?
 	var score = tagsToScore[tagname];
 	if(!score && tagname === "div"){
@@ -477,22 +477,20 @@ Readability.prototype.onclosetag = function(tagname){
 		}
 	}
 	if(score){
-		if((elem.info.textLength + elem.info.linkLength) >= 25 && elemLevel > 0){
-			this._docElements[elemLevel].isCandidate = this._docElements[elemLevel-1].isCandidate = true;
+		if((elem.info.textLength + elem.info.linkLength) > 24 && elem.parent && elem.parent.parent){
+			elem.parent.isCandidate = elem.parent.parent.isCandidate = true;
 			var addScore = 1 + elem.info.commas + Math.min( Math.floor( (elem.info.textLength + elem.info.linkLength) / 100 ), 3);
-			this._docElements[elemLevel].tagScore	+= addScore;
-			this._docElements[elemLevel-1].tagScore	+= addScore / 2;
+			elem.parent.tagScore += addScore;
+			elem.parent.parent.tagScore += addScore / 2;
 		}
 	}
 
 	if(elem.isCandidate){
-		elem.totalScore = Math.floor((elem.tagScore + elem.attributeScore) * (1 - elem.info.density));
+		elem.totalScore = Math.floor(
+			(elem.tagScore + elem.attributeScore) * (1 - elem.info.density)
+		);
 		if(!this._topCandidate || elem.totalScore > this._topCandidate.totalScore){
 			this._topCandidate = elem;
-			if(elemLevel >= 0)
-				this._topParent = this._docElements[elemLevel];
-			else
-				this._topParent = null;
 		}
 	}
 };
@@ -500,40 +498,46 @@ Readability.prototype.onclosetag = function(tagname){
 Readability.prototype.onreset = Readability;
 
 Readability.prototype._getCandidateSiblings = function(){
-	var tmp;
-	if(!this._topCandidate){
-		if((tmp = this._docElements) 
-			&& (tmp = tmp[0]) && (tmp = tmp.children) 
+	var candidate = this._topCandidate;
+	if(!candidate){
+		//find body
+		var tmp = this._currentElement;
+		if((tmp = tmp.children) 
 			&& (tmp = tmp[tmp.length-1]) && (tmp = tmp.children) 
 			&& (tmp = tmp[tmp.length-1])){
-			//use body	
-			this._topCandidate = tmp;
+			candidate = tmp;
 		}
-		else this._topCandidate = new Element("");
-		this._topCandidate.name = "div";
+		else candidate = new Element("");
+		candidate.name = "div";
 	}
+	
+	if(!candidate.parent || candidate.parent.children.length < 2){
+		return [candidate];
+	}
+	
 	//check all siblings
-	if(!this._topParent)
-		return [this._topCandidate];
-
 	var ret = [],
-		childs = this._topParent.children,
+		childs = candidate.parent.children,
 		childNum = childs.length,
-		siblingScoreThreshold = Math.max(10, this._topCandidate.totalScore * 0.2);
+		siblingScoreThreshold = Math.max(10, candidate.totalScore * 0.2),
+		append;
 
 	for(var i = 0; i < childNum; i++){
+		if(childs[i].skip) continue;
 		if(typeof childs[i] === "string") continue;
-		var append = false;
-		if(childs[i] === this._topCandidate) append = true;
-		else{
-			var contentBonus = 0;
-			if(this._topCandidate.attributes["class"] && this._topCandidate.attributes["class"] === childs[i].attributes["class"])
 
-				contentBonus += this._topCandidate.totalScore * 0.2;
-			if((childs[i].totalScore + contentBonus) >= siblingScoreThreshold) append = true;
+		append = false;
+
+		if(childs[i] === candidate) append = true;
+		else {
+			if(candidate.attributes["class"] === childs[i].attributes["class"]){
+				if((childs[i].totalScore + candidate.totalScore * 0.2) >= siblingScoreThreshold){
+					append = true;
+				}
+			}
 			else if(childs[i].name === "p")
 				if(childs[i].info.textLength > 80 && childs[i].info.density < 0.25) append = true;
-				else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && re_badStart.test(childs[i].getText()))
+				else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && re_sentence.test(childs[i].getText()))
 					append = true;
 		}
 		if(append){
