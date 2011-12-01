@@ -4,9 +4,9 @@ a fast and platform independent readability port
 ##About
 One day, I wanted to use [readability](http://code.google.com/p/arc90labs-readability/) for a node.js project. There are plenty of ports of readability to node (using jsdom, e.g. [that one](https://github.com/arrix/node-readability)), but they are pretty slow. I don't want to wait for more than a second (literally) until my node instance is ready to continue. So I started this project, porting the code to a SAX parser.
 
-The basic extraction algorithm was completely ported (some adjustments were made, eg. `<article>` tags are recognized and gain a higher value).
+The basic extraction algorithm was completely ported, some adjustments were made, eg. `<article>` tags are recognized and gain a higher value. And it performs great.
 
-In my tests, most pages, even large ones, were finished within 20ms (on node). It works with Rhino, so it runs on [YQL](http://developer.yahoo.com/yql "Yahoo! Query Language"), which may have interesting uses. And it works within a browser.
+In my tests, most pages, even large ones, were finished within 20ms (on node, see below for more information). It works with Rhino, so it runs on [YQL](http://developer.yahoo.com/yql "Yahoo! Query Language"), which may have interesting uses. And it works within a browser.
 
 The only missing features are the following:
 
@@ -40,10 +40,14 @@ A table using E4X-based events is available as the community table `redabilitySA
 Most SAX parsers (as sax.js) fail when a document is malformed XML, even if it's correct HTML. readabilitySAX should be used with [htmlparser2](https://github.com/FB55/node-htmlparser), my fork of the `htmlparser`-module (used by eg. `jsdom`), which corrects most faults. It's listed as a dependency, so npm should install it with readabilitySAX.
 
 ##Performance
-Using a (jsdom cleaned) package of 680 pages from CleanEval (their website seems to be down, try to google it), readabilitySAX processed all of them in 6667ms, that's an average of 9.8044ms per page. The benchmark was done using `tests/benchmark.js` on a MacBook (2010) and is probably far from perfect.
+Using a package of 680 pages from [CleanEval](cleaneval.sigwac.org.uk) (their website seems to be down, try to google it), readabilitySAX processed all of them in 6667 ms, that's an average of 9.8 ms per page.
+
+The benchmark was done using `tests/benchmark.js` on a MacBook (late 2010) and is probably far from perfect.
+
+Performance is the main goal of this project. The current speed should be good enough to run readabilitySAX on a singe-threaded web server. That's an accomplishment!
 
 ##Todo
 
-- Links and removal of h2s (see above)
+- Removal of h2s (see above)
 - Add documentation & examples
 - Optimize the performance (always)
