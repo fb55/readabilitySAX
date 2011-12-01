@@ -14,12 +14,14 @@ exports.get = function(uri, cb){
 	    });
 	}
 	
-	if(!uri || uri.trim() === ""){
-	    return onErr("No URI specified!");
-	}
+	var link;
+	if(typeof uri === "object") link = uri;
+	else if(typeof uri === "string") link = url.parse(uri);
+	else throw Error("no uri specified!");
 	
-	var link = url.parse(uri),
-		readable, parser, data = "", settings,
+	console.log(link);
+	
+	var readable, parser, data = "", settings,
 		onResponseCB = function(err, resp){
 			if(err) return onErr(err);
 			
@@ -35,47 +37,49 @@ exports.get = function(uri, cb){
 	
 	req.on("error", onErr);
 	
-	req.on("data", function(chunk){ chunk = chunk.toString("utf8"); parser.write(chunk); data += chunk; })
+	req.on("data", function(chunk){
+		chunk = chunk.toString();
+		parser.write(chunk);
+		data += chunk;
+	});
 	
 	req.on("end", function(){
 		parser.done();
 		
-		var ret = readable.getArticle();
-		if(ret.textLength < 250){
-			ret = exports.process(data, settings, 1);	
+		var article = readable.getArticle();
+		if(article.score < 300 && article.textLength < 250){
+			article = exports.process(data, settings, 1);	
 	    }
-	    ret.link = link.href;
-	    cb(ret);
+	    article.link = link.href;
+	    cb(article);
 	});
 };
 exports.process = function(data, settings, skipLevel){
 	if(!skipLevel) skipLevel = 0;
-	else if(skipLevel > 3) skipLevel = 0;
 	if(!settings) settings = {};
 	
-	var contentLength = 0,
-		parser, ret;
-	
 	var readable = new Readability(settings),
-		parser = new Parser(readable);
+		parser = new Parser(readable),
+		article;
 	
-	while(contentLength < 250 && skipLevel < 4){
-		readable.setSkipLevel(skipLevel);
+	do {
+		if(skipLevel !== 0) readable.setSkipLevel(skipLevel);
+
 	    parser.parseComplete(data);
-	    
-	    ret = readable.getArticle();
-	    contentLength = ret.textLength;
+
+	    article = readable.getArticle();
 	    skipLevel += 1;
-	}
+	} while(article.score < 300 && article.textLength < 250 && skipLevel < 4);
+	
 	/*
-	if(contentLength < 250) return {
+	if(article.textLength < 250) return {
 			title:	"Error",
 	    	text:	"Couldn't find content!",
 	    	html:	"<b>Couldn't find content!</b>",
 	    	error: true
 	};
 	*/
-	return ret;
+	return article;
 };
 
 exports.Readability = Readability;
