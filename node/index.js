@@ -1,4 +1,4 @@
-var Readability = require("../ReadabilitySAX"),
+var Readability = require("../readabilitySAX"),
 	request = require("request"),
 	url = require("url"),
 	Parser = require("htmlparser2/lib/Parser.js");
