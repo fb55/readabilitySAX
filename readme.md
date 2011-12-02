@@ -40,7 +40,7 @@ A table using E4X-based events is available as the community table `redabilitySA
 Most SAX parsers (as sax.js) fail when a document is malformed XML, even if it's correct HTML. readabilitySAX should be used with [htmlparser2](https://github.com/FB55/node-htmlparser), my fork of the `htmlparser`-module (used by eg. `jsdom`), which corrects most faults. It's listed as a dependency, so npm should install it with readabilitySAX.
 
 ##Performance
-Using a package of 680 pages from [CleanEval](cleaneval.sigwac.org.uk) (their website seems to be down, try to google it), readabilitySAX processed all of them in 6667 ms, that's an average of 9.8 ms per page.
+Using a package of 680 pages from [CleanEval](http://cleaneval.sigwac.org.uk) (their website seems to be down, try to google it), readabilitySAX processed all of them in 6667 ms, that's an average of 9.8 ms per page.
 
 The benchmark was done using `tests/benchmark.js` on a MacBook (late 2010) and is probably far from perfect.
 
