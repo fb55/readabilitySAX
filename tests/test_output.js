@@ -16,13 +16,24 @@ function debug(data){
 	var data = readable.getArticle();
 	
 	test(JSON.stringify(data), JSON.stringify(expected_data),
-		"Didn't got expected output!");
+		"didn't got expected output!");
 	test(require("util").inspect(readable._currentElement,false,1/0).length, 1052396, 
 		"tree had false size!");
 	test(Object.keys(readable._scannedLinks).length, expected_links, 
-		"lost some links!");
+		"wrong number of links!");
+	
+	testURL();
 
 	console.log("Passed!");
+};
+
+function testURL(){
+	var readable = new Readability({
+		pageURL: "http://foo.bar/this.2/is/a/long/path/index?isnt=it"
+	});
+	
+	test(JSON.stringify(readable._url), JSON.stringify(expected_url), "wrong url");
+	test(readable._baseURL, "http://foo.bar/this.2/is/a/long/path", "wrong base");
 };
 
 function test(got, expected, message){
@@ -33,6 +44,8 @@ function test(got, expected, message){
 };
 
 var expected_links = 2;
+
+var expected_url = {"protocol":"http:","domain":"foo.bar","path":["this.2","is","a","long","path"],"full":"http://foo.bar/this.2/is/a/long/path/index?isnt=it"};
 
 var expected_data = { title: 'Realtime Performance Visualizations using Node.js - How To Node',
   nextPage: 'http://howtonode.org/heat-tracer/dummy/page/2',
