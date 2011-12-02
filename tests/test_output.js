@@ -29,11 +29,15 @@ function debug(data){
 
 function testURL(){
 	var readable = new Readability({
-		pageURL: "http://foo.bar/this.2/is/a/long/path/index?isnt=it"
+		pageURL: "http://foo.bar/this.2/is/a/long/path/index?isnt=it",
+		resolvePaths: true
 	});
 	
 	test(JSON.stringify(readable._url), JSON.stringify(expected_url), "wrong url");
 	test(readable._baseURL, "http://foo.bar/this.2/is/a/long/path", "wrong base");
+	test(readable._convertLinks("../asdf/foo/"), "http://foo.bar/this.2/is/a/long/asdf/foo/", "link1 wasn't resolved!");
+	test(readable._convertLinks("/asdf/foo/"), "http://foo.bar/asdf/foo/", "link2 wasn't resolved!");
+	test(readable._convertLinks("foo/"), "http://foo.bar/this.2/is/a/long/path/foo/", "link3 wasn't resolved!");
 };
 
 function test(got, expected, message){
