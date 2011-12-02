@@ -1,12 +1,12 @@
 //list of values
-var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,select:true,style:true,link:true,aside:true,header:true,nav:true,footer:true},
+var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
 	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
 	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
-	goodAttributes = {href:true,src:true,title:true,alt:true/*,style:true*/},
-	cleanConditionaly = {form:true,table:true,ul:true,ol:true,div:true},
+	goodAttributes = {alt:true,href:true,src:true,title:true/*,style:true*/},
+	cleanConditionaly = {div:true,form:true,ol:true,table:true,ul:true},
 	tagsToScore = {p:true,pre:true,td:true},
-	newLinesAfter = {br:true,p:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true},
-	newLinesBefore = {p:true,h2:true,h3:true,h4:true,h5:true,h6:true},
+	newLinesAfter = {br:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true,p:true},
+	newLinesBefore = {h2:true,h3:true,h4:true,h5:true,h6:true,p:true},
 
 	divToPElements = ["a","blockquote","dl","div","img","ol","p","pre","table","ul"],
 
@@ -31,6 +31,7 @@ var tagsToSkip = {textarea:true,head:true,script:true,noscript:true,input:true,s
 	re_pageInURL = /(?:[_-]?p[a-zA-Z]*|[_-])\d{1,2}$/,
 	re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i,
 	re_noLetters = /[^a-zA-Z]/,
+	re_extension = /\.[a-zA-Z]$/,
 	re_digits = /\d/,
 	re_justDigits = /^\d{1,2}$/,
 	re_slashes = /\/+/,
@@ -184,7 +185,7 @@ Readability.prototype._convertLinks = function(path){
 	if(path_split[0] === ""){ //starting with "/"
 		path_split.shift();
 	}
-	else path_split = this._url.path.concat(path_split);
+	else Array.prototype.unshift.apply(path_split, this._url.path);
 
 	path = path_split.join("/");
 	
@@ -226,16 +227,11 @@ Readability.prototype._getBaseURL = function(){
 		urlSlashes.unshift(first);
 	}
 
-	var dotSplit, segment;
+	var segment;
 
 	for(var i = 0, j = urlSlashes.length; i < j; i++){
 		// Split off and save anything that looks like a file type.
-		dotSplit = urlSlashes[i].split(".", 3);
-
-		//change from Readability: ensure that segments with multiple points get skipped
-		if (dotSplit.length === 2 && !re_noLetters.test(dotSplit[1]))
-			segment = dotSplit[0];
-		else segment = urlSlashes[i];
+		segment = urlSlashes[i].replace(re_extension, "");
 
 		if(segment.indexOf(",00") !== -1)
 			segment = segment.replace(",00", "");
@@ -414,10 +410,11 @@ Readability.prototype.onclosetag = function(tagname){
 	}
 	else if(tagname === "title") this._origTitle = elem.getText();
 	else if(tagname === "h1"){
-		elem.skip = true;
-		if(this._headerTitle !== false)
+		if(this._headerTitle !== false){
 			if(!this._headerTitle) this._headerTitle = elem.getText();
 			else this._headerTitle = false;
+		}
+		return;
 	}
 
 	if(elem.skip) return;
@@ -429,7 +426,7 @@ Readability.prototype.onclosetag = function(tagname){
 	if(tagname === "p"){
 		if(!elem.info.tagCount.img && !elem.info.tagCount.embed && !elem.info.tagCount.object 
 			&& elem.info.linkLength === 0 && elem.info.textLength === 0)
-				elem.skip = true;
+				return;
 	}
 	else if(embeds[tagname]){
 		//check if tag is wanted (youtube or vimeo)
@@ -441,26 +438,24 @@ Readability.prototype.onclosetag = function(tagname){
 			}
 		}
 
-		if(cnvrt) elem.skip = true;
+		if(cnvrt) return;
 	}
 	else if(tagname === "h2" || tagname === "h3"){
 		//clean headers
-		if (elem.attributeScore < 0 || elem.info.density > 0.33) elem.skip = true;
+		if (elem.attributeScore < 0 || elem.info.density > 0.33) return;
 	}
 	else if(this._settings.cleanConditionally && cleanConditionaly[tagname]){
 		var p = elem.info.tagCount.p || 0,
 			contentLength = elem.info.textLength + elem.info.linkLength;
 
-		if( elem.info.tagCount.img > p ) elem.skip = true;
-		else if( (elem.info.tagCount.li - 100) > p && tagname !== "ul" && tagname !== "ol") elem.skip = true;
-		else if(elem.info.tagCount.input > Math.floor(p/3) ) elem.skip = true;
-		else if(contentLength < 25 && (!elem.info.tagCount.img || elem.info.tagCount.img > 2) ) elem.skip = true;
-		else if(elem.attributeScore < 25 && elem.info.density > 0.2) elem.skip = true;
-		else if(elem.attributeScore >= 25 && elem.info.density > 0.5) elem.skip = true;
-		else if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) elem.skip = true;
+		if( elem.info.tagCount.img > p ) return;
+		else if(tagname !== "ul" && tagname !== "ol" && (elem.info.tagCount.li - 100) > p) return;
+		else if(elem.info.tagCount.input > Math.floor(p/3) ) return;
+		else if(contentLength < 25 && (!elem.info.tagCount.img || elem.info.tagCount.img > 2) ) return;
+		else if(elem.attributeScore < 25 && elem.info.density > 0.2) return;
+		else if(elem.attributeScore >= 25 && elem.info.density > 0.5) return;
+		else if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) return;
 	}
-
-	if(elem.skip) return;
 
 	elem.parent.children.push(elem);
 
