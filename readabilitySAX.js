@@ -55,6 +55,7 @@ var Element = function(tagName, parent){
 		this.tagScore = 0;
 		this.attributeScore = 0;
 		this.totalScore = 0;
+		this.elementData = "";
 		this.info = {
 			textLength: 0,
 			linkLength: 0,
@@ -283,7 +284,7 @@ Readability.prototype._scanLink = function(elem){
 	if(!re_digits.test(href.replace(this._baseURL, ""))) return;
 
 	var score = 0,
-		linkData = text + " " + elem.attributes["class"] + " " + elem.attributes.id;
+		linkData = text + " " + elem.elementData;
 
 	if(re_nextLink.test(linkData)) score += 50;
 	if(re_pages.test(linkData)) score += 25;
@@ -300,20 +301,18 @@ Readability.prototype._scanLink = function(elem){
 	if(re_pagenum.test(href) || re_pages.test(href)) score += 25;
 	if(re_extraneous.test(href)) score -= 15;
 
-	var pos = elem,
+	var current = elem,
 		posMatch = true,
-		negMatch = true,
-		parentData = "";
+		negMatch = true;
 
-	while(pos = pos.parent){
-		parentData = pos.attributes["class"] + " " + pos.attributes.id;
-		if(parentData === " ") continue;
-		if(posMatch && re_pages.test(parentData)){
+	while(current = current.parent){
+		if(current.elementData === " ") continue;
+		if(posMatch && re_pages.test(current.elementData)){
 			score += 25;
 			if(!negMatch) break;
 			else posMatch = false;
 		}
-		if(negMatch && re_negative.test(parentData) && !re_positive.test(parentData)){
+		if(negMatch && re_negative.test(current.elementData) && !re_positive.test(current.elementData)){
 			score -= 25;
 			if(!posMatch) break;
 			else negMatch = false;
@@ -328,7 +327,7 @@ Readability.prototype._scanLink = function(elem){
 
 	if(this._scannedLinks[href]){
 		this._scannedLinks[href].score += score;
-		this._scannedLinks[href].text += " | " + text;
+		this._scannedLinks[href].text += " " + text;
 	}
 	else this._scannedLinks[href] = {
 		score: score,
@@ -351,11 +350,12 @@ Readability.prototype.onopentag = function(tagName, attributes){
 
 	var value;
 
-	if(this._settings.stripUnlikelyCandidates){
-		value = ((attributes.id || "") + (attributes["class"] || "")).toLowerCase();
-		if(re_unlikelyCandidates.test(value) && !re_okMaybeItsACandidate.test(value)){
-				elem.skip = true; return;
-		}
+	elem.elementData = ((attributes.id || "") + " " + (attributes["class"] || "")).toLowerCase();
+	
+	if(this._settings.stripUnlikelyCandidates 
+		&& re_unlikelyCandidates.test(elem.elementData)
+		&& !re_okMaybeItsACandidate.test(elem.elementData)){
+			elem.skip = true; return;
 	}
 
 	for(var name in attributes){
@@ -369,8 +369,6 @@ Readability.prototype.onopentag = function(tagName, attributes){
 			}
 			else if(re_negative.test(value)) elem.attributeScore = -25;
 			else if(re_positive.test(value)) elem.attributeScore = 25;
-
-			elem.attributes[name] = value;
 		}
 		else if(name === "href" || name === "src"){
 			//fix links
@@ -396,7 +394,7 @@ Readability.prototype.onclosetag = function(tagname){
 	
 	this._currentElement = elem.parent;
 
-	//if(tagname !== elem.name) this._settings.log("Tagname didn't match!:", tagname, "vs.", elem.name);
+	//if(tagname !== elem.name) this._settings.log("Tagname didn't match:", tagname, "vs.", elem.name);
 
 	//prepare title
 	if(this._settings.searchFurtherPages && tagname === "a"){
