@@ -100,8 +100,7 @@ Element.prototype = {
 		info.density = info.linkLength / (info.textLength + info.linkLength);
 		
 		//if there was no text (the value is NaN), ensure it gets skipped
-		if(info.density !== info.density)
-			info.density = 1;
+		if(info.density !== info.density) info.density = 1;
 	},
 	getOuterHTML: function(){
 		var ret = "<" + this.name;
@@ -121,18 +120,12 @@ Element.prototype = {
 		return ret;
 	},
 	getText: function(){
-		var nodes = this.children, ret = "", text;
+		var nodes = this.children, ret = "";
 		for(var i = 0, j = nodes.length; i < j; i++){
 			if(typeof nodes[i] === "string") ret += nodes[i];
 			else {
-				text = nodes[i].getText();
-
-				if(text === "") continue;
-
 				if(newLinesBefore[ nodes[i].name ]) ret += "\n";
-
-				ret += text;
-
+				ret += nodes[i].getText();
 				if(newLinesAfter[ nodes[i].name ]) ret +=	"\n";
 			}
 		}
@@ -162,14 +155,14 @@ Readability.prototype._settings = {
 	pageURL: null,		//URL of the page which is parsed
 	*/
 	resolvePaths: false,//indicates wheter ".." and "." inside paths should be eliminated
-	log : typeof console === "undefined" ? function(){} : console.log
+	removeSingleH2: false
 };
 
 Readability.prototype._convertLinks = function(path){
 	if(!this._url) return path;
 	if(!path) return this._url.full;
 
-	//Fix javascript:, mailto: links
+	//Ignore javascript:, mailto: links
 	if(re_protocol.test(path)) return path;
 
 	var path_split = path.split("/");
@@ -218,9 +211,7 @@ Readability.prototype._getBaseURL = function(){
 	var first = this._url.full.replace(re_params, "").replace(/.*\//, ""),
 		second = this._url.path[elementNum];
 
-	if((second.length < 3 && re_noLetters.test(first)) || re_justDigits.test(second)){
-		/*ignore second element*/
-	} else { 
+	if(!(second.length < 3 && re_noLetters.test(first)) && !re_justDigits.test(second)){
 		if(re_pageInURL.test(second)){
 			second = second.replace(re_pageInURL, "");
 		}
@@ -249,8 +240,6 @@ Readability.prototype._processSettings = function(settings){
 			this._settings[i] = settings[i];
 		else this._settings[i] = Settings[i];
 	}
-
-	if(settings.log === false) this._settings.log = function(){};
 	
 	var path;
 	if(settings.pageURL){
@@ -394,8 +383,6 @@ Readability.prototype.onclosetag = function(tagname){
 	
 	this._currentElement = elem.parent;
 
-	//if(tagname !== elem.name) this._settings.log("Tagname didn't match:", tagname, "vs.", elem.name);
-
 	//prepare title
 	if(this._settings.searchFurtherPages && tagname === "a"){
 		this._scanLink(elem);
@@ -522,7 +509,7 @@ Readability.prototype._getCandidateSiblings = function(){
 				}
 			}
 			else if(childs[i].name === "p")
-				if(childs[i].info.textLength > 80 && childs[i].info.density < .25) append = true;
+				if(childs[i].info.textLength >= 80 && childs[i].info.density < .25) append = true;
 				else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && re_sentence.test(childs[i].getText()))
 					append = true;
 		}
@@ -584,8 +571,6 @@ Readability.prototype.getNextPage = function(){
 		}
 	}
 
-	//if(topScore !== 49) this._settings.log("Top link score:", topScore);
-
 	return topLink;
 };
 
@@ -601,21 +586,23 @@ Readability.prototype.getArticle = function(type){
 		textLength: elem.info.textLength,
 		score: this._topCandidate.totalScore
 	};
-	
-	//if(elem.info.tagCount.h2 === 1){}
 
 	if(type === "text")
-		ret.text = elem.getText().trim();
+		ret.text = elem.getText().trim().replace(/\n{3,}/g, "\n\n");
 
 	else ret.html = elem.getInnerHTML() //=> clean it
-		//kill breaks
-		.replace(/(?:<\/?br\s*\/?>(?:\s|&nbsp;?)*)+/g,'<br/>')
-		//turn all double brs into ps
-		.replace(/(?:<br[^>]*>[ \n\r\t]*){2,}/g, '</p><p>')
-		//remove font tags
-		.replace(/<(\/?)font[^>]*>/g, '<$1span>')
+		//normalise breaks
+		.replace(/(?:\s|&nbsp;?)*<\/?br[^>]*>/g, "<br/>")
+		//turn all double+ brs into ps
+		.replace(/(?:<br\/>\s*){2,}/g, "<p>")
 		//remove breaks in front of paragraphs
-		.replace(/<br[^>]*>\s*<p/g,"<p");
+		.replace(/<br\/>\s*<p/g,"<p")
+		//remove font tags
+		.replace(/(<\/?)font[^>]*>/g, "$1span>");
+
+	if(this._settings.removeSingleH2 && elem.info.tagCount.h2 === 1){
+		ret.html = ret.html.replace(/<h2[^>]*>.*<\/h2>/,"");
+	}
 
 	return ret;
 };
