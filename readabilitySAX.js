@@ -350,7 +350,11 @@ Readability.prototype.onopentag = function(tagName, attributes){
 	for(var name in attributes){
 		value = attributes[name];
 
-		if(name === "id" || name === "class"){
+		if(name === "href" || name === "src"){
+			//fix links
+			elem.attributes[name] = this._convertLinks(value);
+		}
+		else if(this._settings.weightClasses && (name === "id" || name === "class")){
 			value = value.toLowerCase();
 			if(re_safe.test(value)){
 				elem.attributeScore = 300;
@@ -358,10 +362,6 @@ Readability.prototype.onopentag = function(tagName, attributes){
 			}
 			else if(re_negative.test(value)) elem.attributeScore = -25;
 			else if(re_positive.test(value)) elem.attributeScore = 25;
-		}
-		else if(name === "href" || name === "src"){
-			//fix links
-			elem.attributes[name] = this._convertLinks(value);
 		}
 		else if(this._settings.cleanAttributes){
 			if(goodAttributes[name])
