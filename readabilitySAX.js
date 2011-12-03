@@ -343,7 +343,7 @@ Readability.prototype.onopentag = function(tagName, attributes){
 
 	this._currentElement = elem;
 
-	if(parent.skip === true || tagsToSkip[tagName]){
+	if(parent.skip || tagsToSkip[tagName]){
 		elem.attributes = attributes;
 		elem.skip = true;
 		return;
@@ -364,11 +364,11 @@ Readability.prototype.onopentag = function(tagName, attributes){
 		if(name === "id" || name === "class"){
 			value = value.toLowerCase();
 			if(re_safe.test(value)){
-				elem.attributeScore += 300;
+				elem.attributeScore = 300;
 				elem.isCandidate = true;
 			}
-			else if(re_negative.test(value)) elem.attributeScore -= 25;
-			else if(re_positive.test(value)) elem.attributeScore += 25;
+			else if(re_negative.test(value)) elem.attributeScore = -25;
+			else if(re_positive.test(value)) elem.attributeScore = 25;
 
 			elem.attributes[name] = value;
 		}
@@ -384,7 +384,7 @@ Readability.prototype.onopentag = function(tagName, attributes){
 	}
 
 	//add points for the tags name
-	if(tagCounts[tagName]) elem.tagScore += tagCounts[tagName];
+	if(tagCounts[tagName]) elem.tagScore = tagCounts[tagName];
 };
 
 Readability.prototype.ontext = function(text){
@@ -436,7 +436,7 @@ Readability.prototype.onclosetag = function(tagname){
 	}
 	else if(tagname === "h2" || tagname === "h3"){
 		//clean headers
-		if (elem.attributeScore < 0 || elem.info.density > 0.33) return;
+		if (elem.attributeScore < 0 || elem.info.density > .33) return;
 	}
 	else if(this._settings.cleanConditionally && cleanConditionaly[tagname]){
 		var p = elem.info.tagCount.p || 0,
@@ -446,8 +446,8 @@ Readability.prototype.onclosetag = function(tagname){
 		else if(tagname !== "ul" && tagname !== "ol" && (elem.info.tagCount.li - 100) > p) return;
 		else if(elem.info.tagCount.input > Math.floor(p/3) ) return;
 		else if(contentLength < 25 && (!elem.info.tagCount.img || elem.info.tagCount.img > 2) ) return;
-		else if(elem.attributeScore < 25 && elem.info.density > 0.2) return;
-		else if(elem.attributeScore >= 25 && elem.info.density > 0.5) return;
+		else if(elem.attributeScore < 25 && elem.info.density > .2) return;
+		else if(elem.attributeScore > 24 && elem.info.density > .5) return;
 		else if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) return;
 	}
 
@@ -508,11 +508,10 @@ Readability.prototype._getCandidateSiblings = function(){
 	var ret = [],
 		childs = candidate.parent.children,
 		childNum = childs.length,
-		siblingScoreThreshold = Math.max(10, candidate.totalScore * 0.2),
+		siblingScoreThreshold = Math.max(10, candidate.totalScore * .2),
 		append;
 
 	for(var i = 0; i < childNum; i++){
-		if(childs[i].skip) continue;
 		if(typeof childs[i] === "string") continue;
 
 		append = false;
@@ -520,12 +519,12 @@ Readability.prototype._getCandidateSiblings = function(){
 		if(childs[i] === candidate) append = true;
 		else {
 			if(candidate.attributes["class"] === childs[i].attributes["class"]){
-				if((childs[i].totalScore + candidate.totalScore * 0.2) >= siblingScoreThreshold){
+				if((childs[i].totalScore + candidate.totalScore * .2) >= siblingScoreThreshold){
 					append = true;
 				}
 			}
 			else if(childs[i].name === "p")
-				if(childs[i].info.textLength > 80 && childs[i].info.density < 0.25) append = true;
+				if(childs[i].info.textLength > 80 && childs[i].info.density < .25) append = true;
 				else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && re_sentence.test(childs[i].getText()))
 					append = true;
 		}
