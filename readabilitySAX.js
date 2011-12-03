@@ -36,6 +36,7 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 	re_digits = /\d/,
 	re_justDigits = /^\d{1,2}$/,
 	re_slashes = /\/+/,
+	re_domain = /\/([^\/]+)/,
 
 	re_protocol = /^\w+\:/,
 	re_cleanPaths = /\/\.(?!\.)|\/[^\/]*\/\.\./g,
@@ -96,9 +97,10 @@ Element.prototype = {
 			}
 		}
 		info.density = info.linkLength / (info.textLength + info.linkLength);
-		if(isNaN(info.density))
-			info.density = 1; //just ensure it gets skipped (is the case for 0/0)
-		return info;
+		
+		//if there was no text (the value is NaN), ensure it gets skipped
+		if(info.density !== info.density)
+			info.density = 1;
 	},
 	getOuterHTML: function(){
 		var ret = "<" + this.name;
@@ -273,7 +275,7 @@ Readability.prototype._scanLink = function(elem){
 
 	if(href === this._baseURL || (this._url && href === this._url.full)) return;
 	
-	if(this._url && href.split(re_slashes, 2)[1] !== this._url.domain) return;
+	if(this._url && href.match(re_domain)[1] !== this._url.domain) return;
 
 	var text = elem.getText();
 
