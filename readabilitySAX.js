@@ -412,7 +412,7 @@ Readability.prototype.onclosetag = function(tagname){
 	}
 	else if(embeds[tagname]){
 		//check if tag is wanted (youtube or vimeo)
-		if(!elem.attributes.src || !re_videos.test(elem.attributes.src) return;
+		if(!elem.attributes.src || !re_videos.test(elem.attributes.src)) return;
 	}
 	else if(tagname === "h2" || tagname === "h3"){
 		//clean headers
