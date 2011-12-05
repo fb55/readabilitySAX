@@ -265,7 +265,11 @@ Readability.prototype._scanLink = function(elem){
 
 	if(href === this._baseURL || (this._url && href === this._url.full)) return;
 	
-	if(this._url && href.match(re_domain)[1] !== this._url.domain) return;
+	var match = href.match(re_domain);
+	
+	if(!match) return;
+	
+	if(this._url && match[1] !== this._url.domain) return;
 
 	var text = elem.getText();
 
