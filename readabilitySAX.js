@@ -404,7 +404,6 @@ Readability.prototype.onclosetag = function(tagname){
 
 	elem.addInfo();
 
-	var i, j, cnvrt;
 	//clean conditionally
 	if(tagname === "p"){
 		if(!elem.info.tagCount.img && !elem.info.tagCount.embed && !elem.info.tagCount.object 
@@ -413,15 +412,7 @@ Readability.prototype.onclosetag = function(tagname){
 	}
 	else if(embeds[tagname]){
 		//check if tag is wanted (youtube or vimeo)
-		cnvrt = true;
-		for(i in elem.attributes){
-			if(re_videos.test(elem.attributes[i])){
-				cnvrt = false;
-				break;
-			}
-		}
-
-		if(cnvrt) return;
+		if(!elem.attributes.src || !re_videos.test(elem.attributes.src) return;
 	}
 	else if(tagname === "h2" || tagname === "h3"){
 		//clean headers
@@ -443,7 +434,7 @@ Readability.prototype.onclosetag = function(tagname){
 	elem.parent.children.push(elem);
 
 	//should node be scored?
-	var score = tagsToScore[tagname];
+	var score = tagsToScore[tagname], cnvrt, i, j;
 	if(!score && tagname === "div"){
 		cnvrt = true;
 		for(i = 0, j = divToPElements.length; i < j; i++)
