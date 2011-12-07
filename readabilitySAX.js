@@ -379,17 +379,17 @@ Readability.prototype.ontext = function(text){
 	this._currentElement.children.push(text);
 };
 
-Readability.prototype.onclosetag = function(tagname){
+Readability.prototype.onclosetag = function(tagName){
 	var elem = this._currentElement;
 
 	this._currentElement = elem.parent;
 
 	//prepare title
-	if(this._settings.searchFurtherPages && tagname === "a"){
+	if(this._settings.searchFurtherPages && tagName === "a"){
 		this._scanLink(elem);
 	}
-	else if(tagname === "title") this._origTitle = elem.getText();
-	else if(tagname === "h1"){
+	else if(tagName === "title") this._origTitle = elem.getText();
+	else if(tagName === "h1"){
 		if(this._headerTitle !== false){
 			if(!this._headerTitle) this._headerTitle = elem.getText();
 			else this._headerTitle = false;
@@ -402,25 +402,25 @@ Readability.prototype.onclosetag = function(tagname){
 	elem.addInfo();
 
 	//clean conditionally
-	if(tagname === "p"){
+	if(tagName === "p"){
 		if(!elem.info.tagCount.img && !elem.info.tagCount.embed && !elem.info.tagCount.object 
 			&& elem.info.linkLength === 0 && elem.info.textLength === 0)
 				return;
 	}
-	else if(embeds[tagname]){
+	else if(embeds[tagName]){
 		//check if tag is wanted (youtube or vimeo)
 		if(!elem.attributes.src || !re_videos.test(elem.attributes.src)) return;
 	}
-	else if(tagname === "h2" || tagname === "h3"){
+	else if(tagName === "h2" || tagName === "h3"){
 		//clean headers
 		if (elem.attributeScore < 0 || elem.info.density > .33) return;
 	}
-	else if(this._settings.cleanConditionally && cleanConditionaly[tagname]){
+	else if(this._settings.cleanConditionally && cleanConditionaly[tagName]){
 		var p = elem.info.tagCount.p || 0,
 			contentLength = elem.info.textLength + elem.info.linkLength;
 
 		if( elem.info.tagCount.img > p ) return;
-		else if(tagname !== "ul" && tagname !== "ol" && (elem.info.tagCount.li - 100) > p) return;
+		else if(tagName !== "ul" && tagName !== "ol" && (elem.info.tagCount.li - 100) > p) return;
 		else if(elem.info.tagCount.input > Math.floor(p/3) ) return;
 		else if(contentLength < 25 && (!elem.info.tagCount.img || elem.info.tagCount.img > 2) ) return;
 		else if(elem.attributeScore < 25 && elem.info.density > .2) return;
@@ -431,8 +431,8 @@ Readability.prototype.onclosetag = function(tagname){
 	elem.parent.children.push(elem);
 
 	//should node be scored?
-	var score = tagsToScore[tagname], cnvrt, i, j;
-	if(!score && tagname === "div"){
+	var score = tagsToScore[tagName], cnvrt, i, j;
+	if(!score && tagName === "div"){
 		cnvrt = true;
 		for(i = 0, j = divToPElements.length; i < j; i++)
 			if(elem.info.tagCount[divToPElements[i]]) cnvrt = false;
@@ -453,7 +453,7 @@ Readability.prototype.onclosetag = function(tagname){
 
 	if(elem.isCandidate){
 		//add points for the tags name
-		if(tagCounts[tagname]) elem.tagScore += tagCounts[tagName];
+		if(tagCounts[tagName]) elem.tagScore += tagCounts[tagName];
 
 		elem.totalScore = Math.floor(
 			(elem.tagScore + elem.attributeScore) * (1 - elem.info.density)
