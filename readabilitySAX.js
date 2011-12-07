@@ -466,27 +466,10 @@ Readability.prototype.onclosetag = function(tagname){
 
 Readability.prototype.onreset = Readability;
 
-Readability.prototype._getCandidateSiblings = function(){
-	var candidate = this._topCandidate;
-	if(!candidate){
-		//find body
-		var tmp = this._currentElement;
-		if((tmp = tmp.children) 
-			&& (tmp = tmp[tmp.length-1]) && (tmp = tmp.children) 
-			&& (tmp = tmp[tmp.length-1])){
-			candidate = tmp;
-		}
-		else candidate = new Element("");
-		candidate.name = "div";
-	}
-	
-	if(!candidate.parent || candidate.parent.children.length < 2){
-		return [candidate];
-	}
-	
+Readability.prototype._getCandidateSiblings = function(childs){
 	//check all siblings
 	var ret = [],
-		childs = candidate.parent.children,
+		candidate = this._topCandidate,
 		childNum = childs.length,
 		siblingScoreThreshold = Math.max(10, candidate.totalScore * .2),
 		append;
@@ -518,9 +501,44 @@ Readability.prototype._getCandidateSiblings = function(){
 	return ret;
 };
 
+Readability.prototype._getCandidateNode = function(){
+	var elem = this._topCandidate, parent;
+
+	if(!elem){
+		//get body node
+		(elem = elem.children) && (elem = elem[elem.length-1]) 
+		&& (elem = elem.children) && (elem = elem[elem.length-1]);
+		
+		if(!elem) return new Element("div");
+	}
+	else parent = elem.parent;
+	
+	if(!parent){
+		parent = elem;
+	}
+	else if(parent.children.length > 1){
+		elem = this._getCandidateSiblings(parent.children);
+		
+		//create a new object so that the prototype methods are callable
+		parent = new Element("div")
+		parent.children = elem;
+		parent.addInfo();
+	}
+	
+	while(parent.children.length === 1){
+		if(typeof parent.children[0] === "object"){
+			parent = parent.children[0];
+		} else break;
+	}
+	
+	return parent;
+};
+
 //skipLevel is a shortcut to allow more elements of the page
 Readability.prototype.setSkipLevel = function(skipLevel){
-	//if the prototype is still used for settings
+	if(skipLevel === 0) return;
+	
+	//if the prototype is still used for settings, change that
 	if(this._settings === Readability.prototype._settings){
 		this._processSettings({});
 	}
@@ -570,16 +588,13 @@ Readability.prototype.getNextPage = function(){
 };
 
 Readability.prototype.getArticle = function(type){
-	//create a new object so that the prototype methods are callable
-	var elem = new Element("");
-	elem.children = this._getCandidateSiblings();
-	elem.addInfo();
+	var elem = this._getCandidateNode();
 
 	var ret = {
 		title: this.getTitle(),
 		nextPage: this.getNextPage(),
 		textLength: elem.info.textLength,
-		score: this._topCandidate.totalScore
+		score: this._topCandidate ? this._topCandidate.totalScore : 0
 	};
 
 	if(type === "text")
@@ -593,7 +608,7 @@ Readability.prototype.getArticle = function(type){
 		//remove breaks in front of paragraphs
 		.replace(/<br\/>\s*<p/g,"<p")
 		//remove font tags
-		.replace(/(<\/?)font[^>]*>/g, "$1span>");
+		.replace(/(<\/?)font[^>]*>/g, "$1span>").trim();
 
 	if(this._settings.removeSingleH2 && elem.info.tagCount.h2 === 1){
 		ret.html = ret.html.replace(/<h2[^>]*>.*<\/h2>/,"");
