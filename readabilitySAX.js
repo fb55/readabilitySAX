@@ -506,8 +506,8 @@ Readability.prototype._getCandidateNode = function(){
 
 	if(!elem){
 		//get body node
-		(elem = elem.children) && (elem = elem[elem.length-1]) 
-		&& (elem = elem.children) && (elem = elem[elem.length-1]);
+		(elem = this._currentElement) && (elem = elem.children)
+		&& (elem = elem[elem.length-1]) && (elem = elem.children) && (elem = elem[elem.length-1]);
 		
 		if(!elem) return new Element("div");
 	}
