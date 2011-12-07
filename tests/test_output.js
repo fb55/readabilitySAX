@@ -17,7 +17,7 @@ function debug(data){
 	
 	test(JSON.stringify(data), JSON.stringify(expected_data),
 		"didn't got expected output!");
-	test(require("util").inspect(readable._currentElement,false,1/0).length, 1111934, 
+	test(require("util").inspect(readable._currentElement,false,1/0).length, 1111682, 
 		"tree had false size!");
 	test(Object.keys(readable._scannedLinks).length, expected_links, 
 		"wrong number of links!");
