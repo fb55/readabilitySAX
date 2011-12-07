@@ -277,7 +277,7 @@ Readability.prototype._scanLink = function(elem){
 	if(!re_digits.test(href.replace(this._baseURL, ""))) return;
 
 	var score = 0,
-		linkData = text + " " + elem.elementData;
+		linkData = text + elem.elementData;
 
 	if(re_nextLink.test(linkData)) score += 50;
 	if(re_pages.test(linkData)) score += 25;
@@ -299,7 +299,7 @@ Readability.prototype._scanLink = function(elem){
 		negMatch = true;
 
 	while(current = current.parent){
-		if(current.elementData === " ") continue;
+		if(current.elementData === "") continue;
 		if(posMatch && re_pages.test(current.elementData)){
 			score += 25;
 			if(!negMatch) break;
@@ -343,14 +343,6 @@ Readability.prototype.onopentag = function(tagName, attributes){
 
 	var value;
 
-	elem.elementData = ((attributes.id || "") + " " + (attributes["class"] || "")).toLowerCase();
-
-	if(this._settings.stripUnlikelyCandidates 
-		&& re_unlikelyCandidates.test(elem.elementData)
-		&& !re_okMaybeItsACandidate.test(elem.elementData)){
-			elem.skip = true; return;
-	}
-
 	for(var name in attributes){
 		value = attributes[name];
 
@@ -358,20 +350,29 @@ Readability.prototype.onopentag = function(tagName, attributes){
 			//fix links
 			elem.attributes[name] = this._convertLinks(value);
 		}
-		else if(this._settings.weightClasses && (name === "id" || name === "class")){
+		else if(name === "id" || name === "class"){
 			value = value.toLowerCase();
-			if(re_safe.test(value)){
+			if(!this._settings.weightClasses){/* do nothing */}
+			else if(re_safe.test(value)){
 				elem.attributeScore = 300;
 				elem.isCandidate = true;
 			}
 			else if(re_negative.test(value)) elem.attributeScore = -25;
 			else if(re_positive.test(value)) elem.attributeScore = 25;
+			
+			elem.elementData += " " + value;
 		}
 		else if(this._settings.cleanAttributes){
 			if(goodAttributes[name])
 				elem.attributes[name] = value;
 		}
 		else elem.attributes[name] = value;
+	}
+	
+	if(this._settings.stripUnlikelyCandidates 
+		&& re_unlikelyCandidates.test(elem.elementData)
+		&& !re_okMaybeItsACandidate.test(elem.elementData)){
+			elem.skip = true;
 	}
 };
 
