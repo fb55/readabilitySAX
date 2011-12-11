@@ -53,7 +53,7 @@ exports.get = function(uri, cb){
 			if(article.score < 300 && article.textLength < 250){
 				article = exports.process(data, settings, 1);	
 	    	}
-	    	article.link = link.href;
+	    	article.link = settings.pageURL;
 	    	cb(article);
 		});
 	}).on("error", onErr).end();
