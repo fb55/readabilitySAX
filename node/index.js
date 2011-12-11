@@ -1,5 +1,6 @@
 var Readability = require("../readabilitySAX"),
-	request = require("request"),
+	http = require("http"),
+	https = require("https"),
 	url = require("url"),
 	Parser = require("htmlparser2/lib/Parser.js");
 
@@ -17,43 +18,47 @@ exports.get = function(uri, cb){
 	var link;
 	if(typeof uri === "object") link = uri;
 	else if(typeof uri === "string") link = url.parse(uri);
-	else throw Error("no uri specified!");
+	else onErr("No URI specified!");
 	
-	console.log(link);
+	var req;
+	if(link.protocol === "http:") req = http;
+	else if(link.protocol === "https:") req = https;
+	else onErr("Unsupported protocol: " + link.protocol);
 	
-	var readable, parser, data = "", settings,
-		onResponseCB = function(err, resp){
-			if(err) return onErr(err);
-			
-			settings = { pageURL: url.format(resp.request.uri) };
-			
-			readable = new Readability(settings);
-			parser = new Parser(readable);
-		},
-		req = request({
-			uri: link,
-			onResponse: onResponseCB
-		});
-	
-	req.on("error", onErr);
-	
-	req.on("data", function(chunk){
-		chunk = chunk.toString();
-		parser.write(chunk);
-		data += chunk;
-	});
-	
-	req.on("end", function(){
-		parser.done();
+	req.request(link, function(resp){
+		if(resp.statusCode % 301 < 2){
+			exports.get(resp.headers.location, cb);
+			return;
+		}
+		if(resp.statusCode % 400 < 100){
+			onErr("Got error: " + http.STATUS_CODES[resp.statusCode]);
+			return;
+		}
 		
-		var article = readable.getArticle();
-		if(article.score < 300 && article.textLength < 250){
-			article = exports.process(data, settings, 1);	
-	    }
-	    article.link = link.href;
-	    cb(article);
-	});
+		var settings = {pageURL: url.format(link)},
+			readable = new Readability(settings),
+			parser = new Parser(readable),
+			data = "";
+		
+		resp.on("data", function(chunk){
+			chunk = chunk.toString();
+			data += chunk;
+			parser.write(chunk);
+		});
+		
+		resp.on("end", function(){
+			parser.done();
+			
+			var article = readable.getArticle();
+			if(article.score < 300 && article.textLength < 250){
+				article = exports.process(data, settings, 1);	
+	    	}
+	    	article.link = link.href;
+	    	cb(article);
+		});
+	}).on("error", onErr).end();
 };
+
 exports.process = function(data, settings, skipLevel){
 	if(!skipLevel) skipLevel = 0;
 	if(!settings) settings = {};

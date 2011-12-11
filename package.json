@@ -10,8 +10,7 @@
 		, "url": "git://github.com/fb55/readabilitysax.git"
 	},
     "dependencies": {
-        "request": ">= 2.1.1",
-        "htmlparser2": ">= 1.9.0"
+        "htmlparser2": "2.x.x"
     },
     "scripts": {
     	"test": "node ./tests/test_output.js"
