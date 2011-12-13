@@ -1,4 +1,15 @@
-//list of values
+/*
+* readabilitySAX
+* https://github.com/fb55/readabilitySAX
+* 
+* The code is structured into three main parts:
+* 	1. A list of properties that help readability to determine how a "good" element looks like
+* 	2. An light-weight "Element" class that is used instead of the DOM (and provides some DOM-like functionality)
+* 	3. The Readability class that provides the interface & logic (usable as a htmlparser2 handler)
+*/
+
+
+//1. list of values
 var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
 	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
 	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
@@ -45,7 +56,7 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 
 	re_commas = /,[\s\,]*/g;
 
-//the tree element
+//2. the tree element
 var Element = function(tagName, parent){
 		this.name = tagName;
 		this.parent = parent;
@@ -133,10 +144,9 @@ Element.prototype = {
 	}
 };
 
-//helper functions
-
+//3. the readability class
 var Readability = function(settings){
-	//our tree (used instead of the dom)
+	//the root node
 	this._currentElement = new Element("document");
 	this._topCandidate = null;
 	this._origTitle = this._headerTitle = "";
@@ -151,10 +161,8 @@ Readability.prototype._settings = {
 	cleanAttributes: true,
 	searchFurtherPages: true,
 	linksToSkip: {},	//pages that are already parsed
-	/*
-	pageURL: null,		//URL of the page which is parsed
-	*/
-	resolvePaths: false,//indicates wheter ".." and "." inside paths should be eliminated
+	//pageURL: null,	//URL of the page which is parsed
+	resolvePaths: false,
 	removeSingleH2: false
 };
 
@@ -162,7 +170,7 @@ Readability.prototype._convertLinks = function(path){
 	if(!this._url) return path;
 	if(!path) return this._url.full;
 
-	//Ignore javascript:, mailto: links
+	//ignore javascript:, mailto: links
 	if(re_protocol.test(path)) return path;
 
 	var path_split = path.split("/");
