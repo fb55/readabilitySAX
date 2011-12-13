@@ -2,7 +2,7 @@
 a fast and platform independent readability port
 
 ##About
-One day, I wanted to use [Readability](http://code.google.com/p/arc90labs-readability/), an algorithm to extract relevant pieces of information out of websites, for a node.js project. There are plenty of ports of Readability to node (using jsdom, e.g. [that one](https://github.com/arrix/node-readability)), but they are pretty slow. I don't want to wait for more than a second (literally) until my node instance is ready to continue. So I started this project, porting the code to a SAX parser.
+One day, I wanted to use [Readability](http://code.google.com/p/arc90labs-readability/), an algorithm to extract relevant pieces of information out of websites, for a node.js project. There are some ports of Readability to node (using jsdom, e.g. [that one](https://github.com/arrix/node-readability)), but they are pretty slow. I don't want to wait for more than a second (literally) until my node instance is ready to continue. So I started this project, porting the code to a SAX parser.
 
 The Readability extraction algorithm was completely ported, some adjustments were made, eg. `<article>` tags are recognized and gain a higher value.
 
@@ -40,7 +40,7 @@ Using a package of 680 pages from [CleanEval](http://cleaneval.sigwac.org.uk) (t
 
 The benchmark was done using `tests/benchmark.js` on a MacBook (late 2010) and is probably far from perfect.
 
-Performance is the main goal of this project. The current speed should be good enough to run readabilitySAX on a singe-threaded web server. That's an accomplishment!
+Performance is the main goal of this project. The current speed should be good enough to run readabilitySAX on a singe-threaded web server with an average number of requests. That's an accomplishment!
 
 ##Settings
 These are the options that one may pass to the Readability object:
@@ -51,15 +51,15 @@ These are the options that one may pass to the Readability object:
 
 * `cleanConditionally`: Removes elements that don't match specific criteria (defined by the original Readability). Default: true
 
-* `cleanAttributes`: Just allow some attributes, ignore all the crap nobody needs. Default: true
+* `cleanAttributes`: Only allow some attributes, ignore all the crap nobody needs. Default: true
 
-* `searchFurtherPages`: Indicates whether links should be checked if they point to another page. Default: true
+* `searchFurtherPages`: Indicates whether links should be checked whether they point to the next page of an article. Default: true
 
 * `linksToSkip`: A map of pages that should be ignored when searching links to further pages. Default: {}
 
 * `pageURL`: The URL of the current page. Will be used to resolve all other links and is ignored when searching links. Default: ""
 
-* `resolvePaths`: Indicates wheter ".." and "." inside paths should be eliminated. Default: false
+* `resolvePaths`: Indicates whether ".." and "." inside paths should be eliminated. Default: false
 
 * `removeSingleH2`: If there was just a single h2 inside of a page, Readability assumes it to be the title and removes the node. Default: false
 
