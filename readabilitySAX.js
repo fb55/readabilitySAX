@@ -609,7 +609,7 @@ Readability.prototype.getArticle = function(type){
 
 	else ret.html = elem.getInnerHTML() //=> clean it
 		//normalise breaks
-		.replace(/(?:\s|&nbsp;?)*<\/?br[^>]*>/g, "<br/>")
+		.replace(/(?:\s|&nbsp;?)*<br[^>]*>/g, "<br/>")
 		//turn all double+ brs into ps
 		.replace(/(?:<br\/>\s*){2,}/g, "<p>")
 		//remove breaks in front of paragraphs
