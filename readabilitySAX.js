@@ -119,7 +119,7 @@ Element.prototype = {
 		for(var i in this.attributes)
 			ret += " " + i + "=\"" + this.attributes[i] + "\"";
 		
-		if(ret.children.length === 0) return ret + "/>";
+		if(this.children.length === 0) return ret + "/>";
 
 		return ret + ">" + this.getInnerHTML() + "</" + this.name + ">";
 	},
