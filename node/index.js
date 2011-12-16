@@ -2,7 +2,10 @@ var Readability = require("../readabilitySAX"),
 	http = require("http"),
 	https = require("https"),
 	url = require("url"),
-	Parser = require("htmlparser2/lib/Parser.js");
+	Parser = require("htmlparser2/lib/Parser.js"),
+	parserOptions = {
+		lowerCaseTags: true
+	};
 
 exports.get = function(uri, cb){
 	function onErr(err){
@@ -37,7 +40,7 @@ exports.get = function(uri, cb){
 		
 		var settings = {pageURL: url.format(link)},
 			readable = new Readability(settings),
-			parser = new Parser(readable),
+			parser = new Parser(readable, parserOptions),
 			data = "";
 		
 		resp.on("data", function(chunk){
@@ -64,7 +67,7 @@ exports.process = function(data, settings, skipLevel){
 	if(!settings) settings = {};
 	
 	var readable = new Readability(settings),
-		parser = new Parser(readable),
+		parser = new Parser(readable, parserOptions),
 		article;
 	
 	do {

@@ -1,10 +1,10 @@
 {
     "name": "readabilitySAX",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "the readability script ported to a sax parser",
     "author": "Felix Boehm <me@feedic.com>",
     "main": "./node/index.js",
-    "engine": "*",
+    "engine": "node >= 0.6.0",
     "repository": {
 		  "type": "git"
 		, "url": "git://github.com/fb55/readabilitysax.git"
