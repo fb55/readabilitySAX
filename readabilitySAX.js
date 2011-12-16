@@ -50,7 +50,7 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 	re_domain = /\/([^\/]+)/,
 
 	re_protocol = /^\w+\:/,
-	re_cleanPaths = /\/\.(?!\.)|\/[^\/]*\/\.\./g,
+	re_cleanPaths = /\/\.(?!\.)|\/[^\/]*\/\.\./,
 
 	re_closing = /\/?(?:#.*)?$/,
 
@@ -195,8 +195,7 @@ Readability.prototype._convertLinks = function(path){
 	path = path_split.join("/");
 
 	if(this._settings.resolvePaths){
-		//this will delete most constructs, but not any
-		path = path.replace(re_cleanPaths, "");
+		while(path !== (path = path.replace(re_cleanPaths, "")) ){};
 	}
 
 	return this._url.protocol + "//" + this._url.domain + "/" + path;
