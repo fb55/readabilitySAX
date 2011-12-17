@@ -27,14 +27,17 @@ exports.get = function(uri, cb){
 	if(link.protocol === "http:") req = http;
 	else if(link.protocol === "https:") req = https;
 	else onErr("Unsupported protocol: " + link.protocol);
+
+	//fix for pre node 0.5.x
+	link.path = link.pathname;
 	
 	req.request(link, function(resp){
 		if(resp.statusCode % 301 < 2){
 			exports.get(resp.headers.location, cb);
 			return;
 		}
-		if(resp.statusCode % 400 < 100){
-			onErr("Got error: " + http.STATUS_CODES[resp.statusCode]);
+		if(resp.statusCode >= 400){
+			onErr("Got error: " + http.STATUS_CODES[resp.statusCode] + ", status code " + resp.statusCode);
 			return;
 		}
 		
