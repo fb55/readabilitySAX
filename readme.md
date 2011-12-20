@@ -4,9 +4,17 @@ a fast and platform independent readability port
 ##About
 One day, I wanted to use [Readability](http://code.google.com/p/arc90labs-readability/), an algorithm to extract relevant pieces of information out of websites, for a node.js project. There are some ports of Readability to node (using jsdom, e.g. [that one](https://github.com/arrix/node-readability)), but they are pretty slow. I don't want to wait for more than a second (literally) until my node instance is ready to continue. So I started this project, porting the code to a SAX parser.
 
-The Readability extraction algorithm was completely ported, some adjustments were made, eg. `<article>` tags are recognized and gain a higher value.
-
 In my tests, most pages, even large ones, were finished within 15ms (on node, see below for more information). It works with Rhino, so it runs on [YQL](http://developer.yahoo.com/yql "Yahoo! Query Language"), which may have interesting uses. And it works within a browser.
+
+The Readability extraction algorithm was completely ported, but some adjustments were made:
+
+* `<article>` tags are recognized and gain a higher value
+
+* If a heading is part of the pages `<title>`, it is removed (Readability removed any single `<h2>`, and ignored other tags)
+
+* `henry` and `instapaper-body` are classes to show an algorithm like this where the content is. readabilitySAX recognizes them and marks them as the article
+
+* Every bit of code that was taken from the original algorithm was optimized, eg. RegExps should now perform faster (they were optimized & use `RegExp#test` instead of `String#match`, which doesn't force the interpreter to build an array).
 
 ##HowTo
 ###Installing readabilitySAX (node)
@@ -19,7 +27,9 @@ This module is available on `npm` as `readabilitySAX`. Just run
 Just run `require("readabilitySAX")`. You'll get an object containing three methods:
 
 * `get(link, callback)`: Gets a webpage and process it.
+
 * `process(data)`: Takes a string, runs readabilitySAX and returns the page.
+
 * `Readability(settings)`: The readability object. It works as a handler for `htmlparser2`.
 
 #####Browsers
@@ -60,8 +70,6 @@ These are the options that one may pass to the Readability object:
 * `pageURL`: The URL of the current page. Will be used to resolve all other links and is ignored when searching links. Default: ""
 
 * `resolvePaths`: Indicates whether ".." and "." inside paths should be eliminated. Default: false
-
-* `removeSingleH2`: If there was just a single h2 inside of a page, Readability assumes it to be the title and removes the node. Default: false
 
 ##Todo
 
