@@ -16,8 +16,9 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 	goodAttributes = {alt:true,href:true,src:true,title:true/*,style:true*/},
 	cleanConditionaly = {div:true,form:true,ol:true,table:true,ul:true},
 	tagsToScore = {p:true,pre:true,td:true},
-	newLinesAfter = {br:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true,p:true},
-	newLinesBefore = {h2:true,h3:true,h4:true,h5:true,h6:true,p:true},
+	headerTags = {h2:true,h3:true,h4:true,h5:true,h6:true},
+	newLinesAfter = {br:true,li:true,p:true},
+	newLinesBefore = {p:true},
 
 	divToPElements = ["a","blockquote","dl","div","img","ol","p","pre","table","ul"],
 
@@ -132,15 +133,23 @@ Element.prototype = {
 		}
 		return ret;
 	},
+	getFormattedText: function(){
+		var nodes = this.children, ret = "";
+		for(var i = 0, j = nodes.length; i < j; i++){
+			if(typeof nodes[i] === "string") ret += nodes[i].replace(/\s+/g, " ");
+			else {
+				if(newLinesBefore[nodes[i].name] || headerTags[nodes[i].name]) ret += "\n";
+				ret += nodes[i].getFormattedText();
+				if(newLinesAfter[nodes[i].name] || headerTags[nodes[i].name]) ret += "\n";
+			}
+		}
+		return ret;
+	},
 	getText: function(){
 		var nodes = this.children, ret = "";
 		for(var i = 0, j = nodes.length; i < j; i++){
 			if(typeof nodes[i] === "string") ret += nodes[i];
-			else {
-				if(newLinesBefore[ nodes[i].name ]) ret += "\n";
-				ret += nodes[i].getText();
-				if(newLinesAfter[ nodes[i].name ]) ret +=	"\n";
-			}
+			else ret += nodes[i].getText();
 		}
 		return ret;
 	}
@@ -164,8 +173,7 @@ Readability.prototype._settings = {
 	searchFurtherPages: true,
 	linksToSkip: {},	//pages that are already parsed
 	//pageURL: null,	//URL of the page which is parsed
-	resolvePaths: false,
-	removeSingleH2: false
+	resolvePaths: false
 };
 
 Readability.prototype._convertLinks = function(path){
@@ -390,7 +398,7 @@ Readability.prototype.ontext = function(text){
 };
 
 Readability.prototype.onclosetag = function(tagName){
-	var elem = this._currentElement;
+	var elem = this._currentElement, cnvrt;
 
 	this._currentElement = elem.parent;
 
@@ -405,6 +413,15 @@ Readability.prototype.onclosetag = function(tagName){
 			else this._headerTitle = false;
 		}
 		return;
+	}
+	else if(headerTags[tagName]){
+		if(this._origTitle){
+			cnvrt = elem.getText();
+			if(this._origTitle.substr(0, cnvrt.length) === cnvrt){
+				elem.skip = true;
+				//TODO It's probably the title, so let's use it!
+			}
+		}
 	}
 
 	if(elem.skip) return;
@@ -441,7 +458,7 @@ Readability.prototype.onclosetag = function(tagName){
 	elem.parent.children.push(elem);
 
 	//should node be scored?
-	var score = tagsToScore[tagName], cnvrt, i, j;
+	var score = tagsToScore[tagName], i, j;
 	if(!score && tagName === "div"){
 		cnvrt = true;
 		for(i = 0, j = divToPElements.length; i < j; i++)
@@ -605,7 +622,7 @@ Readability.prototype.getArticle = function(type){
 	};
 
 	if(type === "text")
-		ret.text = elem.getText().trim().replace(/\n{3,}/g, "\n\n");
+		ret.text = elem.getFormattedText().trim().replace(/\n{3,}/g, "\n\n");
 
 	else ret.html = elem.getInnerHTML() //=> clean it
 		//normalise breaks
@@ -616,10 +633,6 @@ Readability.prototype.getArticle = function(type){
 		.replace(/<br\/>\s*<p/g,"<p")
 		//remove font tags
 		.replace(/(<\/?)font[^>]*>/g, "$1span>").trim();
-
-	if(this._settings.removeSingleH2 && elem.info.tagCount.h2 === 1){
-		ret.html = ret.html.replace(/<h2[^>]*>.*<\/h2>/,"");
-	}
 
 	return ret;
 };
