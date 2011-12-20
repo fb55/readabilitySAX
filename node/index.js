@@ -26,10 +26,10 @@ exports.get = function(uri, cb){
 	var req;
 	if(link.protocol === "http:") req = http;
 	else if(link.protocol === "https:") req = https;
-	else onErr("Unsupported protocol: " + link.protocol);
+	else return onErr("Unsupported protocol: " + link.protocol);
 
 	//fix for pre node 0.5.x
-	link.path = link.pathname;
+	if(!link.path) link.path = link.pathname;
 	
 	req.request(link, function(resp){
 		if(resp.statusCode % 301 < 2){

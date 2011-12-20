@@ -362,6 +362,7 @@ Readability.prototype.onopentag = function(tagName, attributes){
 
 	for(var name in attributes){
 		value = attributes[name];
+		if(!value) continue;
 
 		if(name === "href" || name === "src"){
 			//fix links
