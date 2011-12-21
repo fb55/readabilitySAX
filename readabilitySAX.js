@@ -1,35 +1,22 @@
-/*
-* readabilitySAX
-* https://github.com/fb55/readabilitySAX
-* 
-* The code is structured into three main parts:
-* 	1. A list of properties that help readability to determine how a "good" element looks like
-* 	2. An light-weight "Element" class that is used instead of the DOM (and provides some DOM-like functionality)
-* 	3. The Readability class that provides the interface & logic (usable as a htmlparser2 handler)
-*/
-
-
-//1. list of values
+//list of values
 var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
 	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
 	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
 	goodAttributes = {alt:true,href:true,src:true,title:true/*,style:true*/},
 	cleanConditionaly = {div:true,form:true,ol:true,table:true,ul:true},
 	tagsToScore = {p:true,pre:true,td:true},
-	headerTags = {h2:true,h3:true,h4:true,h5:true,h6:true},
-	newLinesAfter = {br:true,li:true,p:true},
-	newLinesBefore = {p:true},
+	newLinesAfter = {br:true,h2:true,h3:true,h4:true,h5:true,h6:true,li:true,p:true},
+	newLinesBefore = {h2:true,h3:true,h4:true,h5:true,h6:true,p:true},
 
 	divToPElements = ["a","blockquote","dl","div","img","ol","p","pre","table","ul"],
 
 	re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/,
-	re_skipFootnoteLink =/^\s*(?:\[?[a-z\d]{1,2}\]?|^|edit|citation needed)\s*$/i,
 	re_nextLink = /[>»]|continue|next|weiter(?:[^\|]|$)/i,
 	re_prevLink = /[<«]|earl|new|old|prev/i,
 	re_extraneous = /all|archive|comment|discuss|e-?mail|login|print|reply|share|sign|single/i,
 	re_pages = /pag(?:e|ing|inat)/i,
 	re_pagenum = /p[ag]{0,2}(?:e|ing|ination)?[=\/]\d{1,2}/i,
-
+	
 	re_safe = /hentry|instapaper_body/,
 	re_final = /first|last/i,
 
@@ -40,7 +27,7 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 
 	re_sentence = /\.(?: |$)/,
 
-	re_pageInURL = /[_-]?p[a-zA-Z]*[_-]?\d{1,2}$/,
+	re_pageInURL = /[_\-]?p[a-zA-Z]*[_\-]?\d{1,2}$/,
 	re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i,
 	re_noLetters = /[^a-zA-Z]/,
 	re_params = /\?.*/,
@@ -51,13 +38,13 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 	re_domain = /\/([^\/]+)/,
 
 	re_protocol = /^\w+\:/,
-	re_cleanPaths = /\/\.(?!\.)|\/[^\/]*\/\.\./,
-
+	re_cleanPaths = /\/\.(?!\.)|\/[^\/]*\/\.\./g,
+	
 	re_closing = /\/?(?:#.*)?$/,
 
 	re_commas = /,[\s\,]*/g;
 
-//2. the tree element
+//the tree element
 var Element = function(tagName, parent){
 		this.name = tagName;
 		this.parent = parent;
@@ -110,7 +97,7 @@ Element.prototype = {
 			}
 		}
 		info.density = info.linkLength / (info.textLength + info.linkLength);
-
+		
 		//if there was no text (the value is NaN), ensure it gets skipped
 		if(info.density !== info.density) info.density = 1;
 	},
@@ -119,8 +106,6 @@ Element.prototype = {
 
 		for(var i in this.attributes)
 			ret += " " + i + "=\"" + this.attributes[i] + "\"";
-		
-		if(this.children.length === 0) return ret + "/>";
 
 		return ret + ">" + this.getInnerHTML() + "</" + this.name + ">";
 	},
@@ -133,31 +118,24 @@ Element.prototype = {
 		}
 		return ret;
 	},
-	getFormattedText: function(){
-		var nodes = this.children, ret = "";
-		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret += nodes[i].replace(/\s+/g, " ");
-			else {
-				if(newLinesBefore[nodes[i].name] || headerTags[nodes[i].name]) ret += "\n";
-				ret += nodes[i].getFormattedText();
-				if(newLinesAfter[nodes[i].name] || headerTags[nodes[i].name]) ret += "\n";
-			}
-		}
-		return ret;
-	},
 	getText: function(){
 		var nodes = this.children, ret = "";
 		for(var i = 0, j = nodes.length; i < j; i++){
 			if(typeof nodes[i] === "string") ret += nodes[i];
-			else ret += nodes[i].getText();
+			else {
+				if(newLinesBefore[ nodes[i].name ]) ret += "\n";
+				ret += nodes[i].getText();
+				if(newLinesAfter[ nodes[i].name ]) ret +=	"\n";
+			}
 		}
 		return ret;
 	}
 };
 
-//3. the readability class
+//helper functions
+
 var Readability = function(settings){
-	//the root node
+	//our tree (used instead of the dom)
 	this._currentElement = new Element("document");
 	this._topCandidate = null;
 	this._origTitle = this._headerTitle = "";
@@ -172,15 +150,18 @@ Readability.prototype._settings = {
 	cleanAttributes: true,
 	searchFurtherPages: true,
 	linksToSkip: {},	//pages that are already parsed
-	//pageURL: null,	//URL of the page which is parsed
-	resolvePaths: false
+	/*
+	pageURL: null,		//URL of the page which is parsed
+	*/
+	resolvePaths: false,//indicates wheter ".." and "." inside paths should be eliminated
+	removeSingleH2: false
 };
 
 Readability.prototype._convertLinks = function(path){
 	if(!this._url) return path;
 	if(!path) return this._url.full;
 
-	//ignore javascript:, mailto: links
+	//Ignore javascript:, mailto: links
 	if(re_protocol.test(path)) return path;
 
 	var path_split = path.split("/");
@@ -203,9 +184,10 @@ Readability.prototype._convertLinks = function(path){
 	else Array.prototype.unshift.apply(path_split, this._url.path);
 
 	path = path_split.join("/");
-
+	
 	if(this._settings.resolvePaths){
-		while(path !== (path = path.replace(re_cleanPaths, "")) ){};
+		//this will delete most constructs, but not any
+		path = path.replace(re_cleanPaths, "");
 	}
 
 	return this._url.protocol + "//" + this._url.domain + "/" + path;
@@ -219,12 +201,12 @@ Readability.prototype._getBaseURL = function(){
 
 	var cleaned = "",
 		elementNum = this._url.path.length - 1;
-
+	
 	for(var i = 0; i < elementNum; i++){
 		// Split off and save anything that looks like a file type and "00,"-trash.
 		cleaned += "/" + this._url.path[i].replace(re_extension, "");
 	}
-
+	
 	var first = this._url.full.replace(re_params, "").replace(/.*\//, ""),
 		second = this._url.path[elementNum];
 
@@ -234,7 +216,7 @@ Readability.prototype._getBaseURL = function(){
 		}
 		cleaned += "/" + second;
 	}
-
+	
 	if(!re_badFirst.test(first)){
 		if(re_pageInURL.test(first)){
 			first = first.replace(re_pageInURL, "");
@@ -250,14 +232,12 @@ Readability.prototype._processSettings = function(settings){
 	var Settings = this._settings;
 	this._settings = {};
 
-	var link;
-
 	for(var i in Settings){
 		if(typeof settings[i] !== "undefined")
 			this._settings[i] = settings[i];
 		else this._settings[i] = Settings[i];
 	}
-
+	
 	var path;
 	if(settings.pageURL){
 		path = settings.pageURL.split(re_slashes);
@@ -277,15 +257,15 @@ Readability.prototype._scanLink = function(elem){
 	if(!href) return;
 
 	href = this._convertLinks(href.replace(re_closing, ""));
-
+	
 	if(this._settings.linksToSkip[href]) return;
 
 	if(href === this._baseURL || (this._url && href === this._url.full)) return;
-
+	
 	var match = href.match(re_domain);
-
+	
 	if(!match) return;
-
+	
 	if(this._url && match[1] !== this._url.domain) return;
 
 	var text = elem.getText();
@@ -294,7 +274,7 @@ Readability.prototype._scanLink = function(elem){
 	if(!re_digits.test(href.replace(this._baseURL, ""))) return;
 
 	var score = 0,
-		linkData = text + elem.elementData;
+		linkData = text + " " + elem.elementData;
 
 	if(re_nextLink.test(linkData)) score += 50;
 	if(re_pages.test(linkData)) score += 25;
@@ -316,7 +296,7 @@ Readability.prototype._scanLink = function(elem){
 		negMatch = true;
 
 	while(current = current.parent){
-		if(current.elementData === "") continue;
+		if(current.elementData === " ") continue;
 		if(posMatch && re_pages.test(current.elementData)){
 			score += 25;
 			if(!negMatch) break;
@@ -360,25 +340,29 @@ Readability.prototype.onopentag = function(tagName, attributes){
 
 	var value;
 
+	elem.elementData = ((attributes.id || "") + " " + (attributes["class"] || "")).toLowerCase();
+	
+	if(this._settings.stripUnlikelyCandidates &&
+		re_unlikelyCandidates.test(elem.elementData) &&
+		!re_okMaybeItsACandidate.test(elem.elementData)){
+			elem.skip = true; return;
+	}
+
 	for(var name in attributes){
 		value = attributes[name];
-		if(!value) continue;
 
 		if(name === "href" || name === "src"){
 			//fix links
 			elem.attributes[name] = this._convertLinks(value);
 		}
-		else if(name === "id" || name === "class"){
+		else if(this._settings.weightClasses && (name === "id" || name === "class")){
 			value = value.toLowerCase();
-			if(!this._settings.weightClasses){/* do nothing */}
-			else if(re_safe.test(value)){
+			if(re_safe.test(value)){
 				elem.attributeScore = 300;
 				elem.isCandidate = true;
 			}
 			else if(re_negative.test(value)) elem.attributeScore = -25;
 			else if(re_positive.test(value)) elem.attributeScore = 25;
-			
-			elem.elementData += " " + value;
 		}
 		else if(this._settings.cleanAttributes){
 			if(goodAttributes[name])
@@ -386,43 +370,31 @@ Readability.prototype.onopentag = function(tagName, attributes){
 		}
 		else elem.attributes[name] = value;
 	}
-	
-	if(this._settings.stripUnlikelyCandidates 
-		&& re_unlikelyCandidates.test(elem.elementData)
-		&& !re_okMaybeItsACandidate.test(elem.elementData)){
-			elem.skip = true;
-	}
+
+	//add points for the tags name
+	if(tagCounts[tagName]) elem.tagScore = tagCounts[tagName];
 };
 
 Readability.prototype.ontext = function(text){
 	this._currentElement.children.push(text);
 };
 
-Readability.prototype.onclosetag = function(tagName){
-	var elem = this._currentElement, cnvrt;
-
+Readability.prototype.onclosetag = function(tagname){
+	var elem = this._currentElement;
+	
 	this._currentElement = elem.parent;
 
 	//prepare title
-	if(this._settings.searchFurtherPages && tagName === "a"){
+	if(this._settings.searchFurtherPages && tagname === "a"){
 		this._scanLink(elem);
 	}
-	else if(tagName === "title") this._origTitle = elem.getText();
-	else if(tagName === "h1"){
+	else if(tagname === "title") this._origTitle = elem.getText();
+	else if(tagname === "h1"){
 		if(this._headerTitle !== false){
 			if(!this._headerTitle) this._headerTitle = elem.getText();
 			else this._headerTitle = false;
 		}
 		return;
-	}
-	else if(headerTags[tagName]){
-		if(this._origTitle){
-			cnvrt = elem.getText();
-			if(this._origTitle.substr(0, cnvrt.length) === cnvrt){
-				elem.skip = true;
-				//TODO It's probably the title, so let's use it!
-			}
-		}
 	}
 
 	if(elem.skip) return;
@@ -430,25 +402,25 @@ Readability.prototype.onclosetag = function(tagName){
 	elem.addInfo();
 
 	//clean conditionally
-	if(tagName === "p"){
+	if(tagname === "p"){
 		if(!elem.info.tagCount.img && !elem.info.tagCount.embed && !elem.info.tagCount.object 
 			&& elem.info.linkLength === 0 && elem.info.textLength === 0)
 				return;
 	}
-	else if(embeds[tagName]){
+	else if(embeds[tagname]){
 		//check if tag is wanted (youtube or vimeo)
 		if(!elem.attributes.src || !re_videos.test(elem.attributes.src)) return;
 	}
-	else if(tagName === "h2" || tagName === "h3"){
+	else if(tagname === "h2" || tagname === "h3"){
 		//clean headers
 		if (elem.attributeScore < 0 || elem.info.density > .33) return;
 	}
-	else if(this._settings.cleanConditionally && cleanConditionaly[tagName]){
+	else if(this._settings.cleanConditionally && cleanConditionaly[tagname]){
 		var p = elem.info.tagCount.p || 0,
 			contentLength = elem.info.textLength + elem.info.linkLength;
 
 		if( elem.info.tagCount.img > p ) return;
-		else if(tagName !== "ul" && tagName !== "ol" && (elem.info.tagCount.li - 100) > p) return;
+		else if(tagname !== "ul" && tagname !== "ol" && (elem.info.tagCount.li - 100) > p) return;
 		else if(elem.info.tagCount.input > Math.floor(p/3) ) return;
 		else if(contentLength < 25 && (!elem.info.tagCount.img || elem.info.tagCount.img > 2) ) return;
 		else if(elem.attributeScore < 25 && elem.info.density > .2) return;
@@ -459,8 +431,8 @@ Readability.prototype.onclosetag = function(tagName){
 	elem.parent.children.push(elem);
 
 	//should node be scored?
-	var score = tagsToScore[tagName], i, j;
-	if(!score && tagName === "div"){
+	var score = tagsToScore[tagname], cnvrt, i, j;
+	if(!score && tagname === "div"){
 		cnvrt = true;
 		for(i = 0, j = divToPElements.length; i < j; i++)
 			if(elem.info.tagCount[divToPElements[i]]) cnvrt = false;
@@ -480,9 +452,6 @@ Readability.prototype.onclosetag = function(tagName){
 	}
 
 	if(elem.isCandidate){
-		//add points for the tags name
-		if(tagCounts[tagName]) elem.tagScore += tagCounts[tagName];
-
 		elem.totalScore = Math.floor(
 			(elem.tagScore + elem.attributeScore) * (1 - elem.info.density)
 		);
@@ -494,10 +463,27 @@ Readability.prototype.onclosetag = function(tagName){
 
 Readability.prototype.onreset = Readability;
 
-Readability.prototype._getCandidateSiblings = function(childs){
+Readability.prototype._getCandidateSiblings = function(){
+	var candidate = this._topCandidate;
+	if(!candidate){
+		//find body
+		var tmp = this._currentElement;
+		if((tmp = tmp.children) &&
+			(tmp = tmp[tmp.length-1]) && (tmp = tmp.children) && 
+			(tmp = tmp[tmp.length-1])){
+			candidate = tmp;
+		}
+		else candidate = new Element("");
+		candidate.name = "div";
+	}
+	
+	if(!candidate.parent || candidate.parent.children.length < 2){
+		return [candidate];
+	}
+	
 	//check all siblings
 	var ret = [],
-		candidate = this._topCandidate,
+		childs = candidate.parent.children,
 		childNum = childs.length,
 		siblingScoreThreshold = Math.max(10, candidate.totalScore * .2),
 		append;
@@ -529,48 +515,18 @@ Readability.prototype._getCandidateSiblings = function(childs){
 	return ret;
 };
 
-Readability.prototype._getCandidateNode = function(){
-	var elem = this._topCandidate, parent;
-
-	if(!elem){
-		//select root node
-		parent = this._currentElement;
-	}
-	else{
-
-		parent = elem.parent;
-
-		if(parent.children.length > 1){
-			elem = this._getCandidateSiblings(parent.children);
-
-			//create a new object so that the prototype methods are callable
-			parent = new Element("div")
-			parent.children = elem;
-			parent.addInfo();
-		}
-	}
-
-	while(parent.children.length === 1){
-		if(typeof parent.children[0] === "object"){
-			parent = parent.children[0];
-		} else break;
-	}
-
-	return parent;
-};
-
 //skipLevel is a shortcut to allow more elements of the page
 Readability.prototype.setSkipLevel = function(skipLevel){
-	if(skipLevel === 0) return;
-
-	//if the prototype is still used for settings, change that
+    if(skipLevel === 0) return;
+    
+	//if the prototype is still used for settings
 	if(this._settings === Readability.prototype._settings){
 		this._processSettings({});
 	}
 
-	if(this._settings.skipLevel > 0) this._settings.stripUnlikelyCandidates = false;
-	if(this._settings.skipLevel > 1) this._settings.weightClasses = false;
-	if(this._settings.skipLevel > 2) this._settings.cleanConditionally = false;
+	if(skipLevel > 0) this._settings.stripUnlikelyCandidates = false;
+	if(skipLevel > 1) this._settings.weightClasses = false;
+	if(skipLevel > 2) this._settings.cleanConditionally = false;
 };
 
 Readability.prototype.getTitle = function(){
@@ -613,27 +569,34 @@ Readability.prototype.getNextPage = function(){
 };
 
 Readability.prototype.getArticle = function(type){
-	var elem = this._getCandidateNode();
+	//create a new object so that the prototype methods are callable
+	var elem = new Element("");
+	elem.children = this._getCandidateSiblings();
+	elem.addInfo();
 
 	var ret = {
 		title: this.getTitle(),
 		nextPage: this.getNextPage(),
 		textLength: elem.info.textLength,
-		score: this._topCandidate ? this._topCandidate.totalScore : 0
+		score: this._topCandidate.totalScore
 	};
 
 	if(type === "text")
-		ret.text = elem.getFormattedText().trim().replace(/\n{3,}/g, "\n\n");
+		ret.text = elem.getText().trim().replace(/\n{3,}/g, "\n\n");
 
 	else ret.html = elem.getInnerHTML() //=> clean it
 		//normalise breaks
-		.replace(/(?:\s|&nbsp;?)*<br[^>]*>/g, "<br/>")
+		.replace(/(?:\s|&nbsp;?)*<\/?br[^>]*>/g, "<br/>")
 		//turn all double+ brs into ps
 		.replace(/(?:<br\/>\s*){2,}/g, "<p>")
 		//remove breaks in front of paragraphs
 		.replace(/<br\/>\s*<p/g,"<p")
 		//remove font tags
-		.replace(/(<\/?)font[^>]*>/g, "$1span>").trim();
+		.replace(/(<\/?)font[^>]*>/g, "$1span>");
+
+	if(this._settings.removeSingleH2 && elem.info.tagCount.h2 === 1){
+		ret.html = ret.html.replace(/<h2[^>]*>.*<\/h2>/,"");
+	}
 
 	return ret;
 };
