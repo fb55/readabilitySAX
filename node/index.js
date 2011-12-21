@@ -12,10 +12,10 @@ exports.get = function(uri, cb){
 		err = err.toString();
 		cb({
 			title:	"Error",
-            text:	err,
-            html:	"<b>" + err + "</b>",
-            error: true
-	    });
+			text:	err,
+			html:	"<b>" + err + "</b>",
+			error: true
+		 });
 	}
 	
 	var link;
@@ -58,9 +58,9 @@ exports.get = function(uri, cb){
 			var article = readable.getArticle();
 			if(article.score < 300 && article.textLength < 250){
 				article = exports.process(data, settings, 1);	
-            }
-            article.link = settings.pageURL;
-            cb(article);
+			}
+			article.link = settings.pageURL;
+			cb(article);
 		});
 	}).on("error", onErr).end();
 };
@@ -76,18 +76,18 @@ exports.process = function(data, settings, skipLevel){
 	do {
 		if(skipLevel !== 0) readable.setSkipLevel(skipLevel);
 
-	    parser.parseComplete(data);
+		 parser.parseComplete(data);
 
-	    article = readable.getArticle();
-	    skipLevel += 1;
+		 article = readable.getArticle();
+		 skipLevel += 1;
 	} while(article.score < 300 && article.textLength < 250 && skipLevel < 4);
 	
 	/*
 	if(article.textLength < 250) return {
 			title:	"Error",
-            text:	"Couldn't find content!",
-            html:	"<b>Couldn't find content!</b>",
-            error: true
+			text:	"Couldn't find content!",
+			html:	"<b>Couldn't find content!</b>",
+			error: true
 	};
 	*/
 	return article;

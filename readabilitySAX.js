@@ -39,7 +39,7 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 
 	re_sentence = /\.(?: |$)/,
 
-	re_pageInURL = /[_-]?p[a-zA-Z]*[_-]?\d{1,2}$/,
+	re_pageInURL = /[_\-]?p[a-zA-Z]*[_\-]?\d{1,2}$/,
 	re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i,
 	re_noLetters = /[^a-zA-Z]/,
 	re_params = /\?.*/,
