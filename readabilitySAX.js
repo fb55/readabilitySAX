@@ -573,18 +573,21 @@ Readability.prototype.setSkipLevel = function(skipLevel){
 Readability.prototype.getTitle = function(){
 	var origTitle = this._origTitle,
 		curTitle = origTitle || "";
+	
+	//normalize whitespace
+	curTitle.replace(/\s+/g, " ").trim();
 
 	if(/ [\|\-] /.test(curTitle)){
-		curTitle = origTitle.replace(/(.*)[\|\-] .*/g,"$1");
+		curTitle = origTitle.replace(/(.*) [\|\-] .*/g, "$1");
 
-		if(curTitle.split(" ", 3).length < 3)
-			curTitle = origTitle.replace(/[^\|\-]*[\|\-](.*)/g,"$1");
+		if(curTitle.split(" ", 2).length < 2)
+			curTitle = origTitle.replace(/.*?[\|\-](.*)/g,"$1");
 	}
 	else if(curTitle.indexOf(": ") !== -1){
 		curTitle = origTitle.replace(/.*:(.*)/g,"$1");
 
 		if(curTitle.split(" ", 3).length < 3)
-			curTitle = origTitle.replace(/[^:]*[:](.*)/g,"$1");
+			curTitle = origTitle.replace(/[^:]*:(.*)/g,"$1");
 	}
 	else if(curTitle.length > 150 || curTitle.length < 15)
 		if(this._headerTitle) curTitle = this._headerTitle;
