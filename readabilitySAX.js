@@ -617,20 +617,8 @@ Readability.prototype.getNextPage = function(){
 	return topLink;
 };
 
-Readability.prototype.getArticle = function(type){
-	var elem = this._getCandidateNode();
-
-	var ret = {
-		title: this.getTitle(),
-		nextPage: this.getNextPage(),
-		textLength: elem.info.textLength,
-		score: this._topCandidate ? this._topCandidate.totalScore : 0
-	};
-
-	if(type === "text")
-		ret.text = elem.getFormattedText().trim().replace(/\n{3,}/g, "\n\n");
-
-	else ret.html = elem.getInnerHTML() //=> clean it
+Readability.prototype.getHTML = function(node){
+	return (node || this._getCandidateNode()).getInnerHTML() //=> clean it
 		//normalise <br>s, remove spaces in front of them
 		.replace(/(?:\s|&nbsp;?)*<br[^>]*>/g, "<br/>")
 		//turn all double+ <br>s into <p>s
@@ -641,6 +629,24 @@ Readability.prototype.getArticle = function(type){
 		.replace(/(<\/?)font[^>]*>/g, "$1span>")
 		//remove empty <li>s
 		.replace(/<li[^>]*>(?:\s|&nbsp;)*<\/li>/g, "").trim();
+};
+
+Readability.prototype.getText = function(node){
+	return (node || this._getCandidateNode()).getFormattedText().trim().replace(/\n+(?=\n{2})/g, "");
+};
+
+Readability.prototype.getArticle = function(type){
+	var elem = this._getCandidateNode();
+
+	var ret = {
+		title: this.getTitle(),
+		nextPage: this.getNextPage(),
+		textLength: elem.info.textLength,
+		score: this._topCandidate ? this._topCandidate.totalScore : 0
+	};
+
+	if(type === "text") ret.text = this.getText(elem);
+	else ret.html = this.getHTML(elem);
 
 	return ret;
 };
