@@ -572,13 +572,12 @@ Readability.prototype.setSkipLevel = function(skipLevel){
 
 Readability.prototype.getTitle = function(){
 	var origTitle = this._origTitle,
-		curTitle = origTitle || "",
-		pos;
+		curTitle = origTitle || "";
 	
 	//normalize whitespace
 	curTitle.replace(/\s+/g, " ").trim();
 
-	if(pos/ [\|\-] /.test(curTitle)){
+	if(/ [\|\-] /.test(curTitle)){
 		curTitle = origTitle.replace(/(.*) [\|\-] .*/g, "$1");
 
 		if(curTitle.split(" ", 2).length < 2)
