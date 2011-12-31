@@ -576,30 +576,31 @@ Readability.prototype.setSkipLevel = function(skipLevel){
 };
 
 Readability.prototype.getTitle = function(){
-	var curTitle = this._headerTitle;
+	var curTitle = this._headerTitle,
+		origTitle = this._origTitle;
 
 	if(curTitle) return curTitle;
 
-	curTitle = this._origTitle;
+	curTitle = origTitle || "";
 	if(!curTitle) return;
 
 	if(/ [\|\-] /.test(curTitle)){
-		curTitle = origTitle.replace(/(.*) [\|\-] .*/g, "$1");
+		curTitle = curTitle.replace(/(.*) [\|\-] .*/g, "$1");
 
 		if(curTitle.split(" ", 2).length < 2)
 			curTitle = origTitle.replace(/.*?[\|\-] (.*)/g,"$1");
 	}
 	else if(curTitle.indexOf(": ") !== -1){
-		curTitle = origTitle.replace(/.*: (.*)/g,"$1");
+		curTitle = curTitle.substr(curTitle.lastIndexOf(": ") + 2);
 
 		if(curTitle.split(" ", 2).length < 2)
-			curTitle = origTitle.replace(/.*?: (.*)/g,"$1");
+			curTitle = origTitle.substr(0, origTitle.indexOf(": "));
 	}
 
 	curTitle = curTitle.trim();
 
 	if(curTitle.split(" ", 5).length < 5)
-		curTitle = this._origTitle;
+		curTitle = origTitle;
 
 	return curTitle;
 };
