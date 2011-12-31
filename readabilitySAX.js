@@ -16,7 +16,7 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 	goodAttributes = {alt:true,href:true,src:true,title:true/*,style:true*/},
 	cleanConditionaly = {div:true,form:true,ol:true,table:true,ul:true},
 	tagsToScore = {p:true,pre:true,td:true},
-	headerTags = {h2:true,h3:true,h4:true,h5:true,h6:true},
+	headerTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 	newLinesAfter = {br:true,li:true,p:true},
 	newLinesBefore = {p:true},
 
@@ -38,6 +38,7 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 
 	re_sentence = /\.(?: |$)/,
+	re_whitespace = /\s+/g,
 
 	re_pageInURL = /[_\-]?p[a-zA-Z]*[_\-]?\d{1,2}$/,
 	re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i,
@@ -118,7 +119,7 @@ Element.prototype = {
 
 		for(var i in this.attributes)
 			ret += " " + i + "=\"" + this.attributes[i] + "\"";
-		
+
 		if(this.children.length === 0) return ret + "/>";
 
 		return ret + ">" + this.getInnerHTML() + "</" + this.name + ">";
@@ -135,7 +136,7 @@ Element.prototype = {
 	getFormattedText: function(){
 		var nodes = this.children, ret = "";
 		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret += nodes[i].replace(/\s+/g, " ");
+			if(typeof nodes[i] === "string") ret += nodes[i].replace(re_whitespace, " ");
 			else {
 				if(newLinesBefore[nodes[i].name] || headerTags[nodes[i].name]) ret += "\n";
 				ret += nodes[i].getFormattedText();
@@ -374,7 +375,7 @@ Readability.prototype.onopentag = function(tagName, attributes){
 			}
 			else if(re_negative.test(value)) elem.attributeScore = -25;
 			else if(re_positive.test(value)) elem.attributeScore = 25;
-			
+
 			elem.elementData += " " + value;
 		}
 		else if(this._settings.cleanAttributes){
@@ -383,7 +384,7 @@ Readability.prototype.onopentag = function(tagName, attributes){
 		}
 		else elem.attributes[name] = value;
 	}
-	
+
 	if(this._settings.stripUnlikelyCandidates 
 		&& re_unlikelyCandidates.test(elem.elementData)
 		&& !re_okMaybeItsACandidate.test(elem.elementData)){
@@ -404,21 +405,25 @@ Readability.prototype.onclosetag = function(tagName){
 	if(this._settings.searchFurtherPages && tagName === "a"){
 		this._scanLink(elem);
 	}
-	else if(tagName === "title") this._origTitle = elem.getText();
-	else if(tagName === "h1"){
-		if(this._headerTitle !== false){
-			if(!this._headerTitle) this._headerTitle = elem.getText();
-			else this._headerTitle = false;
-		}
+	else if(tagName === "title"){
+		this._origTitle = elem.getText().trim().replace(re_whitespace, " ");
 		return;
 	}
 	else if(headerTags[tagName]){
+		cnvrt = elem.getText().trim().replace(re_whitespace, " ");
 		if(this._origTitle){
-			cnvrt = elem.getText();
-			if(this._origTitle.substr(0, cnvrt.length) === cnvrt){
-				elem.skip = true;
-				//TODO It's probably the title, so let's use it!
+			if(this._origTitle.indexOf(cnvrt) !== -1){
+				if(cnvrt.split(" ", 4).length === 4){
+					//It's probably the title, so let's use it!
+					this._headerTitle = cnvrt;
+				}
+				return;
 			}
+		}
+		//if there was no title tag, use any h1 as the title
+		else if(tagName === "h1"){
+			this._headerTitle = cnvrt;
+			return;
 		}
 	}
 
@@ -571,11 +576,12 @@ Readability.prototype.setSkipLevel = function(skipLevel){
 };
 
 Readability.prototype.getTitle = function(){
-	var origTitle = this._origTitle,
-		curTitle = origTitle || "";
-	
-	//normalize whitespace
-	curTitle.replace(/\s+/g, " ").trim();
+	var curTitle = this._headerTitle;
+
+	if(curTitle) return curTitle;
+
+	curTitle = this._origTitle;
+	if(!curTitle) return;
 
 	if(/ [\|\-] /.test(curTitle)){
 		curTitle = origTitle.replace(/(.*) [\|\-] .*/g, "$1");
@@ -589,13 +595,11 @@ Readability.prototype.getTitle = function(){
 		if(curTitle.split(" ", 2).length < 2)
 			curTitle = origTitle.replace(/.*?: (.*)/g,"$1");
 	}
-	else if(curTitle.length > 150 || curTitle.length < 15)
-		if(this._headerTitle) curTitle = this._headerTitle;
 
 	curTitle = curTitle.trim();
 
 	if(curTitle.split(" ", 5).length < 5)
-		curTitle = origTitle;
+		curTitle = this._origTitle;
 
 	return curTitle;
 };

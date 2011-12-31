@@ -52,7 +52,7 @@ var expected_links = 2;
 var expected_url = {"protocol":"http:","domain":"foo.bar","path":["this.2","is","a","long","path"],"full":"http://foo.bar/this.2/is/a/long/path/index?isnt=it"};
 
 var expected_data = {
-	title:"Realtime Performance Visualizations using Node.js - How To Node",
+	title:"Realtime Performance Visualizations using Node.js",
 	nextPage:"http://howtonode.org/heat-tracer/dummy/page/2",
 	textLength:12071,
 	score:83,
