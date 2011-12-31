@@ -623,14 +623,16 @@ Readability.prototype.getArticle = function(type){
 		ret.text = elem.getFormattedText().trim().replace(/\n{3,}/g, "\n\n");
 
 	else ret.html = elem.getInnerHTML() //=> clean it
-		//normalise breaks
+		//normalise <br>s, remove spaces in front of them
 		.replace(/(?:\s|&nbsp;?)*<br[^>]*>/g, "<br/>")
-		//turn all double+ brs into ps
+		//turn all double+ <br>s into <p>s
 		.replace(/(?:<br\/>\s*){2,}/g, "<p>")
-		//remove breaks in front of paragraphs
+		//remove <br>s in front of <p>
 		.replace(/<br\/>\s*<p/g,"<p")
 		//remove font tags
-		.replace(/(<\/?)font[^>]*>/g, "$1span>").trim();
+		.replace(/(<\/?)font[^>]*>/g, "$1span>")
+		//remove empty <li>s
+		.replace(/<li[^>]*>(?:\s|&nbsp;)*<\/li>/g, "").trim();
 
 	return ret;
 };
