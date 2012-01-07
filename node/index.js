@@ -1,6 +1,6 @@
 var Readability = require("../readabilitySAX"),
-	http = require("http"),
-	https = require("https"),
+	minreq = require("minreq"),
+	STATUS_CODES = require("http").STATUS_CODES,
 	url = require("url"),
 	Parser = require("htmlparser2/lib/Parser.js"),
 	parserOptions = {
@@ -8,7 +8,11 @@ var Readability = require("../readabilitySAX"),
 	};
 
 exports.get = function(uri, cb){
+	var calledCB = false;
 	function onErr(err){
+		if(calledCB) return;
+		calledCB = true;
+		
 		err = err.toString();
 		cb({
 			title:	"Error",
@@ -18,51 +22,31 @@ exports.get = function(uri, cb){
 		 });
 	}
 	
-	var link;
-	if(typeof uri === "object") link = uri;
-	else if(typeof uri === "string") link = url.parse(uri);
-	else onErr("No URI specified!");
-	
-	var req;
-	if(link.protocol === "http:") req = http;
-	else if(link.protocol === "https:") req = https;
-	else return onErr("Unsupported protocol: " + link.protocol);
+	var settings, readable, parser;
 
-	//fix for pre node 0.5.x
-	if(!link.path) link.path = link.pathname;
-	
-	req.request(link, function(resp){
-		if(resp.statusCode % 301 < 2){
-			exports.get(resp.headers.location, cb);
-			return;
+	var req = minreq({
+		uri: typeof uri === "object" ? uri : url.parse(uri),
+		only2xx: true
+	}, function(err, headers, body){
+		if(calledCB) return console.log("got end with calledCB === true");
+		
+		parser.done();
+		
+		var article = readable.getArticle();
+		if(article.score < 300 && article.textLength < 250){
+			article = exports.process(body, settings, 1);	
 		}
-		if(resp.statusCode >= 400){
-			onErr("Got error: " + http.STATUS_CODES[resp.statusCode] + ", status code " + resp.statusCode);
-			return;
-		}
-		
-		var settings = {pageURL: url.format(link)},
-			readable = new Readability(settings),
-			parser = new Parser(readable, parserOptions),
-			data = "";
-		
-		resp.on("data", function(chunk){
-			chunk = chunk.toString();
-			data += chunk;
-			parser.write(chunk);
-		});
-		
-		resp.on("end", function(){
-			parser.done();
-			
-			var article = readable.getArticle();
-			if(article.score < 300 && article.textLength < 250){
-				article = exports.process(data, settings, 1);	
-			}
-			article.link = settings.pageURL;
-			cb(article);
-		});
-	}).on("error", onErr).end();
+		article.link = req.response.location;
+		cb(article);
+	}).on("response", function(resp){
+		settings = {pageURL: url.format(uri)};
+		readable = new Readability(settings);
+		parser = new Parser(readable, parserOptions);
+	}).on("data", function(chunk){
+		parser.write(chunk);
+	}).on("error", function(err){
+		onErr(err);
+	});
 };
 
 exports.process = function(data, settings, skipLevel){
