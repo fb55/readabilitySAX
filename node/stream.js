@@ -8,14 +8,19 @@ var Stream = module.exports = function(settings, cb){
 	this._parser = new Parser(this._readable);
 	this._data = "";
 	
+	var scope = this;
+	
 	this.on("error", function(err){
 		err = err.toString();
-    	cb({
+    	if(scope._cb) scope._cb({
     		title:	"Error",
     		text:	err,
     		html:	"<b>" + err + "</b>",
     		error: true
     	});
+	});
+	this.on("data", function(data){
+		if(scope._cb) scope._cb(data);
 	});
 };
 
@@ -32,6 +37,6 @@ Stream.prototype.end = function(){
 	if(article.score < 300 && article.textLength < 250){
 	    article = getContent.process(this._data, this._settings, 1);	
 	}
-	this._cb(article);
+	this.emit("data", article);
 };
 Stream.prototype.writable = true;
