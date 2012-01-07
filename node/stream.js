@@ -38,5 +38,6 @@ Stream.prototype.end = function(){
 	    article = getContent.process(this._data, this._settings, 1);	
 	}
 	this.emit("data", article);
+	this.emit("end");
 };
 Stream.prototype.writable = true;
