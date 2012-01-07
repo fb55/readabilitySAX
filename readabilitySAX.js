@@ -173,6 +173,7 @@ Readability.prototype._settings = {
 	searchFurtherPages: true,
 	linksToSkip: {},	//pages that are already parsed
 	//pageURL: null,	//URL of the page which is parsed
+	//type: "html",		//default type of output
 	resolvePaths: false
 };
 
@@ -267,6 +268,7 @@ Readability.prototype._processSettings = function(settings){
 		};
 		this._baseURL = this._getBaseURL();
 	}
+	if(settings.type) this._settings.type = settings.type;
 };
 
 Readability.prototype._scanLink = function(elem){
@@ -645,6 +647,8 @@ Readability.prototype.getArticle = function(type){
 		score: this._topCandidate ? this._topCandidate.totalScore : 0
 	};
 
+	if(!type && this._settings.type) type = this._settings.type;
+	
 	if(type === "text") ret.text = this.getText(elem);
 	else ret.html = this.getHTML(elem);
 
