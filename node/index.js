@@ -1,6 +1,5 @@
 var Readability = require("../readabilitySAX"),
 	minreq = require("minreq"),
-	STATUS_CODES = require("http").STATUS_CODES,
 	url = require("url"),
 	Parser = require("htmlparser2/lib/Parser.js"),
 	parserOptions = {
