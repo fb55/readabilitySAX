@@ -13,7 +13,6 @@ require("minreq")(process.argv[2])
 .on("error", console.log.bind(null, "Parsing error:"))
 .on("data", function(result){
 	console.log("TITLE:", result.title);
-	console.log("URL:", result.link);
 	console.log("SCORE:", result.score);
 	if(result.nextPage) console.log("NEXT PAGE:", result.nextPage);
 	console.log("LENGTH:", result.textLength);
