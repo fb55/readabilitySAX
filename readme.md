@@ -22,6 +22,21 @@ This module is available on `npm` as `readabilitySAX`. Just run
 
     npm install readabilitySAX
 
+#####CLI
+A command line interface (CLI) may be installed via
+
+    npm install -g readabilitySAX
+
+It's then available via
+
+    readability <domain> [<format>]
+
+To get this readme, just run
+
+    readability https://github.com/FB55/readabilitySAX
+
+The format is optional (it's either `text` or `html`, the default value is `text`).
+
 ###Usage
 #####Node
 Just run `require("readabilitySAX")`. You'll get an object containing three methods:
@@ -68,6 +83,8 @@ These are the options that one may pass to the Readability object:
 * `linksToSkip`: A map of pages that should be ignored when searching links to further pages. Default: {}
 
 * `pageURL`: The URL of the current page. Will be used to resolve all other links and is ignored when searching links. Default: ""
+
+* `type`: The default type of the output of `getArticle()`. Possible values are "html" or "text". Default: "html"
 
 * `resolvePaths`: Indicates whether ".." and "." inside paths should be eliminated. Default: false
 
