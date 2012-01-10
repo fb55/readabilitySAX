@@ -101,11 +101,11 @@ Element.prototype = {
 				info.commas += elem.info.commas;
 
 				for(var j in elem.info.tagCount){
-					if(info.tagCount[j]) info.tagCount[j] += elem.info.tagCount[j];
+					if(j in info.tagCount) info.tagCount[j] += elem.info.tagCount[j];
 					else info.tagCount[j] = elem.info.tagCount[j];
 				}
 
-				if(info.tagCount[elem.name]) info.tagCount[elem.name] += 1;
+				if(elem.name in info.tagCount) info.tagCount[elem.name] += 1;
 				else info.tagCount[elem.name] = 1;
 			}
 		}
@@ -278,7 +278,7 @@ Readability.prototype._scanLink = function(elem){
 
 	href = this._convertLinks(href.replace(re_closing, ""));
 
-	if(this._settings.linksToSkip[href]) return;
+	if(href in this._settings.linksToSkip) return;
 
 	if(href === this._baseURL || (this._url && href === this._url.full)) return;
 
@@ -335,7 +335,7 @@ Readability.prototype._scanLink = function(elem){
 		else score += Math.max(0, 10 - parsedNum);
 	}
 
-	if(this._scannedLinks[href]){
+	if(href in this._scannedLinks){
 		this._scannedLinks[href].score += score;
 		this._scannedLinks[href].text += " " + text;
 	}
@@ -381,7 +381,7 @@ Readability.prototype.onopentag = function(tagName, attributes){
 			elem.elementData += " " + value;
 		}
 		else if(this._settings.cleanAttributes){
-			if(goodAttributes[name])
+			if(name in goodAttributes)
 				elem.attributes[name] = value;
 		}
 		else elem.attributes[name] = value;
@@ -411,7 +411,7 @@ Readability.prototype.onclosetag = function(tagName){
 		this._origTitle = elem.getText().trim().replace(re_whitespace, " ");
 		return;
 	}
-	else if(headerTags[tagName]){
+	else if(tagName in headerTags){
 		cnvrt = elem.getText().trim().replace(re_whitespace, " ");
 		if(this._origTitle){
 			if(this._origTitle.indexOf(cnvrt) !== -1){
@@ -439,7 +439,7 @@ Readability.prototype.onclosetag = function(tagName){
 			&& elem.info.linkLength === 0 && elem.info.textLength === 0)
 				return;
 	}
-	else if(embeds[tagName]){
+	else if(tagName in embeds){
 		//check if tag is wanted (youtube or vimeo)
 		if(!elem.attributes.src || !re_videos.test(elem.attributes.src)) return;
 	}
@@ -485,7 +485,7 @@ Readability.prototype.onclosetag = function(tagName){
 
 	if(elem.isCandidate){
 		//add points for the tags name
-		if(tagCounts[tagName]) elem.tagScore += tagCounts[tagName];
+		if(tagName in tagCounts) elem.tagScore += tagCounts[tagName];
 
 		elem.totalScore = Math.floor(
 			(elem.tagScore + elem.attributeScore) * (1 - elem.info.density)
