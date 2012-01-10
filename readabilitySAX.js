@@ -1,7 +1,7 @@
 /*
 * readabilitySAX
 * https://github.com/fb55/readabilitySAX
-* 
+*
 * The code is structured into three main parts:
 * 	1. A list of properties that help readability to determine how a "good" element looks like
 * 	2. An light-weight "Element" class that is used instead of the DOM (and provides some DOM-like functionality)
@@ -382,7 +382,7 @@ Readability.prototype.onopentag = function(tagName, attributes){
 		else elem.attributes[name] = value;
 	}
 
-	if(this._settings.stripUnlikelyCandidates 
+	if(this._settings.stripUnlikelyCandidates
 		&& re_unlikelyCandidates.test(elem.elementData)
 		&& !re_okMaybeItsACandidate.test(elem.elementData)){
 			elem.skip = true;
@@ -430,7 +430,7 @@ Readability.prototype.onclosetag = function(tagName){
 
 	//clean conditionally
 	if(tagName === "p"){
-		if(!("img" in elem.info.tagCount) && !("embed" in elem.info.tagCount) && !("object" in elem.info.tagCount) 
+		if(!("img" in elem.info.tagCount) && !("embed" in elem.info.tagCount) && !("object" in elem.info.tagCount)
 			&& elem.info.linkLength === 0 && elem.info.textLength === 0)
 				return;
 	}
@@ -459,31 +459,6 @@ Readability.prototype.onclosetag = function(tagName){
 
 	elem.parent.children.push(elem);
 
-	//should node be scored?
-	var score = tagName in tagsToScore, i, j;
-	if(!score && tagName === "div"){
-		cnvrt = true;
-		for(i = 0, j = divToPElements.length; i < j; i++){
-			if(divToPElements[i] in elem.info.tagCount){
-				cnvrt = false;
-				break;
-			}
-		}
-
-		if(cnvrt){
-			elem.name = "p";
-			score = true;
-		}
-	}
-	if(score){
-		if((elem.info.textLength + elem.info.linkLength) > 24 && elem.parent && elem.parent.parent){
-			elem.parent.isCandidate = elem.parent.parent.isCandidate = true;
-			var addScore = 1 + elem.info.commas + Math.min( Math.floor( (elem.info.textLength + elem.info.linkLength) / 100 ), 3);
-			elem.parent.tagScore += addScore;
-			elem.parent.parent.tagScore += addScore / 2;
-		}
-	}
-
 	if(elem.isCandidate){
 		//add points for the tags name
 		if(tagName in tagCounts) elem.tagScore += tagCounts[tagName];
@@ -494,6 +469,25 @@ Readability.prototype.onclosetag = function(tagName){
 		if(!this._topCandidate || elem.totalScore > this._topCandidate.totalScore){
 			this._topCandidate = elem;
 		}
+	}
+
+	//should node be scored?
+	if(tagName in tagsToScore);
+	else if(tagName === "div"){
+		//check if div should be converted to a p
+		for(var i = 0, j = divToPElements.length; i < j; i++){
+			if(divToPElements[i] in elem.info.tagCount) return;
+		}
+
+		elem.name = "p";
+	}
+	else return;
+
+	if((elem.info.textLength + elem.info.linkLength) > 24 && elem.parent && elem.parent.parent){
+	    elem.parent.isCandidate = elem.parent.parent.isCandidate = true;
+	    var addScore = 1 + elem.info.commas + Math.min( Math.floor( (elem.info.textLength + elem.info.linkLength) / 100 ), 3);
+	    elem.parent.tagScore += addScore;
+	    elem.parent.parent.tagScore += addScore / 2;
 	}
 };
 
@@ -642,7 +636,7 @@ Readability.prototype.getArticle = function(type){
 	};
 
 	if(!type && this._settings.type) type = this._settings.type;
-	
+
 	if(type === "text") ret.text = this.getText(elem);
 	else ret.html = this.getHTML(elem);
 
