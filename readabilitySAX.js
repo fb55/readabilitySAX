@@ -146,6 +146,33 @@ Element.prototype = {
 	},
 	toString: function(){
 		return this.children.join("");
+	},
+	getTopCandidate: function(){
+		var childs = this.children,
+			topScore = -1/0,
+			topCandidate, elem;
+
+		for(var i = 0, j = childs.length; i < j; i++){
+			if(typeof childs[i] === "string") continue;
+			if(childs[i].isCandidate){
+				elem = childs[i];
+				//add points for the tags name
+				if(elem.name in tagCounts) elem.tagScore += tagCounts[elem.name];
+
+				elem.totalScore = Math.floor(
+					(elem.tagScore + elem.attributeScore) * (1 - elem.info.density)
+				);
+				if(topScore < elem.totalScore){
+					topScore = elem.totalScore;
+					topCandidate = elem;
+				}
+			}
+			if((elem = childs[i].getTopCandidate()) && topScore < elem.totalScore){
+				topScore = elem.totalScore;
+				topCandidate = elem;
+			}
+		}
+		return topCandidate;
 	}
 };
 
@@ -347,7 +374,7 @@ Readability.prototype.onopentag = function(tagName, attributes){
 
 Readability.prototype._onattribute = function(name, value){
 	if(!value) return;
-	
+
 	var elem = this._currentElement;
 
 	if(name === "href" || name === "src"){
@@ -408,7 +435,7 @@ Readability.prototype.onclosetag = function(tagName){
 			return;
 		}
 	}
-	
+
 	if(tagName in tagsToSkip) return;
 	if(this._settings.stripUnlikelyCandidates
 		&& re_unlikelyCandidates.test(elem.elementData)
@@ -449,18 +476,6 @@ Readability.prototype.onclosetag = function(tagName){
 
 	elem.parent.children.push(elem);
 
-	if(elem.isCandidate){
-		//add points for the tags name
-		if(tagName in tagCounts) elem.tagScore += tagCounts[tagName];
-
-		elem.totalScore = Math.floor(
-			(elem.tagScore + elem.attributeScore) * (1 - elem.info.density)
-		);
-		if(!this._topCandidate || elem.totalScore > this._topCandidate.totalScore){
-			this._topCandidate = elem;
-		}
-	}
-
 	//should node be scored?
 	if(tagName in tagsToScore);
 	else if(tagName === "div"){
@@ -483,10 +498,10 @@ Readability.prototype.onclosetag = function(tagName){
 
 Readability.prototype.onreset = Readability;
 
-Readability.prototype._getCandidateSiblings = function(childs){
+var getCandidateSiblings = function(candidate){
 	//check all siblings
 	var ret = [],
-		candidate = this._topCandidate,
+		childs = candidate.parent.children,
 		childNum = childs.length,
 		siblingScoreThreshold = Math.max(10, candidate.totalScore * .2);
 
@@ -511,34 +526,32 @@ Readability.prototype._getCandidateSiblings = function(childs){
 	return ret;
 };
 
+
+
 Readability.prototype._getCandidateNode = function(){
-	var elem = this._topCandidate, parent;
+	var elem = this._topCandidate, elems;
+	if(!elem) elem = this._topCandidate = this._currentElement.getTopCandidate();
 
 	if(!elem){
 		//select root node
-		parent = this._currentElement;
+		elem = this._currentElement;
 	}
-	else{
+	else if(elem.parent.children.length > 1){
+		elems = getCandidateSiblings(elem);
 
-		parent = elem.parent;
+    	//create a new object so that the prototype methods are callable
+    	elem = new Element("div")
+    	elem.children = elems;
+    	elem.addInfo();
+    }
 
-		if(parent.children.length > 1){
-			elem = this._getCandidateSiblings(parent.children);
-
-			//create a new object so that the prototype methods are callable
-			parent = new Element("div")
-			parent.children = elem;
-			parent.addInfo();
-		}
-	}
-
-	while(parent.children.length === 1){
-		if(typeof parent.children[0] === "object"){
-			parent = parent.children[0];
+	while(elem.children.length === 1){
+		if(typeof elem.children[0] === "object"){
+			elem = elem.children[0];
 		} else break;
 	}
 
-	return parent;
+	return elem;
 };
 
 //skipLevel is a shortcut to allow more elements of the page
