@@ -33,11 +33,11 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 	re_final = /first|last/i,
 
 	re_positive = /article|body|content|entry|main|pag(?:e|ination)|post|text|blog|story/,
-	re_negative = /com(?:bx|ment|-)|contact|foot(?:ter|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-	re_unlikelyCandidates = /ad-break|agegate|com(?:bx|ment|munity)|disqus|extra|foot|header|menu|pag(?:er|ination)|popup|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/,
+	re_negative = /com(?:bx|ment|-)|contact|foot(?:er|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
+	re_unlikelyCandidates = /ad-break|agegate|auth?or|com(?:bx|ment|munity)|disqus|extra|foot|header|menu|pag(?:er|ination)|popup|postinfo|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/,
 	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 
-	re_sentence = /\.(?: |$)/,
+	re_sentence = /\. |\.$/,
 	re_whitespace = /\s+/g,
 
 	re_pageInURL = /[_\-]?p[a-zA-Z]*[_\-]?\d{1,2}$/,
