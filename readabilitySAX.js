@@ -457,6 +457,10 @@ Readability.prototype.onclosetag = function(tagName){
 		//clean headers
 		if (elem.attributeScore < 0 || elem.info.density > .33) return;
 	}
+	else if(tagName === "div" && elem.children.length === 1){
+		elem.parent.children.push(elem.children[0]);
+		return;
+	}
 	else if(this._settings.cleanConditionally && tagName in cleanConditionaly){
 		var p = elem.info.tagCount.p || 0,
 			contentLength = elem.info.textLength + elem.info.linkLength;
