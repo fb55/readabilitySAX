@@ -15,9 +15,13 @@ function debug(data){
 	
 	var data = readable.getArticle();
 	
-	test(JSON.stringify(data), JSON.stringify(expected_data),
-		"didn't got expected output!");
-	test(require("util").inspect(readable._currentElement,false,1/0).length, 1111687, 
+	test(data.title, expected_data.title, "didn't got expected title!");
+	test(data.nextPage, expected_data.nextPage, "didn't got expected nextPage!");
+	test(data.textLength, expected_data.textLength, "didn't got expected textLength!");
+	test(data.score, expected_data.score, "didn't got expected score!");
+	test(data.html, expected_data.html, "didn't got expected html!");
+	
+	test(require("util").inspect(readable._currentElement,false,1/0).length, 1047582, 
 		"tree had false size!");
 	test(Object.keys(readable._scannedLinks).length, expected_links, 
 		"wrong number of links!");
