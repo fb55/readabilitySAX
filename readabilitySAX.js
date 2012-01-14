@@ -63,7 +63,6 @@ var Element = function(tagName, parent){
 		this.parent = parent;
 		this.attributes = {};
 		this.children = [];
-		this.skip = false;
 		this.tagScore = 0;
 		this.attributeScore = 0;
 		this.totalScore = 0;
@@ -176,9 +175,6 @@ Readability.prototype._convertLinks = function(path){
 	if(!this._url) return path;
 	if(!path) return this._url.full;
 
-	//ignore javascript:, mailto: links
-	if(re_protocol.test(path)) return path;
-
 	var path_split = path.split("/");
 
 	//special cases
@@ -271,7 +267,7 @@ Readability.prototype._scanLink = function(elem){
 
 	if(!href) return;
 
-	href = this._convertLinks(href.replace(re_closing, ""));
+	href = href.replace(re_closing, "");
 
 	if(href in this._settings.linksToSkip) return;
 
@@ -346,41 +342,36 @@ Readability.prototype.onopentag = function(tagName, attributes){
 		elem = new Element(tagName, parent);
 
 	this._currentElement = elem;
+	for(var name in attributes) this._onattribute(name, attributes[name]);
+};
 
-	if(parent.skip || tagsToSkip[tagName]){
-		elem.attributes = attributes;
-		elem.skip = true;
-		return;
+Readability.prototype._onattribute = function(name, value){
+	if(!value) return;
+	
+	var elem = this._currentElement;
+
+	if(name === "href" || name === "src"){
+	    //fix links
+	    if(re_protocol.test(value)) elem.attributes[name] = value;
+	    else elem.attributes[name] = this._convertLinks(value);
 	}
+	else if(name === "id" || name === "class"){
+	    value = value.toLowerCase();
+	    if(!this._settings.weightClasses);
+	    else if(re_safe.test(value)){
+	    	elem.attributeScore += 300;
+	    	elem.isCandidate = true;
+	    }
+	    else if(re_negative.test(value)) elem.attributeScore -= 25;
+	    else if(re_positive.test(value)) elem.attributeScore += 25;
 
-	var value;
-
-	for(var name in attributes){
-		value = attributes[name];
-		if(!value) continue;
-
-		if(name === "href" || name === "src"){
-			//fix links
-			elem.attributes[name] = this._convertLinks(value);
-		}
-		else if(name === "id" || name === "class"){
-			value = value.toLowerCase();
-			if(!this._settings.weightClasses){/* do nothing */}
-			else if(re_safe.test(value)){
-				elem.attributeScore = 300;
-				elem.isCandidate = true;
-			}
-			else if(re_negative.test(value)) elem.attributeScore = -25;
-			else if(re_positive.test(value)) elem.attributeScore = 25;
-
-			elem.elementData += " " + value;
-		}
-		else if(this._settings.cleanAttributes){
-			if(name in goodAttributes)
-				elem.attributes[name] = value;
-		}
-		else elem.attributes[name] = value;
+	    elem.elementData += " " + value;
 	}
+	else if(this._settings.cleanAttributes){
+	    if(name in goodAttributes)
+	    	elem.attributes[name] = value;
+	}
+	else elem.attributes[name] = value;
 };
 
 Readability.prototype.ontext = function(text){
@@ -418,7 +409,7 @@ Readability.prototype.onclosetag = function(tagName){
 		}
 	}
 	
-	if(elem.skip) return;
+	if(tagName in tagsToSkip) return;
 	if(this._settings.stripUnlikelyCandidates
 		&& re_unlikelyCandidates.test(elem.elementData)
 		&& !re_okMaybeItsACandidate.test(elem.elementData)){
