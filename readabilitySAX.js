@@ -614,7 +614,7 @@ Readability.prototype.getHTML = function(node){
 		//turn all double+ <br>s into <p>s
 		.replace(/(?:<br\/>){2,}/g, "</p><p>")
 		//remove <br>s in front of <p>s, <font>s & <span>s, empty <li>s
-		.replace(/<br\/>\s*(?=<p)|<\/?(?:font|span).*?>|<li.*?>(?:\s|&nbsp;?)*<\/li>/g, "")
+		.replace(/<br\/>\s*(?=<\/?p)|<\/?(?:font|span).*?>|<li.*?>(?:\s|&nbsp;?)*<\/li>/g, "")
 		//trim the result
 		.trim();
 };
