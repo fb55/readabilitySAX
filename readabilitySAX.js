@@ -364,12 +364,10 @@ Readability.prototype._scanLink = function(elem){
 };
 
 //parser methods
-Readability.prototype.onopentag = function(tagName, attributes){
-	var parent = this._currentElement,
-		elem = new Element(tagName, parent);
+Readability.prototype.onopentag = function(name, attributes){
+	this._currentElement = new Element(name, this._currentElement);
 
-	this._currentElement = elem;
-	for(var name in attributes) this._onattribute(name, attributes[name]);
+	for(name in attributes) this._onattribute(name, attributes[name]);
 };
 
 Readability.prototype._onattribute = function(name, value){
