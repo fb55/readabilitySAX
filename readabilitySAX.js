@@ -381,12 +381,6 @@ Readability.prototype.onopentag = function(tagName, attributes){
 		}
 		else elem.attributes[name] = value;
 	}
-
-	if(this._settings.stripUnlikelyCandidates
-		&& re_unlikelyCandidates.test(elem.elementData)
-		&& !re_okMaybeItsACandidate.test(elem.elementData)){
-			elem.skip = true;
-	}
 };
 
 Readability.prototype.ontext = function(text){
@@ -423,8 +417,13 @@ Readability.prototype.onclosetag = function(tagName){
 			return;
 		}
 	}
-
+	
 	if(elem.skip) return;
+	if(this._settings.stripUnlikelyCandidates
+		&& re_unlikelyCandidates.test(elem.elementData)
+		&& !re_okMaybeItsACandidate.test(elem.elementData)){
+			return;
+	}
 
 	elem.addInfo();
 
