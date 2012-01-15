@@ -15,6 +15,7 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
 	goodAttributes = {alt:true,href:true,src:true,title:true/*,style:true*/},
 	cleanConditionaly = {div:true,form:true,ol:true,table:true,ul:true},
+	emptyTags = {embed:true,iframe:true,img:true,object:true},
 	tagsToScore = {p:true,pre:true,td:true},
 	headerTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 	newLinesAfter = {br:true,li:true,p:true},
@@ -86,7 +87,7 @@ Element.prototype = {
 		for(var i=0; i < childNum; i++){
 			elem = childs[i];
 			if(typeof elem === "string"){
-				info.textLength += elem.length;
+				info.textLength += elem.trim().replace(re_whitespace, " ").length;
 				info.commas += elem.split(re_commas).length - 1;
 			}
 			else {
@@ -110,8 +111,8 @@ Element.prototype = {
 		}
 		info.density = info.linkLength / (info.textLength + info.linkLength);
 
-		//if there was no text (the value is NaN), ensure it gets skipped
-		if(info.density !== info.density) info.density = 1;
+		//if there was no text (the value is NaN), ignore it
+		if(info.density !== info.density) info.density = 0;
 	},
 	getOuterHTML: function(){
 		var ret = "<" + this.name;
@@ -224,7 +225,7 @@ Readability.prototype._convertLinks = function(path){
 	path = path_split.join("/");
 
 	if(this._settings.resolvePaths){
-		while(path !== (path = path.replace(re_cleanPaths, "")) ){};
+		while(path !== (path = path.replace(re_cleanPaths, "")));
 	}
 
 	return this._url.protocol + "//" + this._url.domain + "/" + path;
@@ -293,21 +294,17 @@ Readability.prototype._scanLink = function(elem){
 	var href = elem.attributes.href;
 
 	if(!href) return;
-
 	href = href.replace(re_closing, "");
 
 	if(href in this._settings.linksToSkip) return;
-
 	if(href === this._baseURL || (this._url && href === this._url.full)) return;
 
 	var match = href.match(re_domain);
 
 	if(!match) return;
-
 	if(this._url && match[1] !== this._url.domain) return;
 
 	var text = elem.toString();
-
 	if(text.length > 25 || re_extraneous.test(text)) return;
 	if(!re_digits.test(href.replace(this._baseURL, ""))) return;
 
@@ -348,9 +345,9 @@ Readability.prototype._scanLink = function(elem){
 	}
 
 	var parsedNum = parseInt(text, 10);
-	if(parsedNum){
+	if(parsedNum < 10){
 		if(parsedNum === 1) score -= 10;
-		else score += Math.max(0, 10 - parsedNum);
+		else score += 10 - parsedNum;
 	}
 
 	if(href in this._scannedLinks){
@@ -404,7 +401,7 @@ Readability.prototype.ontext = function(text){
 };
 
 Readability.prototype.onclosetag = function(tagName){
-	var elem = this._currentElement, cnvrt;
+	var elem = this._currentElement, i, j;
 
 	this._currentElement = elem.parent;
 
@@ -417,19 +414,19 @@ Readability.prototype.onclosetag = function(tagName){
 		return;
 	}
 	else if(tagName in headerTags){
-		cnvrt = elem.toString().trim().replace(re_whitespace, " ");
+		i = elem.toString().trim().replace(re_whitespace, " ");
 		if(this._origTitle){
-			if(this._origTitle.indexOf(cnvrt) !== -1){
-				if(cnvrt.split(" ", 4).length === 4){
+			if(this._origTitle.indexOf(i) !== -1){
+				if(i.split(" ", 4).length === 4){
 					//It's probably the title, so let's use it!
-					this._headerTitle = cnvrt;
+					this._headerTitle = i;
 				}
 				return;
 			}
 		}
 		//if there was no title tag, use any h1 as the title
 		else if(tagName === "h1"){
-			this._headerTitle = cnvrt;
+			this._headerTitle = i;
 			return;
 		}
 	}
@@ -445,19 +442,23 @@ Readability.prototype.onclosetag = function(tagName){
 
 	//clean conditionally
 	if(tagName === "p"){
-		if(!("img" in elem.info.tagCount) && !("embed" in elem.info.tagCount) && !("object" in elem.info.tagCount)
-			&& elem.info.linkLength === 0 && elem.info.textLength === 0)
-				return;
+		if(	elem.info.linkLength === 0
+			&& elem.info.textLength === 0
+			&& !("embed" in elem.info.tagCount)
+			&& !("object" in elem.info.tagCount)
+			&& !("img" in elem.info.tagCount)
+		) return;
 	}
 	else if(tagName in embeds){
 		//check if tag is wanted (youtube or vimeo)
-		if(!elem.attributes.src || !re_videos.test(elem.attributes.src)) return;
+		if(!("src" in elem.attributes) || !re_videos.test(elem.attributes.src)) return;
 	}
 	else if(tagName === "h2" || tagName === "h3"){
 		//clean headers
 		if (elem.attributeScore < 0 || elem.info.density > .33) return;
 	}
-	else if(tagName === "div" && elem.children.length === 1){
+	else if(tagName === "div" && elem.children.length === 1 && elem.children[0] in emptyTags){
+		//unpack divs
 		elem.parent.children.push(elem.children[0]);
 		return;
 	}
@@ -465,9 +466,15 @@ Readability.prototype.onclosetag = function(tagName){
 		var p = elem.info.tagCount.p || 0,
 			contentLength = elem.info.textLength + elem.info.linkLength;
 
-		if( elem.info.tagCount.img > p ) return;
-		if(tagName !== "ul" && tagName !== "ol" && (elem.info.tagCount.li - 100) > p) return;
-		if(elem.info.tagCount.input > p/3) return;
+		if(contentLength === 0){
+			for(i = 0, j = elem.children.length; i < j; i++){
+				if(typeof elem.children[i] === "object" 
+					&& !(elem.children[i].name in emptyTags)
+				) return;
+			}
+		}
+		else if(elem.info.tagCount.img > p ) return;
+		if((elem.info.tagCount.li - 100) > p && tagName !== "ul" && tagName !== "ol") return;
 		if(contentLength < 25 && (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2) ) return;
 		if(elem.attributeScore < 25){
 			if(elem.info.density > .2) return;
@@ -482,7 +489,7 @@ Readability.prototype.onclosetag = function(tagName){
 	if(tagName in tagsToScore);
 	else if(tagName === "div"){
 		//check if div should be converted to a p
-		for(var i = 0, j = divToPElements.length; i < j; i++){
+		for(i = 0, j = divToPElements.length; i < j; i++){
 			if(divToPElements[i] in elem.info.tagCount) return;
 		}
 
