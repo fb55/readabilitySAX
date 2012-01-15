@@ -14,8 +14,8 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
 	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
 	goodAttributes = {alt:true,href:true,src:true,title:true/*,style:true*/},
-	cleanConditionaly = {div:true,form:true,ol:true,table:true,ul:true},
-	emptyTags = {embed:true,iframe:true,img:true,object:true},
+	cleanConditionally = {div:true,form:true,ol:true,table:true,ul:true},
+	emptyTags = {embed:true,iframe:true,img:true,object:true,div:true},
 	tagsToScore = {p:true,pre:true,td:true},
 	headerTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 	newLinesAfter = {br:true,li:true,p:true},
@@ -33,9 +33,9 @@ var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:t
 	re_safe = /hentry|instapaper_body/,
 	re_final = /first|last/i,
 
-	re_positive = /article|body|content|entry|main|pag(?:e|ination)|post|text|blog|story/,
+	re_positive = /article|body|content|entry|main|news|pag(?:e|ination)|post|text|blog|story/,
 	re_negative = /com(?:bx|ment|-)|contact|foot(?:er|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-	re_unlikelyCandidates = /ad-break|agegate|auth?or|com(?:bx|ment|munity)|disqus|extra|foot|header|menu|pag(?:er|ination)|popup|postinfo|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/,
+	re_unlikelyCandidates = /ad-break|agegate|auth?or|com(?:bx|ment|munity)|disqus|extra|foot|header|ignore|menu|navi|pag(?:er|ination)|popup|postinfo|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/,
 	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 
 	re_sentence = /\. |\.$/,
@@ -442,8 +442,7 @@ Readability.prototype.onclosetag = function(tagName){
 
 	//clean conditionally
 	if(tagName === "p"){
-		if(	elem.info.linkLength === 0
-			&& elem.info.textLength === 0
+		if(	elem.info.linkLength + elem.info.textLength === 0
 			&& !("embed" in elem.info.tagCount)
 			&& !("object" in elem.info.tagCount)
 			&& !("img" in elem.info.tagCount)
@@ -462,16 +461,14 @@ Readability.prototype.onclosetag = function(tagName){
 		elem.parent.children.push(elem.children[0]);
 		return;
 	}
-	else if(this._settings.cleanConditionally && tagName in cleanConditionaly){
+	else if(this._settings.cleanConditionally && tagName in cleanConditionally){
 		var p = elem.info.tagCount.p || 0,
 			contentLength = elem.info.textLength + elem.info.linkLength;
 
 		if(contentLength === 0){
-			for(i = 0, j = elem.children.length; i < j; i++){
-				if(typeof elem.children[i] === "object" 
-					&& !(elem.children[i].name in emptyTags)
-				) return;
-			}
+			if("a" in elem.info.tagCount) return;
+			if(elem.children.length === 0) return;
+			if(elem.children.length === 1 && typeof elem.children[0] === "string") return;
 		}
 		else if(elem.info.tagCount.img > p ) return;
 		if((elem.info.tagCount.li - 100) > p && tagName !== "ul" && tagName !== "ol") return;
