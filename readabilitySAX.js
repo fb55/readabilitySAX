@@ -635,6 +635,19 @@ Readability.prototype.getText = function(node){
 	return (node || this._getCandidateNode()).getFormattedText().trim().replace(/\n+(?=\n{2})/g, "");
 };
 
+Readability.prototype.getEvents = function(cbs){
+	(function process(node){
+		cbs.onopentag(node.name, node.attributes);
+		for(var i = 0, j = node.children.length; i < j; i++){
+			if(typeof node.children[i] === "string"){
+				cbs.ontext(node.children[i]);
+			}
+			else process(node.children[i]);
+		}
+		cbs.onclosetag(node.name);
+	})(this._getCandidateNode());
+};
+
 Readability.prototype.getArticle = function(type){
 	var elem = this._getCandidateNode();
 
