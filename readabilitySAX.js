@@ -457,7 +457,7 @@ Readability.prototype.onclosetag = function(tagName){
 		//clean headers
 		if (elem.attributeScore < 0 || elem.info.density > .33) return;
 	}
-	else if(tagName === "div" && elem.children.length === 1 && elem.children[0] in emptyTags){
+	else if(tagName === "div" && elem.children.length === 1 && elem.children[0].name in emptyTags){
 		//unpack divs
 		elem.parent.children.push(elem.children[0]);
 		return;
