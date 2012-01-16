@@ -10,12 +10,13 @@
 
 
 //1. list of values
-var tagsToSkip = {aside:true,footer:true,head:true,header:true,input:true,link:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
+var tagsToSkip = {aside:true,footer:true,head:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
 	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
 	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
 	goodAttributes = {alt:true,href:true,src:true,title:true/*,style:true*/},
 	cleanConditionally = {div:true,form:true,ol:true,table:true,ul:true},
-	emptyTags = {embed:true,iframe:true,img:true,object:true,div:true},
+	unpackDivs = {embed:true,iframe:true,img:true,object:true,div:true},
+	noContent = {br:true,hr:true,input:false,link:false,meta:false},
 	tagsToScore = {p:true,pre:true,td:true},
 	headerTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 	newLinesAfter = {br:true,li:true,p:true},
@@ -87,7 +88,7 @@ Element.prototype = {
 		for(var i=0; i < childNum; i++){
 			elem = childs[i];
 			if(typeof elem === "string"){
-				info.textLength += elem.trim().replace(re_whitespace, " ").length;
+				info.textLength += elem.trim()./*replace(re_whitespace, " ").*/length;
 				info.commas += elem.split(re_commas).length - 1;
 			}
 			else {
@@ -362,6 +363,13 @@ Readability.prototype._scanLink = function(elem){
 
 //parser methods
 Readability.prototype.onopentag = function(name, attributes){
+	if(name in noContent){
+		if(noContent[name]){
+			this._currentElement.children.push("<" + name + "\/>");
+		}
+		return;
+	}
+	//else
 	this._currentElement = new Element(name, this._currentElement);
 
 	for(name in attributes) this._onattribute(name, attributes[name]);
@@ -401,6 +409,8 @@ Readability.prototype.ontext = function(text){
 };
 
 Readability.prototype.onclosetag = function(tagName){
+	if(tagName in noContent) return;
+
 	var elem = this._currentElement, i, j;
 
 	this._currentElement = elem.parent;
@@ -456,7 +466,7 @@ Readability.prototype.onclosetag = function(tagName){
 		//clean headers
 		if (elem.attributeScore < 0 || elem.info.density > .33) return;
 	}
-	else if(tagName === "div" && elem.children.length === 1 && elem.children[0].name in emptyTags){
+	else if(tagName === "div" && elem.children.length === 1 && elem.children[0].name in unpackDivs){
 		//unpack divs
 		elem.parent.children.push(elem.children[0]);
 		return;
@@ -618,8 +628,8 @@ Readability.prototype.getNextPage = function(){
 
 Readability.prototype.getHTML = function(node){
 	return (node || this._getCandidateNode()).getInnerHTML() //=> clean it
-		//normalise <br>s, remove spaces in front of them
-		.replace(/(?:\s|&nbsp;?)*<br.*?>/g, "<br/>")
+		//remove spaces in front of <br>s
+		.replace(/(?:\s|&nbsp;?)+(?=<br\/>)/g, "")
 		//turn all double+ <br>s into <p>s
 		.replace(/(?:<br\/>){2,}/g, "</p><p>")
 		//remove <br>s in front of <p>s, <font>s & <span>s, empty <li>s
