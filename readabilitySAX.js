@@ -3,63 +3,12 @@
 * https://github.com/fb55/readabilitySAX
 *
 * The code is structured into three main parts:
-* 	1. A list of properties that help readability to determine how a "good" element looks like
-* 	2. An light-weight "Element" class that is used instead of the DOM (and provides some DOM-like functionality)
+* 	1. An light-weight "Element" class that is used instead of the DOM (and provides some DOM-like functionality)
+* 	2. A list of properties that help readability to determine how a "good" element looks like
 * 	3. The Readability class that provides the interface & logic (usable as a htmlparser2 handler)
 */
 
-
-//1. list of values
-var tagsToSkip = {aside:true,footer:true,head:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
-	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
-	removeIfEmpty = {blockquote:true,div:true,form:true,li:true,ol:true,p:true,pre:true,table:true,tbody:true,td:true,th:true,thead:true,tr:true,ul:true},
-	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
-	goodAttributes = {alt:true,href:true,src:true,title:true/*,style:true*/},
-	cleanConditionally = {div:true,form:true,ol:true,table:true,ul:true},
-	unpackDivs = {embed:true,iframe:true,img:true,object:true,div:true},
-	noContent = {br:true,hr:true,input:false,link:false,meta:false},
-	tagsToScore = {p:true,pre:true,td:true},
-	headerTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
-	newLinesAfter = {br:true,li:true,p:true},
-
-	divToPElements = ["a","blockquote","dl","img","ol","p","pre","table","ul"],
-
-	re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/,
-	re_nextLink = /[>»]|continue|next|weiter(?:[^\|]|$)/i,
-	re_prevLink = /[<«]|earl|new|old|prev/i,
-	re_extraneous = /all|archive|comment|discuss|e-?mail|login|print|reply|share|sign|single/i,
-	re_pages = /pag(?:e|ing|inat)/i,
-	re_pagenum = /p[ag]{0,2}(?:e|ing|ination)?[=\/]\d{1,2}/i,
-
-	re_safe = /hentry|instapaper_body/,
-	re_final = /first|last/i,
-
-	re_positive = /article|body|content|entry|main|news|pag(?:e|ination)|post|text|blog|story/,
-	re_negative = /com(?:bx|ment|-)|contact|foot(?:er|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-	re_unlikelyCandidates = /ad-break|agegate|auth?or|com(?:bx|ment|munity)|disqus|extra|foot|header|ignore|menu|navi|pag(?:er|ination)|popup|postinfo|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/,
-	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
-
-	re_sentence = /\. |\.$/,
-	re_whitespace = /\s+/g,
-
-	re_pageInURL = /[_\-]?p[a-zA-Z]*[_\-]?\d{1,2}$/,
-	re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i,
-	re_noLetters = /[^a-zA-Z]/,
-	re_params = /\?.*/,
-	re_extension = /00,|\.[a-zA-Z]+$/g,
-	re_digits = /\d/,
-	re_justDigits = /^\d{1,2}$/,
-	re_slashes = /\/+/,
-	re_domain = /\/([^\/]+)/,
-
-	re_protocol = /^\w+\:/,
-	re_cleanPaths = /\/\.(?!\.)|\/[^\/]*\/\.\./,
-
-	re_closing = /\/?(?:#.*)?$/,
-
-	re_commas = /,[\s\,]*/g;
-
-//2. the tree element
+//1. the tree element
 var Element = function(tagName, parent){
 		this.name = tagName;
 		this.parent = parent;
@@ -177,6 +126,56 @@ Element.prototype = {
 		return topCandidate;
 	}
 };
+
+//2. list of values
+var tagsToSkip = {aside:true,footer:true,head:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
+	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
+	removeIfEmpty = {blockquote:true,div:true,form:true,li:true,ol:true,p:true,pre:true,table:true,tbody:true,td:true,th:true,thead:true,tr:true,ul:true},
+	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
+	goodAttributes = {alt:true,href:true,src:true,title:true/*,style:true*/},
+	cleanConditionally = {div:true,form:true,ol:true,table:true,ul:true},
+	unpackDivs = {embed:true,iframe:true,img:true,object:true,div:true},
+	noContent = {br:new Element("br"),hr:new Element("hr"),input:false,link:false,meta:false},
+	tagsToScore = {p:true,pre:true,td:true},
+	headerTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
+	newLinesAfter = {br:true,li:true,p:true},
+
+	divToPElements = ["a","blockquote","dl","img","ol","p","pre","table","ul"],
+
+	re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/,
+	re_nextLink = /[>»]|continue|next|weiter(?:[^\|]|$)/i,
+	re_prevLink = /[<«]|earl|new|old|prev/i,
+	re_extraneous = /all|archive|comment|discuss|e-?mail|login|print|reply|share|sign|single/i,
+	re_pages = /pag(?:e|ing|inat)/i,
+	re_pagenum = /p[ag]{0,2}(?:e|ing|ination)?[=\/]\d{1,2}/i,
+
+	re_safe = /hentry|instapaper_body/,
+	re_final = /first|last/i,
+
+	re_positive = /article|body|content|entry|main|news|pag(?:e|ination)|post|text|blog|story/,
+	re_negative = /com(?:bx|ment|-)|contact|foot(?:er|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
+	re_unlikelyCandidates = /ad-break|agegate|auth?or|com(?:bx|ment|munity)|disqus|extra|foot|header|ignore|menu|navi|pag(?:er|ination)|popup|postinfo|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/,
+	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
+
+	re_sentence = /\. |\.$/,
+	re_whitespace = /\s+/g,
+
+	re_pageInURL = /[_\-]?p[a-zA-Z]*[_\-]?\d{1,2}$/,
+	re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i,
+	re_noLetters = /[^a-zA-Z]/,
+	re_params = /\?.*/,
+	re_extension = /00,|\.[a-zA-Z]+$/g,
+	re_digits = /\d/,
+	re_justDigits = /^\d{1,2}$/,
+	re_slashes = /\/+/,
+	re_domain = /\/([^\/]+)/,
+
+	re_protocol = /^\w+\:/,
+	re_cleanPaths = /\/\.(?!\.)|\/[^\/]*\/\.\./,
+
+	re_closing = /\/?(?:#.*)?$/,
+
+	re_commas = /,[\s\,]*/g;
 
 //3. the readability class
 var Readability = function(settings){
@@ -363,9 +362,7 @@ Readability.prototype._scanLink = function(elem){
 //parser methods
 Readability.prototype.onopentag = function(name, attributes){
 	if(name in noContent){
-		if(noContent[name]){
-			this._currentElement.children.push("<" + name + "\/>");
-		}
+		if(noContent[name]) this._currentElement.children.push(noContent[name]);
 		return;
 	}
 	//else
