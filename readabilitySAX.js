@@ -12,6 +12,7 @@
 //1. list of values
 var tagsToSkip = {aside:true,footer:true,head:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
 	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
+	removeIfEmpty = {blockquote:true,div:true,form:true,li:true,ol:true,p:true,pre:true,table:true,tbody:true,td:true,th:true,thead:true,tr:true,ul:true},
 	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
 	goodAttributes = {alt:true,href:true,src:true,title:true/*,style:true*/},
 	cleanConditionally = {div:true,form:true,ol:true,table:true,ul:true},
@@ -20,9 +21,8 @@ var tagsToSkip = {aside:true,footer:true,head:true,nav:true,noscript:true,script
 	tagsToScore = {p:true,pre:true,td:true},
 	headerTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 	newLinesAfter = {br:true,li:true,p:true},
-	newLinesBefore = {p:true},
 
-	divToPElements = ["a","blockquote","dl","div","img","ol","p","pre","table","ul"],
+	divToPElements = ["a","blockquote","dl","img","ol","p","pre","table","ul"],
 
 	re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/,
 	re_nextLink = /[>»]|continue|next|weiter(?:[^\|]|$)/i,
@@ -139,7 +139,7 @@ Element.prototype = {
 		for(var i = 0, j = nodes.length; i < j; i++){
 			if(typeof nodes[i] === "string") ret += nodes[i].replace(re_whitespace, " ");
 			else {
-				if(nodes[i].name in newLinesBefore || nodes[i].name in headerTags) ret += "\n";
+				if(nodes[i].name === "p" || nodes[i].name in headerTags) ret += "\n";
 				ret += nodes[i].getFormattedText();
 				if(nodes[i].name in newLinesAfter || nodes[i].name in headerTags) ret += "\n";
 			}
@@ -218,9 +218,8 @@ Readability.prototype._convertLinks = function(path){
 		}
 	}
 
-	if(path_split[0] === ""){ //starting with "/"
-		path_split.shift();
-	}
+	//if path is starting with "/"
+	if(path_split[0] === "") path_split.shift();
 	else Array.prototype.unshift.apply(path_split, this._url.path);
 
 	path = path_split.join("/");
@@ -451,11 +450,11 @@ Readability.prototype.onclosetag = function(tagName){
 	elem.addInfo();
 
 	//clean conditionally
-	if(tagName === "p"){
-		if(	elem.info.linkLength + elem.info.textLength === 0
-			&& !("embed" in elem.info.tagCount)
-			&& !("object" in elem.info.tagCount)
-			&& !("img" in elem.info.tagCount)
+	if(tagName in removeIfEmpty && elem.info.linkLength + elem.info.textLength === 0){
+		if(!("embed" in elem.info.tagCount)
+		&& !("iframe" in elem.info.tagCount) 
+		&& !("img" in elem.info.tagCount) 
+		&& !("object" in elem.info.tagCount)
 		) return;
 	}
 	else if(tagName in embeds){
@@ -471,7 +470,7 @@ Readability.prototype.onclosetag = function(tagName){
 		elem.parent.children.push(elem.children[0]);
 		return;
 	}
-	else if(this._settings.cleanConditionally && tagName in cleanConditionally){
+	if(this._settings.cleanConditionally && tagName in cleanConditionally){
 		var p = elem.info.tagCount.p || 0,
 			contentLength = elem.info.textLength + elem.info.linkLength;
 
