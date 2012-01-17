@@ -583,12 +583,11 @@ Readability.prototype.setSkipLevel = function(skipLevel){
 };
 
 Readability.prototype.getTitle = function(){
-	var curTitle = this._headerTitle,
-		origTitle = this._origTitle;
+	if(this._headerTitle) return this._headerTitle;
 
-	if(curTitle) return curTitle;
+	var curTitle = this._origTitle || "",
+		origTitle = curTitle;
 
-	curTitle = origTitle || "";
 	if(!curTitle) return;
 
 	if(/ [\|\-] /.test(curTitle)){
@@ -628,10 +627,10 @@ Readability.prototype.getHTML = function(node){
 	return (node || this._getCandidateNode()).getInnerHTML() //=> clean it
 		//remove spaces in front of <br>s
 		.replace(/(?:\s|&nbsp;?)+(?=<br\/>)/g, "")
+		//remove <br>s in front of opening & closing <p>s
+		.replace(/(?:<br\/>)+(?:\s|&nbsp;?)*(?=<\/?p)/g, "")
 		//turn all double+ <br>s into <p>s
 		.replace(/(?:<br\/>){2,}/g, "</p><p>")
-		//remove <br>s in front of opening & closing <p>s
-		.replace(/<br\/>(?:\s|&nbsp;?)*(?=<\/?p)/g, "")
 		//trim the result
 		.trim();
 };
