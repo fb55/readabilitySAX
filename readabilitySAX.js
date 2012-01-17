@@ -38,7 +38,7 @@ Element.prototype = {
 			elem = childs[i];
 			if(typeof elem === "string"){
 				info.textLength += elem.trim()./*replace(re_whitespace, " ").*/length;
-				info.commas += elem.split(re_commas).length - 1;
+				if(re_commas.test(elem)) info.commas += elem.split(re_commas).length - 1;
 			}
 			else {
 				if(elem.name === "a"){
@@ -130,12 +130,12 @@ Element.prototype = {
 //2. list of values
 var tagsToSkip = {aside:true,footer:true,head:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
 	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
-	removeIfEmpty = {blockquote:true,div:true,form:true,li:true,ol:true,p:true,pre:true,table:true,tbody:true,td:true,th:true,thead:true,tr:true,ul:true},
+	removeIfEmpty = {blockquote:true,li:true,p:true,pre:true,tbody:true,td:true,th:true,thead:true,tr:true},
 	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
 	goodAttributes = {alt:true,href:true,src:true,title:true/*,style:true*/},
 	cleanConditionally = {div:true,form:true,ol:true,table:true,ul:true},
 	unpackDivs = {embed:true,iframe:true,img:true,object:true,div:true},
-	noContent = {br:new Element("br"),hr:new Element("hr"),input:false,link:false,meta:false},
+	noContent = {br:new Element("br"),font:false,hr:new Element("hr"),input:false,link:false,meta:false,span:false},
 	tagsToScore = {p:true,pre:true,td:true},
 	headerTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 	newLinesAfter = {br:true,li:true,p:true},
@@ -443,6 +443,15 @@ Readability.prototype.onclosetag = function(tagName){
 		&& !re_okMaybeItsACandidate.test(elem.elementData)){
 			return;
 	}
+	if(tagName === "div"
+		&& elem.children.length === 1
+		&& typeof elem.children[0] === "object"
+		&& elem.children[0].name in unpackDivs
+	){
+		//unpack divs
+		elem.parent.children.push(elem.children[0]);
+		return;
+	}
 
 	elem.addInfo();
 
@@ -462,27 +471,20 @@ Readability.prototype.onclosetag = function(tagName){
 		//clean headers
 		if (elem.attributeScore < 0 || elem.info.density > .33) return;
 	}
-	else if(tagName === "div" && elem.children.length === 1 && elem.children[0].name in unpackDivs){
-		//unpack divs
-		elem.parent.children.push(elem.children[0]);
-		return;
-	}
-	if(this._settings.cleanConditionally && tagName in cleanConditionally){
+	else if(this._settings.cleanConditionally && tagName in cleanConditionally){
 		var p = elem.info.tagCount.p || 0,
 			contentLength = elem.info.textLength + elem.info.linkLength;
 
 		if(contentLength === 0){
-			if("a" in elem.info.tagCount) return;
 			if(elem.children.length === 0) return;
+			if("a" in elem.info.tagCount) return;
 			if(elem.children.length === 1 && typeof elem.children[0] === "string") return;
 		}
 		else if(elem.info.tagCount.img > p ) return;
 		if((elem.info.tagCount.li - 100) > p && tagName !== "ul" && tagName !== "ol") return;
 		if(contentLength < 25 && (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2) ) return;
-		if(elem.attributeScore < 25){
-			if(elem.info.density > .2) return;
-		}
-		else if(elem.info.density > .5) return;
+		if(elem.info.density > .5) return;
+		if(elem.attributeScore < 25 && elem.info.density > .2) return;
 		if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) return;
 	}
 
@@ -628,8 +630,8 @@ Readability.prototype.getHTML = function(node){
 		.replace(/(?:\s|&nbsp;?)+(?=<br\/>)/g, "")
 		//turn all double+ <br>s into <p>s
 		.replace(/(?:<br\/>){2,}/g, "</p><p>")
-		//remove <br>s in front of <p>s, <font>s & <span>s, empty <li>s
-		.replace(/<br\/>\s*(?=<\/?p)|<\/?(?:font|span).*?>|<li.*?>(?:\s|&nbsp;?)*<\/li>/g, "")
+		//remove <br>s in front of opening & closing <p>s
+		.replace(/<br\/>(?:\s|&nbsp;?)*(?=<\/?p)/g, "")
 		//trim the result
 		.trim();
 };
