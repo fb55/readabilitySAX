@@ -456,14 +456,7 @@ Readability.prototype.onclosetag = function(tagName){
 	elem.addInfo();
 
 	//clean conditionally
-	if(tagName in removeIfEmpty && elem.info.linkLength + elem.info.textLength === 0){
-		if(!("embed" in elem.info.tagCount)
-		&& !("iframe" in elem.info.tagCount) 
-		&& !("img" in elem.info.tagCount) 
-		&& !("object" in elem.info.tagCount)
-		) return;
-	}
-	else if(tagName in embeds){
+	if(tagName in embeds){
 		//check if tag is wanted (youtube or vimeo)
 		if(!("src" in elem.attributes) || !re_videos.test(elem.attributes.src)) return;
 	}
@@ -487,6 +480,13 @@ Readability.prototype.onclosetag = function(tagName){
 		if(elem.attributeScore < 25 && elem.info.density > .2) return;
 		if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) return;
 	}
+	if((tagName in removeIfEmpty || !this._settings.cleanConditionally && tagName in cleanConditionally) 
+		&& (elem.info.linkLength + elem.info.textLength === 0)
+		&& !("embed" in elem.info.tagCount)
+		&& !("iframe" in elem.info.tagCount) 
+		&& !("img" in elem.info.tagCount) 
+		&& !("object" in elem.info.tagCount)
+	) return;
 
 	elem.parent.children.push(elem);
 
