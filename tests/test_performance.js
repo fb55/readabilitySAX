@@ -10,6 +10,8 @@ var processContent = function(data, settings){
 		parser = new Parser(readable);
 	
 	console.log("parsing took (ms):", ben(1e3, function(){ parser.parseComplete(data); }));
+	console.log("getHTML took (ms):", ben(1e3, function(){ readable.getHTML(); }));
+	console.log("getText took (ms):", ben(1e3, function(){ readable.getText(); }));
 	console.log("getArticle took (ms):", ben(1e3,function(){ readable.getArticle(); }));
 	console.log("Whole parsing took (ms):", ben(500, function(){ getReadableContent.process(data, settings); }));
 };
