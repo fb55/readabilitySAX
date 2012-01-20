@@ -8,6 +8,8 @@
 * 	3. The Readability class that provides the interface & logic (usable as a htmlparser2 handler)
 */
 
+;(function(global){
+
 //1. the tree element
 var Element = function(tagName, parent){
 		this.name = tagName;
@@ -672,4 +674,8 @@ Readability.prototype.getArticle = function(type){
 	return ret;
 };
 
-if(typeof module !== "undefined" && typeof module.exports !== "undefined") module.exports = Readability;
+if(typeof module !== "undefined" && "exports" in module){
+	module.exports = Readability;
+} else global.Readability = Readability;
+
+})(typeof window === "object" ? window : this);
