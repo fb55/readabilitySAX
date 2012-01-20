@@ -141,6 +141,7 @@ var tagsToSkip = {aside:true,footer:true,head:true,nav:true,noscript:true,script
 	newLinesAfter = {br:true,li:true,p:true},
 
 	divToPElements = ["a","blockquote","dl","img","ol","p","pre","table","ul"],
+	okayIfEmpty = ["audio","embed","iframe","img","object","video"],
 
 	re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/,
 	re_nextLink = /[>»]|continue|next|weiter(?:[^\|]|$)/i,
@@ -407,7 +408,7 @@ Readability.prototype.ontext = function(text){
 Readability.prototype.onclosetag = function(tagName){
 	if(tagName in noContent) return;
 
-	var elem = this._currentElement, i, j;
+	var elem = this._currentElement, title, i, j, cnvrt;
 
 	this._currentElement = elem.parent;
 
@@ -420,19 +421,19 @@ Readability.prototype.onclosetag = function(tagName){
 		return;
 	}
 	else if(tagName in headerTags){
-		i = elem.toString().trim().replace(re_whitespace, " ");
+		title = elem.toString().trim().replace(re_whitespace, " ");
 		if(this._origTitle){
-			if(this._origTitle.indexOf(i) !== -1){
-				if(i.split(" ", 4).length === 4){
+			if(this._origTitle.indexOf(title) !== -1){
+				if(title.split(" ", 4).length === 4){
 					//It's probably the title, so let's use it!
-					this._headerTitle = i;
+					this._headerTitle = title;
 				}
 				return;
 			}
 		}
 		//if there was no title tag, use any h1 as the title
 		else if(tagName === "h1"){
-			this._headerTitle = i;
+			this._headerTitle = title;
 			return;
 		}
 	}
@@ -482,11 +483,13 @@ Readability.prototype.onclosetag = function(tagName){
 	}
 	if((tagName in removeIfEmpty || !this._settings.cleanConditionally && tagName in cleanConditionally) 
 		&& (elem.info.linkLength + elem.info.textLength === 0)
-		&& !("embed" in elem.info.tagCount)
-		&& !("iframe" in elem.info.tagCount) 
-		&& !("img" in elem.info.tagCount) 
-		&& !("object" in elem.info.tagCount)
-	) return;
+	) {
+		cnvrt = elem.children.length !== 0;
+		for(i = 0, j = okayIfEmpty.length; i < j && cnvrt; i++){
+			cnvrt = !(okayIfEmpty[i] in elem.info.tagCount);
+		}
+		if(cnvrt) return;
+	}
 
 	elem.parent.children.push(elem);
 
@@ -528,12 +531,11 @@ var getCandidateSiblings = function(candidate){
 				if(childs[i].name !== "p") childs[i].name = "div";
 			}
 		    else continue;
-		}
-		else if(childs[i].name === "p")
+		} else if(childs[i].name === "p"){
 		    if(childs[i].info.textLength >= 80 && childs[i].info.density < .25);
 		    else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && re_sentence.test(childs[i].toString()));
 		    else continue;
-		else continue;
+		} else continue;
 
 		ret.push(childs[i]);
 	}
