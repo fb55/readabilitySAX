@@ -92,7 +92,7 @@ Element.prototype = {
 			else {
 				if(nodes[i].name === "p" || nodes[i].name in headerTags) ret += "\n";
 				ret += nodes[i].getFormattedText();
-				if(nodes[i].name in newLinesAfter || nodes[i].name in headerTags) ret += "\n";
+				if(nodes[i].name in newLinesAfter) ret += "\n";
 			}
 		}
 		return ret;
@@ -130,17 +130,17 @@ Element.prototype = {
 };
 
 //2. list of values
-var tagsToSkip = {aside:true,footer:true,head:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
-	tagCounts = {address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
-	removeIfEmpty = {blockquote:true,li:true,p:true,pre:true,tbody:true,td:true,th:true,thead:true,tr:true},
-	embeds = {embed:true,object:true,iframe:true}, //iframe added for html5 players
-	goodAttributes = {alt:true,href:true,src:true,title:true/*,style:true*/},
-	cleanConditionally = {div:true,form:true,ol:true,table:true,ul:true},
-	unpackDivs = {embed:true,iframe:true,img:true,object:true,div:true},
-	noContent = {br:new Element("br"),font:false,hr:new Element("hr"),input:false,link:false,meta:false,span:false},
-	tagsToScore = {p:true,pre:true,td:true},
-	headerTags = {h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
-	newLinesAfter = {br:true,li:true,p:true},
+var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
+	tagCounts = {__proto__:null,address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
+	removeIfEmpty = {__proto__:null,blockquote:true,li:true,p:true,pre:true,tbody:true,td:true,th:true,thead:true,tr:true},
+	embeds = {__proto__:null,embed:true,object:true,iframe:true}, //iframe added for html5 players
+	goodAttributes = {__proto__:null,alt:true,href:true,src:true,title:true/*,style:true*/},
+	cleanConditionally = {__proto__:null,div:true,form:true,ol:true,table:true,ul:true},
+	unpackDivs = {__proto__:null,embed:true,iframe:true,img:true,object:true,div:true},
+	noContent = {__proto__:null,br:new Element("br"),font:false,hr:new Element("hr"),input:false,link:false,meta:false,span:false},
+	tagsToScore = {__proto__:null,p:true,pre:true,td:true},
+	headerTags = {__proto__:null,h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
+	newLinesAfter = {__proto__:headerTags,br:true,li:true,p:true},
 
 	divToPElements = ["a","blockquote","dl","img","ol","p","pre","table","ul"],
 	okayIfEmpty = ["audio","embed","iframe","img","object","video"],
@@ -157,7 +157,7 @@ var tagsToSkip = {aside:true,footer:true,head:true,nav:true,noscript:true,script
 
 	re_positive = /article|body|content|entry|main|news|pag(?:e|ination)|post|text|blog|story/,
 	re_negative = /com(?:bx|ment|-)|contact|foot(?:er|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-	re_unlikelyCandidates = /ad-break|agegate|auth?or|com(?:bx|ment|munity)|disqus|extra|foot|header|ignore|menu|navi|pag(?:er|ination)|popup|postinfo|remark|rss|shoutbox|sidebar|sponsor|tweet|twitter|unrelated/,
+	re_unlikelyCandidates = /ad-break|agegate|auth?or|com(?:bx|ment|munity)|disqus|extra|foot|header|ignore|menu|navi|pag(?:er|ination)|popup|postinfo|remark|rss|shoutbox|sidebar|sponsor|teaserlist|tweet|twitter|unrelated/,
 	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 
 	re_sentence = /\. |\.$/,
@@ -432,6 +432,7 @@ Readability.prototype.onclosetag = function(tagName){
 				}
 				return;
 			}
+			if(tagName === "h1") return;
 		}
 		//if there was no title tag, use any h1 as the title
 		else if(tagName === "h1"){
@@ -676,6 +677,13 @@ Readability.prototype.getArticle = function(type){
 
 if(typeof module !== "undefined" && "exports" in module){
 	module.exports = Readability;
-} else global.Readability = Readability;
+} else {
+	if(typeof define === "function" && define.amd){
+		define("Readability", function(){
+			return Readability;
+		});
+	}
+	global.Readability = Readability;
+}
 
 })(typeof window === "object" ? window : this);
