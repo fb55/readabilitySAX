@@ -136,7 +136,7 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,nav:true,noscr
 	embeds = {__proto__:null,embed:true,object:true,iframe:true}, //iframe added for html5 players
 	goodAttributes = {__proto__:null,alt:true,href:true,src:true,title:true/*,style:true*/},
 	cleanConditionally = {__proto__:null,div:true,form:true,ol:true,table:true,ul:true},
-	unpackDivs = {__proto__:null,embed:true,iframe:true,img:true,object:true,div:true},
+	unpackDivs = {__proto__:embeds,div:true,img:true},
 	noContent = {__proto__:null,br:new Element("br"),font:false,hr:new Element("hr"),input:false,link:false,meta:false,span:false},
 	tagsToScore = {__proto__:null,p:true,pre:true,td:true},
 	headerTags = {__proto__:null,h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
@@ -152,13 +152,14 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,nav:true,noscr
 	re_pages = /pag(?:e|ing|inat)/i,
 	re_pagenum = /p[ag]{0,2}(?:e|ing|ination)?[=\/]\d{1,2}/i,
 
-	re_safe = /hentry|instapaper_body/,
+	re_safe = /article-body|hentry|instapaper_body/,
 	re_final = /first|last/i,
 
-	re_positive = /article|body|content|entry|main|news|pag(?:e|ination)|post|text|blog|story/,
+	re_positive = /article|blog|body|content|entry|main|news|pag(?:e|ination)|post|story|text/,
 	re_negative = /com(?:bx|ment|-)|contact|foot(?:er|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
 	re_unlikelyCandidates = /ad-break|agegate|auth?or|com(?:bx|ment|munity)|disqus|extra|foot|header|ignore|menu|navi|pag(?:er|ination)|popup|postinfo|remark|rss|shoutbox|sidebar|sponsor|teaserlist|tweet|twitter|unrelated/,
 	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
+	re_linkLists = /bookmark|cat|date|links|nav|related|similar|social|time/, // TODO merge this with unlikelyCandidates?
 
 	re_sentence = /\. |\.$/,
 	re_whitespace = /\s+/g,
@@ -380,25 +381,40 @@ Readability.prototype._onattribute = function(name, value){
 	var elem = this._currentElement;
 
 	if(name === "href" || name === "src"){
-	    //fix links
-	    if(re_protocol.test(value)) elem.attributes[name] = value;
-	    else elem.attributes[name] = this._convertLinks(value);
+		//fix links
+		if(re_protocol.test(value)) elem.attributes[name] = value;
+		else elem.attributes[name] = this._convertLinks(value);
 	}
 	else if(name === "id" || name === "class"){
-	    value = value.toLowerCase();
-	    if(!this._settings.weightClasses);
-	    else if(re_safe.test(value)){
-	    	elem.attributeScore += 300;
-	    	elem.isCandidate = true;
-	    }
-	    else if(re_negative.test(value)) elem.attributeScore -= 25;
-	    else if(re_positive.test(value)) elem.attributeScore += 25;
+		value = value.toLowerCase();
+		if(!this._settings.weightClasses);
+		else if(re_safe.test(value)){
+			elem.attributeScore += 300;
+			elem.isCandidate = true;
+		}
+		else if(re_negative.test(value)) elem.attributeScore -= 25;
+		else if(re_positive.test(value)) elem.attributeScore += 25;
 
-	    elem.elementData += " " + value;
+		elem.elementData += " " + value;
+	}
+	else if(elem.name === "img" && (name === "width" || name === "height")){
+		value = parseInt(value, 10);
+		if(value !== value); // NaN (skip)
+		else if(value <= 32) {
+			// skip the image
+			// (use a tagname that's part of tagsToSkip)
+			elem.name = "script";
+		}
+		else if(name === "width" ? value >= 390 : value >= 290){
+			// increase score of parent
+			elem.parent.attributeScore += 20;
+		}
+		else if(name === "width" ? value >= 200 : value >= 150){
+			elem.parent.attributeScore += 5;
+		}
 	}
 	else if(this._settings.cleanAttributes){
-	    if(name in goodAttributes)
-	    	elem.attributes[name] = value;
+		if(name in goodAttributes) elem.attributes[name] = value;
 	}
 	else elem.attributes[name] = value;
 };
@@ -447,6 +463,7 @@ Readability.prototype.onclosetag = function(tagName){
 		&& !re_okMaybeItsACandidate.test(elem.elementData)){
 			return;
 	}
+	//if(re_linkLists.test(elem.elementData)) return; // TODO
 	if(tagName === "div"
 		&& elem.children.length === 1
 		&& typeof elem.children[0] === "object"
@@ -462,7 +479,7 @@ Readability.prototype.onclosetag = function(tagName){
 	//clean conditionally
 	if(tagName in embeds){
 		//check if tag is wanted (youtube or vimeo)
-		if(!("src" in elem.attributes) || !re_videos.test(elem.attributes.src)) return;
+		if(!("src" in elem.attributes && re_videos.test(elem.attributes.src))) return;
 	}
 	else if(tagName === "h2" || tagName === "h3"){
 		//clean headers
@@ -509,10 +526,10 @@ Readability.prototype.onclosetag = function(tagName){
 	else return;
 
 	if((elem.info.textLength + elem.info.linkLength) > 24 && elem.parent && elem.parent.parent){
-	    elem.parent.isCandidate = elem.parent.parent.isCandidate = true;
-	    var addScore = 1 + elem.info.commas + Math.min( Math.floor( (elem.info.textLength + elem.info.linkLength) / 100 ), 3);
-	    elem.parent.tagScore += addScore;
-	    elem.parent.parent.tagScore += addScore / 2;
+		elem.parent.isCandidate = elem.parent.parent.isCandidate = true;
+		var addScore = 1 + elem.info.commas + Math.min( Math.floor( (elem.info.textLength + elem.info.linkLength) / 100 ), 3);
+		elem.parent.tagScore += addScore;
+		elem.parent.parent.tagScore += addScore / 2;
 	}
 };
 
@@ -533,11 +550,11 @@ var getCandidateSiblings = function(candidate){
 			if((childs[i].totalScore + candidate.totalScore * .2) >= siblingScoreThreshold){
 				if(childs[i].name !== "p") childs[i].name = "div";
 			}
-		    else continue;
+			  else continue;
 		} else if(childs[i].name === "p"){
-		    if(childs[i].info.textLength >= 80 && childs[i].info.density < .25);
-		    else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && re_sentence.test(childs[i].toString()));
-		    else continue;
+			if(childs[i].info.textLength >= 80 && childs[i].info.density < .25);
+			else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && re_sentence.test(childs[i].toString()));
+			else continue;
 		} else continue;
 
 		ret.push(childs[i]);
@@ -558,11 +575,11 @@ Readability.prototype._getCandidateNode = function(){
 	else if(elem.parent.children.length > 1){
 		elems = getCandidateSiblings(elem);
 
-    	//create a new object so that the prototype methods are callable
-    	elem = new Element("div")
-    	elem.children = elems;
-    	elem.addInfo();
-    }
+		//create a new object so that the prototype methods are callable
+		elem = new Element("div")
+		elem.children = elems;
+		elem.addInfo();
+	}
 
 	while(elem.children.length === 1){
 		if(typeof elem.children[0] === "object"){
