@@ -131,7 +131,7 @@ Element.prototype = {
 
 //2. list of values
 var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
-	tagCounts = {__proto__:null,address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,td:3,th:-5,ul:-3},
+	tagCounts = {__proto__:null,address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,section:15,td:3,th:-5,ul:-3},
 	removeIfEmpty = {__proto__:null,blockquote:true,li:true,p:true,pre:true,tbody:true,td:true,th:true,thead:true,tr:true},
 	embeds = {__proto__:null,embed:true,object:true,iframe:true}, //iframe added for html5 players
 	goodAttributes = {__proto__:null,alt:true,href:true,src:true,title:true/*,style:true*/},

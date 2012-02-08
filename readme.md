@@ -8,13 +8,17 @@ In my tests, most pages, even large ones, were finished within 15ms (on node, se
 
 The Readability extraction algorithm was completely ported, but some adjustments were made:
 
-* `<article>` tags are recognized and gain a higher value
+* `<article>` and `<section>` tags are recognized and gain a higher value
 
 * If a heading is part of the pages `<title>`, it is removed (Readability removed any single `<h2>`, and ignored other tags)
 
-* `henry` and `instapaper-body` are classes to show an algorithm like this where the content is. readabilitySAX recognizes them and marks them as the article
+* `henry` and `instapaper-body` are classes to show an algorithm like this where the content is. readabilitySAX recognizes them and adds additional points
 
-* Every bit of code that was taken from the original algorithm was optimized, eg. RegExps should now perform faster (they were optimized & use `RegExp#test` instead of `String#match`, which doesn't force the interpreter to build an array).
+* Every bit of code that was taken from the original algorithm was optimized, eg. RegExps should now perform faster (they were optimized & use `RegExp#test` instead of `String#match`, which doesn't force the interpreter to build an array)
+
+* Some improvements made by [GGReadability](https://github.com/curthard89/COCOA-Stuff/tree/master/GGReadability) (an Obj-C port of Readability) were adopted
+    * Images get additional scores when their `height` or `width` attributes are high - icon sized images (<= 32px) get skipped
+    * Additional classes & ids are checked
 
 ##HowTo
 ###Installing readabilitySAX (node)
