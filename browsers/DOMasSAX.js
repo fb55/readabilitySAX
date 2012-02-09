@@ -12,15 +12,16 @@ function saxParser(elem, callbacks){
 	
 	function parse(node){
 		var name = node.tagName.toLowerCase(),
-			attributes = {},
-			attributeNodes = node.attributes, 
-			attrNum = attributeNodes.length;
-		for(var i = 0; i < attrNum; i++){
-			attributes[attributeNodes[i].name+''] = attributeNodes[i].value;
-		}
-		callbacks.onopentag(name, attributes);
+		    attributeNodes = node.attributes;
 		
-		var childs = node.childNodes, num = childs.length, nodeType;
+		for(var i = 0, j = attributeNodes.length; i < j; i++){
+			callbacks.onattribute(attributeNodes[i].name+'', attributeNodes[i].value);
+		}
+		callbacks.onopentagname(name);
+		
+		var childs = node.childNodes,
+		    num = childs.length, nodeType;
+		
 		for(var i = 0; i < num; i++){
 			nodeType = childs[i].nodeType;
 			if(nodeType === 3 /*text*/)

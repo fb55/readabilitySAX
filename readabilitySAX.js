@@ -364,18 +364,14 @@ Readability.prototype._scanLink = function(elem){
 };
 
 //parser methods
-Readability.prototype.onopentag = function(name, attributes){
+Readability.prototype.onopentagname = function(name){
 	if(name in noContent){
 		if(noContent[name]) this._currentElement.children.push(noContent[name]);
-		return;
 	}
-	//else
-	this._currentElement = new Element(name, this._currentElement);
-
-	for(name in attributes) this._onattribute(name, attributes[name]);
+	else this._currentElement = new Element(name, this._currentElement);
 };
 
-Readability.prototype._onattribute = function(name, value){
+Readability.prototype.onattribute = function(name, value){
 	if(!value) return;
 
 	var elem = this._currentElement;
