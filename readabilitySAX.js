@@ -61,10 +61,9 @@ Element.prototype = {
 				else info.tagCount[elem.name] = 1;
 			}
 		}
-		info.density = info.linkLength / (info.textLength + info.linkLength);
-
-		//if there was no text (the value is NaN), ignore it
-		if(info.density !== info.density) info.density = 0;
+		
+		if(info.linkLength === 0) info.density = 0;
+		else info.density = info.linkLength / (info.textLength + info.linkLength);
 	},
 	getOuterHTML: function(){
 		var ret = "<" + this.name;
