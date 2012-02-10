@@ -62,8 +62,9 @@ Element.prototype = {
 			}
 		}
 		
-		if(info.linkLength === 0) info.density = 0;
-		else info.density = info.linkLength / (info.textLength + info.linkLength);
+		if(info.linkLength !== 0){
+			info.density = info.linkLength / (info.textLength + info.linkLength);
+		}
 	},
 	getOuterHTML: function(){
 		var ret = "<" + this.name;
