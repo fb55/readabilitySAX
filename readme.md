@@ -73,6 +73,11 @@ The benchmark was done using `tests/benchmark.js` on a MacBook (late 2010) and i
 
 Performance is the main goal of this project. The current speed should be good enough to run readabilitySAX on a singe-threaded web server with an average number of requests. That's an accomplishment!
 
+#####Accuracy
+The main goal of CleanEval is to evaluate the accuracy of an algorithm. 
+
+___// TODO___
+
 ##Todo
 
 - Add documentation & examples
