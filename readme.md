@@ -49,7 +49,7 @@ Just run `require("readabilitySAX")`. You'll get an object containing three meth
 
 * `process(data)`: Takes a string, runs readabilitySAX and returns the page.
 
-* `Readability(settings)`: The readability object. It works as a handler for `htmlparser2`.
+* `Readability(settings)`: The readability object. It works as a handler for `htmlparser2`. Read more about it [in the wiki](https://github.com/FB55/readabilitySAX/wiki/The-Readability-constructor)!
 
 #####Browsers
 
@@ -65,32 +65,13 @@ A table using E4X-based events is available as the community table `redabilitySA
 Most SAX parsers (as sax.js) fail when a document is malformed XML, even if it's correct HTML. readabilitySAX should be used with [htmlparser2](https://github.com/FB55/node-htmlparser), my fork of the `htmlparser`-module (used by eg. `jsdom`), which corrects most faults. It's listed as a dependency, so npm should install it with readabilitySAX.
 
 ##Performance
-Using a package of 680 pages from [CleanEval](http://cleaneval.sigwac.org.uk) (their website seems to be down, try to google it), readabilitySAX processed all of them in 6667 ms, that's an average of 9.8 ms per page.
+
+#####Speed
+Using a package of 724 pages from [CleanEval](http://cleaneval.sigwac.org.uk) (their website seems to be down, try to google it), readabilitySAX processed all of them in 5768 ms, that's an average of 7.97 ms per page.
 
 The benchmark was done using `tests/benchmark.js` on a MacBook (late 2010) and is probably far from perfect.
 
 Performance is the main goal of this project. The current speed should be good enough to run readabilitySAX on a singe-threaded web server with an average number of requests. That's an accomplishment!
-
-##Settings
-These are the options that one may pass to the Readability object:
-
-* `stripUnlikelyCandidates`: Removes elements that probably don't belong to the article. Default: true
-
-* `weightClasses`: Indicates whether classes should be scored. This may lead to shorter articles. Default: true
-
-* `cleanConditionally`: Removes elements that don't match specific criteria (defined by the original Readability). Default: true
-
-* `cleanAttributes`: Only allow some attributes, ignore all the crap nobody needs. Default: true
-
-* `searchFurtherPages`: Indicates whether links should be checked whether they point to the next page of an article. Default: true
-
-* `linksToSkip`: A map of pages that should be ignored when searching links to further pages. Default: {}
-
-* `pageURL`: The URL of the current page. Will be used to resolve all other links and is ignored when searching links. Default: ""
-
-* `type`: The default type of the output of `getArticle()`. Possible values are "html" or "text". Default: "html"
-
-* `resolvePaths`: Indicates whether ".." and "." inside paths should be eliminated. Default: false
 
 ##Todo
 
