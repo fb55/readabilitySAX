@@ -182,6 +182,8 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,nav:true,noscr
 
 //3. the readability class
 var Readability = function(settings){
+	if(!(this instanceof Readability)) return new Readability(settings);
+
 	//the root node
 	this._currentElement = new Element("document");
 	this._topCandidate = null;
@@ -641,7 +643,8 @@ Readability.prototype.getNextPage = function(){
 };
 
 Readability.prototype.getHTML = function(node){
-	return (node || this._getCandidateNode()).getInnerHTML() //=> clean it
+	if(!node) node = this._getCandidateNode();
+	return node.getInnerHTML() //=> clean it
 		//remove spaces in front of <br>s
 		.replace(/(?:\s|&nbsp;?)+(?=<br\/>)/g, "")
 		//remove <br>s in front of opening & closing <p>s
@@ -653,7 +656,8 @@ Readability.prototype.getHTML = function(node){
 };
 
 Readability.prototype.getText = function(node){
-	return (node || this._getCandidateNode()).getFormattedText().trim().replace(/\n+(?=\n{2})/g, "");
+	if(!node) node = this._getCandidateNode();
+	return node.getFormattedText().trim().replace(/\n+(?=\n{2})/g, "");
 };
 
 Readability.prototype.getEvents = function(cbs){
