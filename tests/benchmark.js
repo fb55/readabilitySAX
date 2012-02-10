@@ -1,6 +1,6 @@
-var getReadableContent = require("../"),
+var getReadableContent = require("../").process,
 	fs = require("fs"),
-	dir = "/Users/felix/Downloads/finalrun-input/"
+	dir = "/Users/felix/Downloads/finalrun-input/",
 	files = fs.readdirSync(dir),
 	time = 0, total = files.length, skipped = 0, min = 1/0, 
 	max = -1/0;
@@ -11,7 +11,7 @@ var run = function(name){
 	var file = fs.readFileSync(dir + name).toString(),
 		start = Date.now();
     
-    var ret = getReadableContent.process(file);
+    var ret = getReadableContent(file);
     
     if(!ret.score) skipped++;
     else{
