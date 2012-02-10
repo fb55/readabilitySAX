@@ -182,8 +182,6 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,nav:true,noscr
 
 //3. the readability class
 var Readability = function(settings){
-	if(!(this instanceof Readability)) return new Readability(settings);
-
 	//the root node
 	this._currentElement = new Element("document");
 	this._topCandidate = null;
