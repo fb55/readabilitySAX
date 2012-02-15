@@ -1,7 +1,7 @@
 var WritableStream = require("./WritableStream.js"),
 	minreq = require("minreq"),
 	url = require("url"),
-	processData = require("./index.js").process;
+	processData = require("./process.js");
 
 module.exports = function(uri, format, cb){
 	if(typeof format === "function"){
