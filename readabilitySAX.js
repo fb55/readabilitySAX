@@ -178,6 +178,7 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,nav:true,noscr
 	re_cleanPaths = /\/\.(?!\.)|\/[^\/]*\/\.\./,
 
 	re_closing = /\/?(?:#.*)?$/,
+	re_imgUrl = /\.(jpe?g|png|gif)$/i,
 
 	re_commas = /,[\s\,]*/g;
 
@@ -196,6 +197,7 @@ Readability.prototype._settings = {
 	weightClasses: true,
 	cleanConditionally: true,
 	cleanAttributes: true,
+	replaceImgs: true,
 	searchFurtherPages: true,
 	linksToSkip: {},	//pages that are already parsed
 	//pageURL: null,	//URL of the page which is parsed
@@ -505,6 +507,15 @@ Readability.prototype.onclosetag = function(tagName){
 			cnvrt = !(okayIfEmpty[i] in elem.info.tagCount);
 		}
 		if(cnvrt) return;
+	}
+	if(this._settings.replaceImgs
+		&& tagName === "a"
+		&& elem.children.length === 1
+		&& elem.children[0].name === "img"
+		&& re_imgUrl.test(elem.attributes.href)
+	){
+		elem = elem.children[0];
+		elem.attributes.src = elem.parent.attributes.href;
 	}
 
 	elem.parent.children.push(elem);
