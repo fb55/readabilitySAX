@@ -157,9 +157,8 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,nav:true,noscr
 
 	re_positive = /article|blog|body|content|entry|main|news|pag(?:e|ination)|post|story|text/,
 	re_negative = /com(?:bx|ment|-)|contact|foot(?:er|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-	re_unlikelyCandidates = /ad-break|agegate|auth?or|com(?:bx|ment|munity)|disqus|extra|foot|header|ignore|menu|navi|pag(?:er|ination)|popup|postinfo|remark|rss|shoutbox|sidebar|sponsor|teaserlist|tweet|twitter|unrelated/,
+	re_unlikelyCandidates = /ad-break|agegate|auth?or|bookmark|cat|com(?:bx|ment|munity)|date|disqus|extra|foot|header|ignore|info|links|menu|nav|pag(?:er|ination)|popup|postinfo|related|remark|rss|shoutbox|sidebar|similar|social|sponsor|teaserlist|time|tweet|twitter|unrelated/,
 	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
-	re_linkLists = /bookmark|cat|date|links|nav|related|similar|social|time/, // TODO merge this with unlikelyCandidates?
 
 	re_sentence = /\. |\.$/,
 	re_whitespace = /\s+/g,
@@ -461,7 +460,6 @@ Readability.prototype.onclosetag = function(tagName){
 		&& !re_okMaybeItsACandidate.test(elem.elementData)){
 			return;
 	}
-	//if(re_linkLists.test(elem.elementData)) return; // TODO
 	if(tagName === "div"
 		&& elem.children.length === 1
 		&& typeof elem.children[0] === "object"
