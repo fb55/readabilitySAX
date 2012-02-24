@@ -72,7 +72,10 @@ Element.prototype = {
 		for(var i in this.attributes)
 			ret += " " + i + "=\"" + this.attributes[i] + "\"";
 
-		if(this.children.length === 0) return ret + "/>";
+		if(this.children.length === 0){
+			if(this.name in noContent) return ret + "/>";
+			else return ret + "></" + this.name + ">";
+		}
 
 		return ret + ">" + this.getInnerHTML() + "</" + this.name + ">";
 	},
