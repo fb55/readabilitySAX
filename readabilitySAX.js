@@ -73,7 +73,7 @@ Element.prototype = {
 			ret += " " + i + "=\"" + this.attributes[i] + "\"";
 
 		if(this.children.length === 0){
-			if(this.name in noContent) return ret + "/>";
+			if(this.name in formatTags) return ret + "/>";
 			else return ret + "></" + this.name + ">";
 		}
 
@@ -140,7 +140,8 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,nav:true,noscr
 	goodAttributes = {__proto__:null,alt:true,href:true,src:true,title:true/*,style:true*/},
 	cleanConditionally = {__proto__:null,div:true,form:true,ol:true,table:true,ul:true},
 	unpackDivs = {__proto__:embeds,div:true,img:true},
-	noContent = {__proto__:null,br:new Element("br"),font:false,hr:new Element("hr"),input:false,link:false,meta:false,span:false},
+	noContent = {__proto__:formatTags,font:false,input:false,link:false,meta:false,span:false},
+	formatTags = {__proto__:null,br:new Element("br"),hr:new Element("hr")},
 	tagsToScore = {__proto__:null,p:true,pre:true,td:true},
 	headerTags = {__proto__:null,h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 	newLinesAfter = {__proto__:headerTags,br:true,li:true,p:true},
@@ -370,7 +371,7 @@ Readability.prototype._scanLink = function(elem){
 //parser methods
 Readability.prototype.onopentagname = function(name){
 	if(name in noContent){
-		if(noContent[name]) this._currentElement.children.push(noContent[name]);
+		if(name in formatTags) this._currentElement.children.push(formatTags[name]);
 	}
 	else this._currentElement = new Element(name, this._currentElement);
 };
