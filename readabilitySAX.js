@@ -142,7 +142,6 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,nav:true,noscr
 	unpackDivs = {__proto__:embeds,div:true,img:true},
 	noContent = {__proto__:formatTags,font:false,input:false,link:false,meta:false,span:false},
 	formatTags = {__proto__:null,br:new Element("br"),hr:new Element("hr")},
-	tagsToScore = {__proto__:null,p:true,pre:true,td:true},
 	headerTags = {__proto__:null,h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
 	newLinesAfter = {__proto__:headerTags,br:true,li:true,p:true},
 
@@ -524,7 +523,7 @@ Readability.prototype.onclosetag = function(tagName){
 	elem.parent.children.push(elem);
 
 	//should node be scored?
-	if(tagName in tagsToScore);
+	if(tagName === "p" || tagName === "pre" || tagName === "td");
 	else if(tagName === "div"){
 		//check if div should be converted to a p
 		for(i = 0, j = divToPElements.length; i < j; i++){
@@ -556,11 +555,11 @@ var getCandidateSiblings = function(candidate){
 		if(typeof childs[i] === "string") continue;
 
 		if(childs[i] === candidate);
-		else if(candidate.attributes["class"] === childs[i].attributes["class"]){
+		else if(candidate.elementData === childs[i].elementData){ //TODO: just the class name should be checked
 			if((childs[i].totalScore + candidate.totalScore * .2) >= siblingScoreThreshold){
 				if(childs[i].name !== "p") childs[i].name = "div";
 			}
-			  else continue;
+			else continue;
 		} else if(childs[i].name === "p"){
 			if(childs[i].info.textLength >= 80 && childs[i].info.density < .25);
 			else if(childs[i].info.textLength < 80 && childs[i].info.density === 0 && re_sentence.test(childs[i].toString()));
