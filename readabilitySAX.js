@@ -491,10 +491,8 @@ Readability.prototype.onclosetag = function(tagName){
 
 		if(contentLength === 0){
 			if(elem.children.length === 0) return;
-			if("a" in elem.info.tagCount) return;
 			if(elem.children.length === 1 && typeof elem.children[0] === "string") return;
 		}
-		else if(elem.info.tagCount.img > p ) return;
 		if((elem.info.tagCount.li - 100) > p && tagName !== "ul" && tagName !== "ol") return;
 		if(contentLength < 25 && (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2) ) return;
 		if(elem.info.density > .5) return;
