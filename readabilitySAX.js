@@ -33,9 +33,9 @@ var Element = function(tagName, parent){
 Element.prototype = {
 	addInfo: function(){
 		var info = this.info,
-			childs = this.children,
-			childNum = childs.length,
-			elem;
+		    childs = this.children,
+		    childNum = childs.length,
+		    elem;
 		for(var i=0; i < childNum; i++){
 			elem = childs[i];
 			if(typeof elem === "string"){
@@ -61,7 +61,7 @@ Element.prototype = {
 				else info.tagCount[elem.name] = 1;
 			}
 		}
-		
+
 		if(info.linkLength !== 0){
 			info.density = info.linkLength / (info.textLength + info.linkLength);
 		}
@@ -105,8 +105,8 @@ Element.prototype = {
 	},
 	getTopCandidate: function(){
 		var childs = this.children,
-			topScore = -1/0,
-			topCandidate, elem;
+		    topScore = -1/0,
+		    topCandidate, elem;
 
 		for(var i = 0, j = childs.length; i < j; i++){
 			if(typeof childs[i] === "string") continue;
@@ -134,55 +134,55 @@ Element.prototype = {
 
 //2. list of values
 var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
-	tagCounts = {__proto__:null,address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,section:15,td:3,th:-5,ul:-3},
-	removeIfEmpty = {__proto__:null,blockquote:true,li:true,p:true,pre:true,tbody:true,td:true,th:true,thead:true,tr:true},
-	embeds = {__proto__:null,embed:true,object:true,iframe:true}, //iframe added for html5 players
-	goodAttributes = {__proto__:null,alt:true,href:true,src:true,title:true/*,style:true*/},
-	cleanConditionally = {__proto__:null,div:true,form:true,ol:true,table:true,ul:true},
-	unpackDivs = {__proto__:embeds,div:true,img:true},
-	noContent = {__proto__:formatTags,font:false,input:false,link:false,meta:false,span:false},
-	formatTags = {__proto__:null,br:new Element("br"),hr:new Element("hr")},
-	headerTags = {__proto__:null,h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
-	newLinesAfter = {__proto__:headerTags,br:true,li:true,p:true},
+    tagCounts = {__proto__:null,address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,section:15,td:3,th:-5,ul:-3},
+    removeIfEmpty = {__proto__:null,blockquote:true,li:true,p:true,pre:true,tbody:true,td:true,th:true,thead:true,tr:true},
+    embeds = {__proto__:null,embed:true,object:true,iframe:true}, //iframe added for html5 players
+    goodAttributes = {__proto__:null,alt:true,href:true,src:true,title:true/*,style:true*/},
+    cleanConditionally = {__proto__:null,div:true,form:true,ol:true,table:true,ul:true},
+    unpackDivs = {__proto__:embeds,div:true,img:true},
+    noContent = {__proto__:formatTags,font:false,input:false,link:false,meta:false,span:false},
+    formatTags = {__proto__:null,br:new Element("br"),hr:new Element("hr")},
+    headerTags = {__proto__:null,h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
+    newLinesAfter = {__proto__:headerTags,br:true,li:true,p:true},
 
-	divToPElements = ["a","blockquote","dl","img","ol","p","pre","table","ul"],
-	okayIfEmpty = ["audio","embed","iframe","img","object","video"],
+    divToPElements = ["a","blockquote","dl","img","ol","p","pre","table","ul"],
+    okayIfEmpty = ["audio","embed","iframe","img","object","video"],
 
-	re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/,
-	re_nextLink = /[>»]|continue|next|weiter(?:[^\|]|$)/i,
-	re_prevLink = /[<«]|earl|new|old|prev/i,
-	re_extraneous = /all|archive|comment|discuss|e-?mail|login|print|reply|share|sign|single/i,
-	re_pages = /pag(?:e|ing|inat)/i,
-	re_pagenum = /p[ag]{0,2}(?:e|ing|ination)?[=\/]\d{1,2}/i,
+    re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/,
+    re_nextLink = /[>»]|continue|next|weiter(?:[^\|]|$)/i,
+    re_prevLink = /[<«]|earl|new|old|prev/i,
+    re_extraneous = /all|archive|comment|discuss|e-?mail|login|print|reply|share|sign|single/i,
+    re_pages = /pag(?:e|ing|inat)/i,
+    re_pagenum = /p[ag]{0,2}(?:e|ing|ination)?[=\/]\d{1,2}/i,
 
-	re_safe = /article-body|hentry|instapaper_body/,
-	re_final = /first|last/i,
+    re_safe = /article-body|hentry|instapaper_body/,
+    re_final = /first|last/i,
 
-	re_positive = /article|blog|body|content|entry|main|news|pag(?:e|ination)|post|story|text/,
-	re_negative = /com(?:bx|ment|-)|contact|foot(?:er|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
-	re_unlikelyCandidates =  /ad-break|agegate|auth?or|bookmark|cat|com(?:bx|ment|munity)|date|disqus|extra|foot|header|ignore|info|links|menu|nav|pag(?:er|ination)|popup|related|remark|rss|shoutbox|sidebar|similar|social|sponsor|teaserlist|time|tweet|twitter/,
-	re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
+    re_positive = /article|blog|body|content|entry|main|news|pag(?:e|ination)|post|story|text/,
+    re_negative = /com(?:bx|ment|-)|contact|foot(?:er|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/,
+    re_unlikelyCandidates =  /ad-break|agegate|auth?or|bookmark|cat|com(?:bx|ment|munity)|date|disqus|extra|foot|header|ignore|info|links|menu|nav|pag(?:er|ination)|popup|related|remark|rss|shoutbox|sidebar|similar|social|sponsor|teaserlist|time|tweet|twitter/,
+    re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 
-	re_sentence = /\. |\.$/,
-	re_whitespace = /\s+/g,
+    re_sentence = /\. |\.$/,
+    re_whitespace = /\s+/g,
 
-	re_pageInURL = /[_\-]?p[a-zA-Z]*[_\-]?\d{1,2}$/,
-	re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i,
-	re_noLetters = /[^a-zA-Z]/,
-	re_params = /\?.*/,
-	re_extension = /00,|\.[a-zA-Z]+$/g,
-	re_digits = /\d/,
-	re_justDigits = /^\d{1,2}$/,
-	re_slashes = /\/+/,
-	re_domain = /\/([^\/]+)/,
+    re_pageInURL = /[_\-]?p[a-zA-Z]*[_\-]?\d{1,2}$/,
+    re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i,
+    re_noLetters = /[^a-zA-Z]/,
+    re_params = /\?.*/,
+    re_extension = /00,|\.[a-zA-Z]+$/g,
+    re_digits = /\d/,
+    re_justDigits = /^\d{1,2}$/,
+    re_slashes = /\/+/,
+    re_domain = /\/([^\/]+)/,
 
-	re_protocol = /^\w+\:/,
-	re_cleanPaths = /\/\.(?!\.)|\/[^\/]*\/\.\./,
+    re_protocol = /^\w+\:/,
+    re_cleanPaths = /\/\.(?!\.)|\/[^\/]*\/\.\./,
 
-	re_closing = /\/?(?:#.*)?$/,
-	re_imgUrl = /\.(gif|jpe?g|png|webp)$/i,
+    re_closing = /\/?(?:#.*)?$/,
+    re_imgUrl = /\.(gif|jpe?g|png|webp)$/i,
 
-	re_commas = /,[\s\,]*/g;
+    re_commas = /,[\s\,]*/g;
 
 //3. the readability class
 var Readability = function(settings){
@@ -245,7 +245,7 @@ Readability.prototype._getBaseURL = function(){
 	}
 
 	var cleaned = "",
-		elementNum = this._url.path.length - 1;
+	    elementNum = this._url.path.length - 1;
 
 	for(var i = 0; i < elementNum; i++){
 		// Split off and save anything that looks like a file type and "00,"-trash.
@@ -253,7 +253,7 @@ Readability.prototype._getBaseURL = function(){
 	}
 
 	var first = this._url.full.replace(re_params, "").replace(/.*\//, ""),
-		second = this._url.path[elementNum];
+	    second = this._url.path[elementNum];
 
 	if(!(second.length < 3 && re_noLetters.test(first)) && !re_justDigits.test(second)){
 		if(re_pageInURL.test(second)){
@@ -316,7 +316,7 @@ Readability.prototype._scanLink = function(elem){
 	if(!re_digits.test(href.replace(this._baseURL, ""))) return;
 
 	var score = 0,
-		linkData = text + elem.elementData;
+	    linkData = text + elem.elementData;
 
 	if(re_nextLink.test(linkData)) score += 50;
 	if(re_pages.test(linkData)) score += 25;
@@ -334,8 +334,8 @@ Readability.prototype._scanLink = function(elem){
 	if(re_extraneous.test(href)) score -= 15;
 
 	var current = elem,
-		posMatch = true,
-		negMatch = true;
+	    posMatch = true,
+	    negMatch = true;
 
 	while(current = current.parent){
 		if(current.elementData === "") continue;
@@ -487,7 +487,7 @@ Readability.prototype.onclosetag = function(tagName){
 	}
 	else if(this._settings.cleanConditionally && tagName in cleanConditionally){
 		var p = elem.info.tagCount.p || 0,
-			contentLength = elem.info.textLength + elem.info.linkLength;
+		    contentLength = elem.info.textLength + elem.info.linkLength;
 
 		if(contentLength === 0){
 			if(elem.children.length === 0) return;
@@ -545,9 +545,9 @@ Readability.prototype.onreset = Readability;
 var getCandidateSiblings = function(candidate){
 	//check all siblings
 	var ret = [],
-		childs = candidate.parent.children,
-		childNum = childs.length,
-		siblingScoreThreshold = Math.max(10, candidate.totalScore * .2);
+	    childs = candidate.parent.children,
+	    childNum = childs.length,
+	    siblingScoreThreshold = Math.max(10, candidate.totalScore * .2);
 
 	for(var i = 0; i < childNum; i++){
 		if(typeof childs[i] === "string") continue;
@@ -615,7 +615,7 @@ Readability.prototype.getTitle = function(){
 	if(this._headerTitle) return this._headerTitle;
 
 	var curTitle = this._origTitle || "",
-		origTitle = curTitle;
+	    origTitle = curTitle;
 
 	if(!curTitle) return;
 
