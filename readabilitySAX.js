@@ -12,22 +12,22 @@
 
 //1. the tree element
 var Element = function(tagName, parent){
-		this.name = tagName;
-		this.parent = parent;
-		this.attributes = {};
-		this.children = [];
-		this.tagScore = 0;
-		this.attributeScore = 0;
-		this.totalScore = 0;
-		this.elementData = "";
-		this.info = {
-			textLength: 0,
-			linkLength: 0,
-			commas:		0,
-			density:	0,
-			tagCount:	{}
-		};
-		this.isCandidate = false;
+	this.name = tagName;
+	this.parent = parent;
+	this.attributes = {};
+	this.children = [];
+	this.tagScore = 0;
+	this.attributeScore = 0;
+	this.totalScore = 0;
+	this.elementData = "";
+	this.info = {
+		textLength: 0,
+		linkLength: 0,
+		commas:		0,
+		density:	0,
+		tagCount:	{}
+	};
+	this.isCandidate = false;
 };
 
 Element.prototype = {
@@ -106,6 +106,7 @@ Element.prototype = {
 	getTopCandidate: function(){
 		var childs = this.children,
 		    topScore = -1/0,
+		    score = 0,
 		    topCandidate, elem;
 
 		for(var i = 0, j = childs.length; i < j; i++){
@@ -115,11 +116,11 @@ Element.prototype = {
 				//add points for the tags name
 				if(elem.name in tagCounts) elem.tagScore += tagCounts[elem.name];
 
-				elem.totalScore = Math.floor(
+				score = Math.floor(
 					(elem.tagScore + elem.attributeScore) * (1 - elem.info.density)
 				);
-				if(topScore < elem.totalScore){
-					topScore = elem.totalScore;
+				if(topScore < score){
+					elem.totalScore = topScore = score;
 					topCandidate = elem;
 				}
 			}
@@ -508,6 +509,7 @@ Readability.prototype.onclosetag = function(tagName){
 		}
 		if(cnvrt) return;
 	}
+
 	if(this._settings.replaceImgs
 		&& tagName === "a"
 		&& elem.children.length === 1
@@ -523,11 +525,10 @@ Readability.prototype.onclosetag = function(tagName){
 	//should node be scored?
 	if(tagName === "p" || tagName === "pre" || tagName === "td");
 	else if(tagName === "div"){
-		//check if div should be converted to a p
+ 		//check if div should be converted to a p
 		for(i = 0, j = divToPElements.length; i < j; i++){
 			if(divToPElements[i] in elem.info.tagCount) return;
 		}
-
 		elem.name = "p";
 	}
 	else return;
