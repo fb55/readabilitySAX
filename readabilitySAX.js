@@ -614,29 +614,27 @@ Readability.prototype.setSkipLevel = function(skipLevel){
 
 Readability.prototype.getTitle = function(){
 	if(this._headerTitle) return this._headerTitle;
+	if(!this._origTitle) return "";
 
-	var curTitle = this._origTitle || "",
-	    origTitle = curTitle;
-
-	if(!curTitle) return;
+	var curTitle, origTitle = curTitle = this._origTitle;
 
 	if(/ [\|\-] /.test(curTitle)){
 		curTitle = curTitle.replace(/(.*) [\|\-] .*/g, "$1");
 
-		if(curTitle.split(" ", 2).length < 2)
-			curTitle = origTitle.replace(/.*?[\|\-] (.*)/g,"$1");
+		if(curTitle.split(" ", 3).length !== 3)
+			curTitle = origTitle.replace(/.*?[\|\-] /,"");
 	}
 	else if(curTitle.indexOf(": ") !== -1){
 		curTitle = curTitle.substr(curTitle.lastIndexOf(": ") + 2);
 
-		if(curTitle.split(" ", 2).length < 2)
-			curTitle = origTitle.substr(0, origTitle.indexOf(": "));
+		if(curTitle.split(" ", 3).length !== 3)
+			curTitle = origTitle.substr(origTitle.indexOf(": "));
 	}
+	//TODO: support arrow ("\u00bb")
 
 	curTitle = curTitle.trim();
 
-	if(curTitle.split(" ", 5).length < 5)
-		curTitle = origTitle;
+	if(curTitle.split(" ", 5).length !== 5) curTitle = origTitle;
 
 	return curTitle;
 };
@@ -688,7 +686,7 @@ Readability.prototype.getArticle = function(type){
 	var elem = this._getCandidateNode();
 
 	var ret = {
-		title: this.getTitle(),
+		title: this._headerTitle || this.getTitle(),
 		nextPage: this.getNextPage(),
 		textLength: elem.info.textLength,
 		score: this._topCandidate ? this._topCandidate.totalScore : 0
