@@ -14,10 +14,11 @@ function saxParser(elem, callbacks){
 		var name = node.tagName.toLowerCase(),
 		    attributeNodes = node.attributes;
 		
+		callbacks.onopentagname(name);
+		
 		for(var i = 0, j = attributeNodes.length; i < j; i++){
 			callbacks.onattribute(attributeNodes[i].name+'', attributeNodes[i].value);
 		}
-		callbacks.onopentagname(name);
 		
 		var childs = node.childNodes,
 		    num = childs.length, nodeType;
