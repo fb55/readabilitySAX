@@ -14,10 +14,10 @@ module.exports = function(data, settings, skipLevel){
 	do {
 		if(skipLevel !== 0) readable.setSkipLevel(skipLevel);
 
-		 parser.parseComplete(data);
+		parser.parseComplete(data);
 
-		 article = readable.getArticle();
-		 skipLevel += 1;
+		article = readable.getArticle();
+		skipLevel += 1;
 	} while(article.score < 300 && article.textLength < 250 && skipLevel < 4);
 	
 	/*

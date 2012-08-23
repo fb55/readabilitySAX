@@ -20,7 +20,7 @@ module.exports = function(uri, format, cb){
 			text:	err,
 			html:	"<b>" + err + "</b>",
 			error: true
-		 });
+		});
 	}
 	
 	var settings, stream;
@@ -35,7 +35,7 @@ module.exports = function(uri, format, cb){
 		
 		var article = stream.getArticle();
 		if(article.textLength < 250 && article.score < 300){
-			article = processData(body, settings, 1);	
+			article = processData(body, settings, 1);
 		}
 		
 		article.link = req.response.location;
