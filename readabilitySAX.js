@@ -3,9 +3,9 @@
 * https://github.com/fb55/readabilitySAX
 *
 * The code is structured into three main parts:
-* 	1. An light-weight "Element" class that is used instead of the DOM (and provides some DOM-like functionality)
-* 	2. A list of properties that help readability to determine how a "good" element looks like
-* 	3. The Readability class that provides the interface & logic (usable as a htmlparser2 handler)
+*	1. An light-weight "Element" class that is used instead of the DOM (and provides some DOM-like functionality)
+*	2. A list of properties that help readability to determine how a "good" element looks like
+*	3. The Readability class that provides the interface & logic (usable as a htmlparser2 handler)
 */
 
 ;(function(global){
@@ -105,7 +105,7 @@ Element.prototype = {
 	},
 	getTopCandidate: function(){
 		var childs = this.children,
-		    topScore = -1/0,
+		    topScore = -Infinity,
 		    score = 0,
 		    topCandidate, elem;
 
@@ -134,7 +134,7 @@ Element.prototype = {
 };
 
 //2. list of values
-var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
+var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,label:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
     tagCounts = {__proto__:null,address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,section:15,td:3,th:-5,ul:-3},
     removeIfEmpty = {__proto__:null,blockquote:true,li:true,p:true,pre:true,tbody:true,td:true,th:true,thead:true,tr:true},
     embeds = {__proto__:null,embed:true,object:true,iframe:true}, //iframe added for html5 players
@@ -525,7 +525,7 @@ Readability.prototype.onclosetag = function(tagName){
 	//should node be scored?
 	if(tagName === "p" || tagName === "pre" || tagName === "td");
 	else if(tagName === "div"){
- 		//check if div should be converted to a p
+		//check if div should be converted to a p
 		for(i = 0, j = divToPElements.length; i < j; i++){
 			if(divToPElements[i] in elem.info.tagCount) return;
 		}
@@ -584,7 +584,7 @@ Readability.prototype._getCandidateNode = function(){
 		elems = getCandidateSiblings(elem);
 
 		//create a new object so that the prototype methods are callable
-		elem = new Element("div")
+		elem = new Element("div");
 		elem.children = elems;
 		elem.addInfo();
 	}
@@ -616,26 +616,25 @@ Readability.prototype.getTitle = function(){
 	if(this._headerTitle) return this._headerTitle;
 	if(!this._origTitle) return "";
 
-	var curTitle, origTitle = curTitle = this._origTitle;
+	var curTitle = this._origTitle;
 
 	if(/ [\|\-] /.test(curTitle)){
 		curTitle = curTitle.replace(/(.*) [\|\-] .*/g, "$1");
 
 		if(curTitle.split(" ", 3).length !== 3)
-			curTitle = origTitle.replace(/.*?[\|\-] /,"");
+			curTitle = this._origTitle.replace(/.*?[\|\-] /,"");
 	}
 	else if(curTitle.indexOf(": ") !== -1){
 		curTitle = curTitle.substr(curTitle.lastIndexOf(": ") + 2);
 
 		if(curTitle.split(" ", 3).length !== 3)
-			curTitle = origTitle.substr(origTitle.indexOf(": "));
+			curTitle = this._origTitle.substr(origTitle.indexOf(": "));
 	}
 	//TODO: support arrow ("\u00bb")
 
 	curTitle = curTitle.trim();
 
-	if(curTitle.split(" ", 5).length !== 5) curTitle = origTitle;
-
+	if(curTitle.split(" ", 5).length !== 5) return this._origTitle;
 	return curTitle;
 };
 
