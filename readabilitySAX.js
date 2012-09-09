@@ -430,7 +430,7 @@ Readability.prototype.ontext = function(text){
 Readability.prototype.onclosetag = function(tagName){
 	if(tagName in noContent) return;
 
-	var elem = this._currentElement, title, i, j, cnvrt;
+	var elem = this._currentElement, title, i, j;
 
 	this._currentElement = elem.parent;
 
@@ -502,14 +502,16 @@ Readability.prototype.onclosetag = function(tagName){
 		if(elem.attributeScore < 25 && elem.info.density > .2) return;
 		if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) return;
 	}
-	if((tagName in removeIfEmpty || !this._settings.cleanConditionally && tagName in cleanConditionally) 
+
+	filterEmpty: if(
+		(tagName in removeIfEmpty || !this._settings.cleanConditionally && tagName in cleanConditionally) 
 		&& (elem.info.linkLength + elem.info.textLength === 0)
+		&& elem.children.length !== 0
 	) {
-		cnvrt = elem.children.length !== 0;
-		for(i = 0, j = okayIfEmpty.length; i < j && cnvrt; i++){
-			cnvrt = !(okayIfEmpty[i] in elem.info.tagCount);
+		for(i = 0, j = okayIfEmpty.length; i < j; i++){
+			if(okayIfEmpty[i] in elem.info.tagCount) break filterEmpty;
 		}
-		if(cnvrt) return;
+		return;
 	}
 
 	if(this._settings.replaceImgs
