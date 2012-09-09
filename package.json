@@ -1,6 +1,6 @@
 {
     "name": "readabilitySAX",
-    "version": "1.4.3",
+    "version": "1.4.4",
     "description": "the readability script ported to a sax parser",
     "author": "Felix Boehm <me@feedic.com>",
     "keywords": ["html", "content extraction", "readability", "instapaper"],
