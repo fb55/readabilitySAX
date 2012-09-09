@@ -69,8 +69,9 @@ Element.prototype = {
 	getOuterHTML: function(){
 		var ret = "<" + this.name;
 
-		for(var i in this.attributes)
+		for(var i in this.attributes){
 			ret += " " + i + "=\"" + this.attributes[i] + "\"";
+		}
 
 		if(this.children.length === 0){
 			if(this.name in formatTags) return ret + "/>";
@@ -279,8 +280,9 @@ Readability.prototype._processSettings = function(settings){
 	this._settings = {};
 
 	for(var i in Settings){
-		if(typeof settings[i] !== "undefined")
+		if(typeof settings[i] !== "undefined"){
 			this._settings[i] = settings[i];
+		}
 		else this._settings[i] = Settings[i];
 	}
 
