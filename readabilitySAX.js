@@ -504,7 +504,7 @@ Readability.prototype.onclosetag = function(tagName){
 	}
 
 	filterEmpty: if(
-		(tagName in removeIfEmpty || !this._settings.cleanConditionally && tagName in cleanConditionally) 
+		(tagName in removeIfEmpty || !this._settings.cleanConditionally && tagName in cleanConditionally)
 		&& (elem.info.linkLength + elem.info.textLength === 0)
 		&& elem.children.length !== 0
 	) {
@@ -632,7 +632,7 @@ Readability.prototype.getTitle = function(){
 		curTitle = curTitle.substr(curTitle.lastIndexOf(": ") + 2);
 
 		if(curTitle.split(" ", 3).length !== 3)
-			curTitle = this._origTitle.substr(origTitle.indexOf(": "));
+			curTitle = this._origTitle.substr(this._origTitle.indexOf(": "));
 	}
 	//TODO: support arrow ("\u00bb")
 
