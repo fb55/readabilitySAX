@@ -53,7 +53,7 @@ Just run `require("readabilitySAX")`. You'll get an object containing three meth
 
 There are two methods available that are deprecated and __will be removed__ in a future version:
 
-* `get(link, callback)`: Gets a webpage and process it.
+* `get(link, [settings], callback)`: Gets a webpage and process it.
 
 * `process(data)`: Takes a string, runs readabilitySAX and returns the page.
 
