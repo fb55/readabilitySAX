@@ -12,7 +12,7 @@
 	},
     "dependencies": {
         "htmlparser2": "2.x.x",
-        "minreq": "0.x.x",
+        "minreq": "~0.1.6",
         "entities": "0.x.x"
     },
     "bin" : {
