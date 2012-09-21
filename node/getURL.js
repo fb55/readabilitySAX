@@ -3,10 +3,12 @@ var WritableStream = require("./WritableStream.js"),
 	url = require("url"),
 	processData = require("./process.js");
 
-module.exports = function(uri, format, cb){
-	if(typeof format === "function"){
-		cb = format;
-		format = "html";
+module.exports = function(uri, settings, cb){
+	if(typeof settings === "function"){
+		cb = settings;
+		settings = {};
+	} else  if(typeof settings === "string"){
+		settings = {format: settings};
 	}
 
 	var calledCB = false;
@@ -24,13 +26,12 @@ module.exports = function(uri, format, cb){
 	}
 
 	var req = minreq({
-		uri: typeof uri === "object" ? uri : url.parse(uri),
+		uri: uri,
 		only2xx: true
 	}).on("error", onErr).on("response", function(resp){
-		var stream = new WritableStream({
-			pageURL: req.response.location,
-			type: format
-		}, function(article){
+		settings.pageURL = req.response.location;
+
+		var stream = new WritableStream(settings, function(article){
 			if(calledCB) return console.log("got article with called cb");
 			article.link = req.response.location;
 			cb(article);
