@@ -30,11 +30,13 @@ Object.getOwnPropertyNames(Readability.prototype).forEach(function(name){
 });
 
 WritableStream.prototype.onend = function(){
-	for(var candidate, skipLevel = 1;
-		(candidate = this._getCandidateNode()).info.textLength < 250 &&
-		skipLevel < 4;
-	skipLevel++){
-		this.reset();
+	for(
+		var candidate, skipLevel = 1;
+			(candidate = this._getCandidateNode()).info.textLength < 250 &&
+			skipLevel < 4;
+		skipLevel++
+	){
+		this.onreset();
 		this.setSkipLevel(skipLevel);
 
 		for(var i = 0; i < this._ws_queue.length; i+=2){
