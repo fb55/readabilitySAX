@@ -45,11 +45,19 @@ The format is optional (it's either `text` or `html`, the default value is `text
 #####Node
 Just run `require("readabilitySAX")`. You'll get an object containing three methods:
 
+* `Readability(settings)`: The readability constructor. It works as a handler for `htmlparser2`. Read more about it [in the wiki](https://github.com/FB55/readabilitySAX/wiki/The-Readability-constructor)!
+
+* `WritableStream(settings, cb)`: A constructor that unites `htmlparser2` and the `Readability` constructor. It's a writable stream, so simply `.write` all your data to it. Your callback will be called once `.end` was called. Bonus: You can also `.pipe` data into it!
+
+* `createWritableStream(settings, cb)`: Returns a new instance of the `WritableStream`. (It's a simple factory method.)
+
+There are two methods available that are deprecated and __will be removed__ in a future version:
+
 * `get(link, callback)`: Gets a webpage and process it.
 
 * `process(data)`: Takes a string, runs readabilitySAX and returns the page.
 
-* `Readability(settings)`: The readability object. It works as a handler for `htmlparser2`. Read more about it [in the wiki](https://github.com/FB55/readabilitySAX/wiki/The-Readability-constructor)!
+__Please don't use those two methods anymore__. Streams are the way you should build interfaces in node, and that's what I want encourage people to use.
 
 #####Browsers
 
