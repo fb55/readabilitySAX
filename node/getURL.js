@@ -22,27 +22,20 @@ module.exports = function(uri, format, cb){
 			error: true
 		});
 	}
-	
-	var settings, stream;
 
 	var req = minreq({
 		uri: typeof uri === "object" ? uri : url.parse(uri),
 		only2xx: true
-	}, function(err, headers, body){
-		if(err) return onErr(err);
-		if(!stream) return onErr("Got no stream!");
-		if(calledCB) return console.log("got end with calledCB = true");
-		
-		var article = stream.getArticle();
-		if(article.textLength < 250){
-			article = processData(body, settings, 1);
-		}
-		
-		article.link = req.response.location;
-		cb(article);
-	}).on("response", function(resp){
-		settings = {pageURL: req.response.location, type: format};
-		stream = new WritableStream(settings);
+	}).on("error", onErr).on("response", function(resp){
+		var stream = new WritableStream({
+			pageURL: req.response.location,
+			type: format
+		}, function(article){
+			if(calledCB) return console.log("got article with called cb");
+			article.link = req.response.location;
+			cb(article);
+		});
+
 		req.pipe(stream);
 	});
 };
