@@ -92,4 +92,3 @@ ___// TODO___
 - Add support for URLs containing hash-bangs (`#!`)
 - Allow fetching articles with more than one page
 - Don't remove all images inside `<a>` tags
-- Add a `user-agent` header with usable contents

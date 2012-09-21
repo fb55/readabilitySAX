@@ -27,7 +27,10 @@ module.exports = function(uri, settings, cb){
 
 	var req = minreq({
 		uri: uri,
-		only2xx: true
+		only2xx: true,
+		headers: {
+			"user-agent": "Mozilla/5.0 (compatible; readabilitySAX/1.5; +https://github.com/fb55/readabilitySAX)"
+		}
 	}).on("error", onErr).on("response", function(resp){
 		settings.pageURL = req.response.location;
 
