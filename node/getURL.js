@@ -34,7 +34,7 @@ module.exports = function(uri, format, cb){
 		if(calledCB) return console.log("got end with calledCB = true");
 		
 		var article = stream.getArticle();
-		if(article.textLength < 250 && article.score < 300){
+		if(article.textLength < 250){
 			article = processData(body, settings, 1);
 		}
 		

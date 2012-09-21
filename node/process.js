@@ -18,7 +18,7 @@ module.exports = function(data, settings, skipLevel){
 
 		article = readable.getArticle();
 		skipLevel += 1;
-	} while(article.score < 300 && article.textLength < 250 && skipLevel < 4);
+	} while(article.textLength < 250 && skipLevel < 4);
 	
 	/*
 	if(article.textLength < 250) return {
