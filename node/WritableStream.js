@@ -5,6 +5,10 @@ var Readability = require("../readabilitySAX.js"),
 	};
 
 var WritableStream = function(settings, callback){
+	if(typeof settings === "function"){
+		callback = settings;
+		settings = null;
+	}
 	Readability.call(this, settings);
 	WritableParser.call(this, this, parserOptions);
 	this._ws_queue = [];
@@ -14,13 +18,13 @@ var WritableStream = function(settings, callback){
 require("util").inherits(WritableStream, WritableParser);
 
 Object.getOwnPropertyNames(Readability.prototype).forEach(function(name){
-	if(name.substr(0, 2) === "on") {
+	//cache (almost) all events
+	if(name.substr(0, 2) === "on" && name !== "onreset") {
 		WritableStream.prototype[name] = function(){
 			this._ws_queue.push(name, arguments);
 			Readability.prototype[name].apply(this, arguments);
 		};
-	}
-	else {
+	} else {
 		WritableStream.prototype[name] = Readability.prototype[name];
 	}
 });
@@ -38,7 +42,9 @@ WritableStream.prototype.onend = function(){
 		}
 	}
 
-	this._ws_callback(this.getArticle());
+	if(this._ws_callback){
+		this._ws_callback(this.getArticle());
+	}
 };
 
 module.exports = WritableStream;
