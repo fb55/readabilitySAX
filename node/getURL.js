@@ -8,7 +8,7 @@ module.exports = function(uri, settings, cb){
 		cb = settings;
 		settings = {};
 	} else  if(typeof settings === "string"){
-		settings = {format: settings};
+		settings = {type: settings};
 	}
 
 	var calledCB = false;

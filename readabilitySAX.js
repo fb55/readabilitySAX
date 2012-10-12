@@ -297,7 +297,7 @@ Readability.prototype._processSettings = function(settings){
 		};
 		this._baseURL = this._getBaseURL();
 	}
-	if(settings.format) this._settings.format = settings.format;
+	if(settings.type) this._settings.type = settings.type;
 };
 
 Readability.prototype._scanLink = function(elem){
@@ -685,7 +685,7 @@ Readability.prototype.getEvents = function(cbs){
 	})(this._getCandidateNode());
 };
 
-Readability.prototype.getArticle = function(format){
+Readability.prototype.getArticle = function(type){
 	var elem = this._getCandidateNode();
 
 	var ret = {
@@ -695,9 +695,9 @@ Readability.prototype.getArticle = function(format){
 		score: this._topCandidate ? this._topCandidate.totalScore : 0
 	};
 
-	if(!format && this._settings.format) format = this._settings.format;
+	if(!type && this._settings.type) type = this._settings.type;
 
-	if(format === "text") ret.text = this.getText(elem);
+	if(type === "text") ret.text = this.getText(elem);
 	else ret.html = this.getHTML(elem);
 
 	return ret;
