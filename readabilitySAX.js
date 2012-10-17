@@ -69,8 +69,9 @@ Element.prototype = {
 	getOuterHTML: function(){
 		var ret = "<" + this.name;
 
-		for(var i in this.attributes)
+		for(var i in this.attributes){
 			ret += " " + i + "=\"" + this.attributes[i] + "\"";
+		}
 
 		if(this.children.length === 0){
 			if(this.name in formatTags) return ret + "/>";
@@ -302,8 +303,9 @@ Readability.prototype._processSettings = function(settings){
 	this._settings = {};
 
 	for(var i in Settings){
-		if(typeof settings[i] !== "undefined")
+		if(typeof settings[i] !== "undefined"){
 			this._settings[i] = settings[i];
+		}
 		else this._settings[i] = Settings[i];
 	}
 
@@ -466,7 +468,7 @@ Readability.prototype.ontext = function(text){
 Readability.prototype.onclosetag = function(tagName){
 	if(tagName in noContent) return;
 
-	var elem = this._currentElement, title, i, j, cnvrt;
+	var elem = this._currentElement, title, i, j;
 
 	this._currentElement = elem.parent;
 
@@ -538,14 +540,15 @@ Readability.prototype.onclosetag = function(tagName){
 		if(elem.attributeScore < 25 && elem.info.density > .2) return;
 		if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) return;
 	}
-	if((tagName in removeIfEmpty || !this._settings.cleanConditionally && tagName in cleanConditionally)
+	filterEmpty: if(
+		(tagName in removeIfEmpty || !this._settings.cleanConditionally && tagName in cleanConditionally)
 		&& (elem.info.linkLength + elem.info.textLength === 0)
+		&& elem.children.length !== 0
 	) {
-		cnvrt = elem.children.length !== 0;
-		for(i = 0, j = okayIfEmpty.length; i < j && cnvrt; i++){
-			cnvrt = !(okayIfEmpty[i] in elem.info.tagCount);
+		for(i = 0, j = okayIfEmpty.length; i < j; i++){
+			if(okayIfEmpty[i] in elem.info.tagCount) break filterEmpty;
 		}
-		if(cnvrt) return;
+		return;
 	}
 
 	if(this._settings.replaceImgs
@@ -666,7 +669,7 @@ Readability.prototype.getTitle = function(){
 		curTitle = curTitle.substr(curTitle.lastIndexOf(": ") + 2);
 
 		if(curTitle.split(" ", 3).length !== 3)
-			curTitle = this._origTitle.substr(origTitle.indexOf(": "));
+			curTitle = this._origTitle.substr(this._origTitle.indexOf(": "));
 	}
 	//TODO: support arrow ("\u00bb")
 

@@ -3,10 +3,12 @@ var WritableStream = require("./WritableStream.js"),
 	url = require("url"),
 	processData = require("./process.js");
 
-module.exports = function(uri, format, cb){
-	if(typeof format === "function"){
-		cb = format;
-		format = "html";
+module.exports = function(uri, settings, cb){
+	if(typeof settings === "function"){
+		cb = settings;
+		settings = {};
+	} else  if(typeof settings === "string"){
+		settings = {type: settings};
 	}
 
 	var calledCB = false;
@@ -22,27 +24,22 @@ module.exports = function(uri, format, cb){
 			error: true
 		});
 	}
-	
-	var settings, stream;
 
 	var req = minreq({
-		uri: typeof uri === "object" ? uri : url.parse(uri),
-		only2xx: true
-	}, function(err, headers, body){
-		if(err) return onErr(err);
-		if(!stream) return onErr("Got no stream!");
-		if(calledCB) return console.log("got end with calledCB = true");
-		
-		var article = stream.getArticle();
-		if(article.textLength < 250 && article.score < 300){
-			article = processData(body, settings, 1);
+		uri: uri,
+		only2xx: true,
+		headers: {
+			"user-agent": "Mozilla/5.0 (compatible; readabilitySAX/1.5; +https://github.com/fb55/readabilitySAX)"
 		}
-		
-		article.link = req.response.location;
-		cb(article);
-	}).on("response", function(resp){
-		settings = {pageURL: req.response.location, type: format};
-		stream = new WritableStream(settings);
+	}).on("error", onErr).on("response", function(resp){
+		settings.pageURL = req.response.location;
+
+		var stream = new WritableStream(settings, function(article){
+			if(calledCB) return console.log("got article with called cb");
+			article.link = req.response.location;
+			cb(article);
+		});
+
 		req.pipe(stream);
 	});
 };
