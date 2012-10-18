@@ -240,18 +240,6 @@ Readability.prototype._convertLinks = function(path){
 	return this._url.protocol + "//" + this._url.domain + "/" + path;
 };
 
-/*
- * very important for getNextPage
- * test case::
- http://auto.163.com/12/0827/14/89TVE9MN00084TUP.html
->http://auto.163.com/12/0827/14
- http://mst.zol.com.cn/317/3173974.html
->http://mst.zol.com.cn/317
- http://www.csdn.net/article/2012-08-28/2809267-30-css-tools-and-applications
->http://www.csdn.net/article/2012-08-28/2809267-30-css-tools-and-applications
- http://www.csdn.net/article/2012-08-28/2809267-30-css-tools-and-applications/1
->http://www.csdn.net/article/2012-08-28/2809267-30-css-tools-and-applications
- */
 Readability.prototype._getBaseURL = function(){
 	if(this._url.path.length === 0){
 		//return what we got
@@ -269,24 +257,8 @@ Readability.prototype._getBaseURL = function(){
 	var first = this._url.full.replace(re_params, "").replace(/.*\//, ""),
 	    second = this._url.path[elementNum];
 
-	/*
-	if(!(second.length < 3 && re_noLetters.test(first)) && !re_justDigits.test(second)){
-		if(re_pageInURL.test(second)){
-			second = second.replace(re_pageInURL, "");
-		}
-		cleaned += "/" + second;
-	}
-
-	if(!re_badFirst.test(first)){
-		if(re_pageInURL.test(first)){
-			first = first.replace(re_pageInURL, "");
-		}
-		cleaned += "/" + first;
-	}
-	*/
-
 	var fn = first, dir = second;
-	if(/\./.test(fn)){ // .html .??? ignore first
+	if(/\./.test(fn)){
 	  cleaned += "/" + dir;
 	} else if (fn.length <3 || re_justDigits.test(fn)) {
 	  cleaned += '/' + dir;
@@ -321,7 +293,6 @@ Readability.prototype._processSettings = function(settings){
 		this._baseURL = this._getBaseURL();
 	}
 	if(settings.type) this._settings.type = settings.type;
-	// console.dir(this);
 };
 
 Readability.prototype._scanLink = function(elem){
@@ -329,21 +300,12 @@ Readability.prototype._scanLink = function(elem){
 
 	if(!href) return;
 	href = href.replace(re_closing, "");
-	// added trim
 	href = href.trim();
 
 	if(href in this._settings.linksToSkip) return;
 	if(href === this._baseURL || (this._url && href === this._url.full)) return;
 
-	// added by jackyz :: if not start with baseURL, skip it.
 	if(href.indexOf(this._baseURL) === -1) return;
-
-	/*
-	var match = href.match(re_domain);
-
-	if(!match) return;
-	if(this._url && match[1] !== this._url.domain) return;
-	*/
 
 	var text = elem.toString();
 	if(text.length > 25 || re_extraneous.test(text)) return;
@@ -399,13 +361,6 @@ Readability.prototype._scanLink = function(elem){
 		score: score,
 		text: text
 	};
-	/*
-	console.log("_scanLink::\n %s\n %s\n score:%s text:%s",
-	  this._baseURL,href,
-	  this._scannedLinks[href].score,
-	  this._scannedLinks[href].text
-	);
-	*/
 };
 
 //parser methods
@@ -680,7 +635,7 @@ Readability.prototype.getTitle = function(){
 };
 
 Readability.prototype.getNextPage = function(){
-	var topScore = 30, /*49,*/ topLink = "";
+	var topScore = 30, topLink = "";
 	for(var link in this._scannedLinks){
 		if(this._scannedLinks[link].score > topScore){
 			topLink = link;
