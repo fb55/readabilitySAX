@@ -169,7 +169,7 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,label:true,nav
     re_whitespace = /\s+/g,
 
     re_pageInURL = /[_\-]?p[a-zA-Z]*[_\-]?\d{1,2}$/,
-    re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i,
+    re_badFilename = /^(?:[^a-z]{0,3}|index|\d+)$/i,
     re_noLetters = /[^a-zA-Z]/,
     re_params = /\?.*/,
     re_extension = /00,|\.[a-zA-Z]+$/g,
@@ -253,17 +253,21 @@ Readability.prototype._getBaseURL = function(){
 		// Split off and save anything that looks like a file type and "00,"-trash.
 		cleaned += "/" + this._url.path[i].replace(re_extension, "");
 	}
+	
+	var fn = this._url.full.replace(re_params, "").replace(/.*\//, ""),
+	    fnPage = re_badFilename.test(fn) || /\./.test(fn),
+	    dir = this._url.path[elementNum],
+	    dirPage = (dir.length < 3 && re_noLetters.test(fn)) || re_justDigits.test(dir);
 
-	var first = this._url.full.replace(re_params, "").replace(/.*\//, ""),
-	    second = this._url.path[elementNum];
-
-	var fn = first, dir = second;
-	if(/\./.test(fn)){
-	  cleaned += "/" + dir;
-	} else if (fn.length <3 || re_justDigits.test(fn)) {
-	  cleaned += '/' + dir;
+	if(fnPage){
+	  cleaned += "/"+ dir;
 	} else {
-	  cleaned += '/' + dir + '/' + fn;
+	  if (dirPage) {
+	    cleaned += "/" + fn.replace(re_pageInURL, "");
+	  } else {
+	    cleaned += "/" + dir.replace(re_pageInURL, "");
+	    cleaned += "/" + fn.replace(re_pageInURL, "");
+	  }
 	}
 
 	// This is our final, cleaned, base article URL.
@@ -305,7 +309,9 @@ Readability.prototype._scanLink = function(elem){
 	if(href in this._settings.linksToSkip) return;
 	if(href === this._baseURL || (this._url && href === this._url.full)) return;
 
-	if(href.indexOf(this._baseURL) === -1) return;
+	var match = href.match(re_domain);
+	if(!match) return;
+	if(this._url && match[1] !== this._url.domain) return;
 
 	var text = elem.toString();
 	if(text.length > 25 || re_extraneous.test(text)) return;
@@ -313,6 +319,8 @@ Readability.prototype._scanLink = function(elem){
 
 	var score = 0,
 	    linkData = text + elem.elementData;
+
+	if(href.indexOf(this._baseURL) === -1) score -= 65;
 
 	if(re_nextLink.test(linkData)) score += 50;
 	if(re_pages.test(linkData)) score += 25;
