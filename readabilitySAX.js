@@ -204,6 +204,7 @@ Readability.prototype._settings = {
 	replaceImgs: true,
 	searchFurtherPages: true,
 	linksToSkip: {},	//pages that are already parsed
+	scoreMin: 49,           //nextPage score min value
 	//pageURL: null,	//URL of the page which is parsed
 	//type: "html",		//default type of output
 	resolvePaths: false
@@ -643,7 +644,7 @@ Readability.prototype.getTitle = function(){
 };
 
 Readability.prototype.getNextPage = function(){
-	var topScore = 30, topLink = "";
+	var topScore = this._settings.scoreMin, topLink = "";
 	for(var link in this._scannedLinks){
 		if(this._scannedLinks[link].score > topScore){
 			topLink = link;
