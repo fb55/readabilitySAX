@@ -169,7 +169,7 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,label:true,nav
     re_whitespace = /\s+/g,
 
     re_pageInURL = /[_\-]?p[a-zA-Z]*[_\-]?\d{1,2}$/,
-    re_badFilename = /^(?:[^a-z]{0,3}|index|\d+)$/i,
+    re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i,
     re_noLetters = /[^a-zA-Z]/,
     re_params = /\?.*/,
     re_extension = /00,|\.[a-zA-Z]+$/g,
@@ -255,20 +255,16 @@ Readability.prototype._getBaseURL = function(){
 		cleaned += "/" + this._url.path[i].replace(re_extension, "");
 	}
 	
-	var fn = this._url.full.replace(re_params, "").replace(/.*\//, ""),
-	    fnPage = re_badFilename.test(fn) || /\./.test(fn),
-	    dir = this._url.path[elementNum],
-	    dirPage = (dir.length < 3 && re_noLetters.test(fn)) || re_justDigits.test(dir);
+	var first = this._url.full.replace(re_params, "").replace(/.*\//, ""),
+	    second = this._url.path[elementNum];
 
-	if(fnPage){
-	  cleaned += "/"+ dir;
+	if(re_badFirst.test(first) || /\./.test(first)){
+	  cleaned += "/"+ second;
+	} else if ((second.length < 3 && re_noLetters.test(first)) || re_justDigits.test(second)) {
+	  cleaned += "/" + first.replace(re_pageInURL, "");
 	} else {
-	  if (dirPage) {
-	    cleaned += "/" + fn.replace(re_pageInURL, "");
-	  } else {
-	    cleaned += "/" + dir.replace(re_pageInURL, "");
-	    cleaned += "/" + fn.replace(re_pageInURL, "");
-	  }
+	  cleaned += "/" + second.replace(re_pageInURL, "");
+	  cleaned += "/" + first.replace(re_pageInURL, "");
 	}
 
 	// This is our final, cleaned, base article URL.
@@ -321,7 +317,7 @@ Readability.prototype._scanLink = function(elem){
 	var score = 0,
 	    linkData = text + elem.elementData;
 
-	if(href.indexOf(this._baseURL) === -1) score -= 65;
+	if(href.indexOf(this._baseURL) === -1) score -= 5;
 
 	if(re_nextLink.test(linkData)) score += 50;
 	if(re_pages.test(linkData)) score += 25;
