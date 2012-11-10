@@ -657,10 +657,10 @@ Readability.prototype.getNextPage = function(){
 Readability.prototype.getHTML = function(node){
 	if(!node) node = this._getCandidateNode();
 	return node.getInnerHTML() //=> clean it
+		//remove <br>s in front of opening & closing <p>s
+		.replace(/(?:<br\/>(?:\s|&nbsp;?)*)+(?=<\/?p)/g, "")
 		//remove spaces in front of <br>s
 		.replace(/(?:\s|&nbsp;?)+(?=<br\/>)/g, "")
-		//remove <br>s in front of opening & closing <p>s
-		.replace(/(?:<br\/>)+(?:\s|&nbsp;?)*(?=<\/?p)/g, "")
 		//turn all double+ <br>s into <p>s
 		.replace(/(?:<br\/>){2,}/g, "</p><p>")
 		//trim the result
