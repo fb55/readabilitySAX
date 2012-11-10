@@ -32,6 +32,11 @@ module.exports = function(uri, settings, cb){
 			"user-agent": "Mozilla/5.0 (compatible; readabilitySAX/1.5; +https://github.com/fb55/readabilitySAX)"
 		}
 	}).on("error", onErr).on("response", function(resp){
+		if("content-type" in resp.headers && resp.headers["content-type"].substr(0, 5) !== "text/"){
+			//TODO we're actually only interested in text/html, but text/plain shouldn't result in an error (as it will be forwarded)
+			onErr("document isn't text");
+			return;
+		}
 		settings.pageURL = req.response.location;
 
 		var stream = new WritableStream(settings, function(article){
