@@ -1,24 +1,25 @@
 {
     "name": "readabilitySAX",
-    "version": "1.5.3",
+    "version": "1.6.0",
     "description": "the readability script ported to a sax parser",
     "author": "Felix Boehm <me@feedic.com>",
     "keywords": ["html", "content extraction", "readability", "instapaper"],
-    "main": "./node/index.js",
-    "engine": "node >= 0.4.0",
+    "main": "node/index.js",
     "repository": {
 		  "type": "git"
 		, "url": "git://github.com/fb55/readabilitysax.git"
 	},
     "dependencies": {
-        "htmlparser2": "2.x.x",
-        "minreq": "~0.1.6",
-        "entities": "0.x.x"
+        "htmlparser2": "3.0",
+        "minreq": "0.2",
+        "entities": "0",
+        "readable-stream": "1.0"
     },
     "bin" : {
-        "readability" : "./node/CLI.js"
+        "readability" : "node/CLI.js"
     },
     "scripts": {
-    	"test": "node ./tests/test_output.js"
-    }
+    	"test": "node tests/test_output.js"
+    },
+    "license": "BSD-like"
 }
