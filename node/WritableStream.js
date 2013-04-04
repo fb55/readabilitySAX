@@ -1,52 +1,49 @@
+module.exports = WritableStream;
+
 var Readability = require("../readabilitySAX.js"),
-	WritableParser = require("htmlparser2/lib/WritableStream.js"),
+    htmlparser2 = require("htmlparser2"),
+	Parser = htmlparser2.Parser,
+	CollectingHandler = htmlparser2.CollectingHandler,
+	Super = require("stream").Writable || require("readable-stream").Writable,
 	parserOptions = {
 		lowerCaseTags: true
 	};
 
-var WritableStream = function(settings, callback){
+function WritableStream(settings, callback){
 	if(typeof settings === "function"){
 		callback = settings;
 		settings = null;
 	}
-	Readability.call(this, settings);
-	WritableParser.call(this, this, parserOptions);
-	this._ws_queue = [];
-	this._ws_callback = callback;
+	this._cb = callback;
+
+	this._readability = new Readability(settings);
+	this._handler = new CollectingHandler(this._readability);
+	this._parser = new Parser(this._handler, parserOptions);
+
+	Super.call(this);
+}
+
+require("util").inherits(WritableStream, Super);
+
+WritableStream.prototype._write = function(chunk, encoding, cb){
+	this._parser.write(chunk);
+	cb();
 };
 
-require("util").inherits(WritableStream, WritableParser);
+WritableStream.prototype.end = function(chunk){
+	this._parser.end(chunk);
+	Super.prototype.end.call(this);
 
-Object.getOwnPropertyNames(Readability.prototype).forEach(function(name){
-	//cache (almost) all events
-	if(name.substr(0, 2) === "on" && name !== "onreset") {
-		WritableStream.prototype[name] = function(){
-			this._ws_queue.push(name, arguments);
-			Readability.prototype[name].apply(this, arguments);
-		};
-	} else {
-		WritableStream.prototype[name] = Readability.prototype[name];
-	}
-});
-
-WritableStream.prototype.onend = function(){
 	for(
-		var candidate, skipLevel = 1;
-			(candidate = this._getCandidateNode()).info.textLength < 250 &&
-			skipLevel < 4;
+		var skipLevel = 1;
+		this._readability._getCandidateNode().info.textLength < 250 && skipLevel < 4;
 		skipLevel++
 	){
-		this.onreset();
-		this.setSkipLevel(skipLevel);
-
-		for(var i = 0; i < this._ws_queue.length; i+=2){
-			Readability.prototype[this._ws_queue[i]].apply(this, this._ws_queue[i+1]);
-		}
+		this._readability.setSkipLevel(skipLevel);
+		this._handler.restart();
 	}
 
-	if(this._ws_callback){
-		this._ws_callback(this.getArticle());
+	if(this._cb){
+		this._cb(this._readability.getArticle());
 	}
 };
-
-module.exports = WritableStream;
