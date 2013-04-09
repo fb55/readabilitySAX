@@ -2,9 +2,9 @@
 a fast and platform independent readability port
 
 ##About
-One day, I wanted to use [Readability](http://code.google.com/p/arc90labs-readability/), an algorithm to extract relevant pieces of information out of websites, for a node.js project. There are some ports of Readability to node (using jsdom, e.g. [that one](https://github.com/arrix/node-readability)), but they are pretty slow. I don't want to wait for more than a second (literally) until my node instance is ready to continue. So I started this project, porting the code to a SAX parser.
+This is a port of the algorithm used by the [Readability](http://code.google.com/p/arc90labs-readability/) bookmarklet to extract relevant pieces of information out of websites to a SAX parser.
 
-In my tests, most pages, even large ones, were finished within 15ms (on node, see below for more information). It works with Rhino, so it runs on [YQL](http://developer.yahoo.com/yql "Yahoo! Query Language"), which may have interesting uses. And it works within a browser.
+The advantage over other ports, e.g. [arrix/node-readability](https://github.com/arrix/node-readability), is a smaller memory footprint and a much faster execution. In my tests, most pages, even large ones, were finished within 15ms (on node, see below for more information). It works with Rhino, so it runs on [YQL](http://developer.yahoo.com/yql "Yahoo! Query Language"), which may have interesting uses. And it works within a browser.
 
 The Readability extraction algorithm was completely ported, but some adjustments were made:
 
