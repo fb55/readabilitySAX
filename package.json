@@ -4,7 +4,7 @@
     "description": "the readability script ported to a sax parser",
     "author": "Felix Boehm <me@feedic.com>",
     "keywords": ["html", "content extraction", "readability", "instapaper"],
-    "main": "node/index.js",
+    "main": "lib/",
     "repository": {
 		  "type": "git"
 		, "url": "git://github.com/fb55/readabilitysax.git"
@@ -16,7 +16,7 @@
         "readable-stream": "1.0"
     },
     "bin" : {
-        "readability" : "node/CLI.js"
+        "readability" : "bin/cli.js"
     },
     "scripts": {
     	"test": "node tests/test_output.js"
