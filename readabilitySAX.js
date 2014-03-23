@@ -314,6 +314,25 @@ Readability.prototype._processHeader = function(elem){
 	return false;
 };
 
+function cleanConditionally_(elem){
+	if(elem.name in cleanConditionally){
+		var p = elem.info.tagCount.p || 0,
+		    contentLength = elem.info.textLength + elem.info.linkLength;
+
+		if(contentLength === 0){
+			if(elem.children.length === 0) return true;
+			if(elem.children.length === 1 && typeof elem.children[0] === "string") return true;
+		}
+		if(
+			((elem.info.tagCount.li - 100) > p && elem.name !== "ul" && elem.name !== "ol") ||
+			(contentLength < 25 && (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2)) ||
+			elem.info.density > .5 ||
+			(elem.attributeScore < 25 && elem.info.density > .2) ||
+			((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1)
+		) return true;
+	}
+}
+
 Readability.prototype.onclosetag = function(tagName){
 	if(tagName in noContent) return;
 
@@ -363,22 +382,8 @@ Readability.prototype.onclosetag = function(tagName){
 		//clean headers
 		if (elem.attributeScore < 0 || elem.info.density > .33) return;
 	}
-	else if(this._settings.cleanConditionally && tagName in cleanConditionally){
-		var p = elem.info.tagCount.p || 0,
-		    contentLength = elem.info.textLength + elem.info.linkLength;
+	else if(this._settings.cleanConditionally && cleanConditionally_(elem)) return;
 
-		if(contentLength === 0){
-			if(elem.children.length === 0) return;
-			if(elem.children.length === 1 && typeof elem.children[0] === "string") return;
-		}
-		if(
-			((elem.info.tagCount.li - 100) > p && tagName !== "ul" && tagName !== "ol") ||
-			(contentLength < 25 && (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2)) ||
-			elem.info.density > .5 ||
-			(elem.attributeScore < 25 && elem.info.density > .2) ||
-			((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1)
-		) return;
-	}
 
 	filterEmpty:
 	if(
