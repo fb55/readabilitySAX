@@ -1,151 +1,17 @@
-/*
-* readabilitySAX
-* https://github.com/fb55/readabilitySAX
-*
-* The code is structured into three main parts:
-*	1. An light-weight "Element" class that is used instead of the DOM (and provides some DOM-like functionality)
-*	2. A list of properties that help readability to determine how a "good" element looks like
-*	3. The Readability class that provides the interface & logic (usable as a htmlparser2 handler)
-*/
+module.exports = Readability;
 
-;(function(global){
+var Element = require("./lib/element.js");
 
-//1. the tree element
-var Element = function(tagName, parent){
-	this.name = tagName;
-	this.parent = parent;
-	this.attributes = {};
-	this.children = [];
-	this.tagScore = 0;
-	this.attributeScore = 0;
-	this.totalScore = 0;
-	this.elementData = "";
-	this.info = {
-		textLength: 0,
-		linkLength: 0,
-		commas:		0,
-		density:	0,
-		tagCount:	{}
-	};
-	this.isCandidate = false;
-};
-
-Element.prototype = {
-	addInfo: function(){
-		var info = this.info,
-		    childs = this.children,
-		    childNum = childs.length,
-		    elem;
-		for(var i=0; i < childNum; i++){
-			elem = childs[i];
-			if(typeof elem === "string"){
-				info.textLength += elem.trim()./*replace(re_whitespace, " ").*/length;
-				if(re_commas.test(elem)) info.commas += elem.split(re_commas).length - 1;
-			}
-			else {
-				if(elem.name === "a"){
-					info.linkLength += elem.info.textLength + elem.info.linkLength;
-				}
-				else{
-					info.textLength += elem.info.textLength;
-					info.linkLength += elem.info.linkLength;
-				}
-				info.commas += elem.info.commas;
-
-				for(var j in elem.info.tagCount){
-					if(j in info.tagCount) info.tagCount[j] += elem.info.tagCount[j];
-					else info.tagCount[j] = elem.info.tagCount[j];
-				}
-
-				if(elem.name in info.tagCount) info.tagCount[elem.name] += 1;
-				else info.tagCount[elem.name] = 1;
-			}
-		}
-
-		if(info.linkLength !== 0){
-			info.density = info.linkLength / (info.textLength + info.linkLength);
-		}
-	},
-	getOuterHTML: function(){
-		var ret = "<" + this.name;
-
-		for(var i in this.attributes){
-			ret += " " + i + "=\"" + this.attributes[i] + "\"";
-		}
-
-		if(this.children.length === 0){
-			if(this.name in formatTags) return ret + "/>";
-			else return ret + "></" + this.name + ">";
-		}
-
-		return ret + ">" + this.getInnerHTML() + "</" + this.name + ">";
-	},
-	getInnerHTML: function(){
-		var nodes = this.children, ret = "";
-
-		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret += nodes[i];
-			else ret += nodes[i].getOuterHTML();
-		}
-		return ret;
-	},
-	getFormattedText: function(){
-		var nodes = this.children, ret = "";
-		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret += nodes[i].replace(re_whitespace, " ");
-			else {
-				if(nodes[i].name === "p" || nodes[i].name in headerTags) ret += "\n";
-				ret += nodes[i].getFormattedText();
-				if(nodes[i].name in newLinesAfter) ret += "\n";
-			}
-		}
-		return ret;
-	},
-	toString: function(){
-		return this.children.join("");
-	},
-	getTopCandidate: function(){
-		var childs = this.children,
-		    topScore = -Infinity,
-		    score = 0,
-		    topCandidate, elem;
-
-		for(var i = 0, j = childs.length; i < j; i++){
-			if(typeof childs[i] === "string") continue;
-			if(childs[i].isCandidate){
-				elem = childs[i];
-				//add points for the tags name
-				if(elem.name in tagCounts) elem.tagScore += tagCounts[elem.name];
-
-				score = Math.floor(
-					(elem.tagScore + elem.attributeScore) * (1 - elem.info.density)
-				);
-				if(topScore < score){
-					elem.totalScore = topScore = score;
-					topCandidate = elem;
-				}
-			}
-			if((elem = childs[i].getTopCandidate()) && topScore < elem.totalScore){
-				topScore = elem.totalScore;
-				topCandidate = elem;
-			}
-		}
-		return topCandidate;
-	}
-};
-
-//2. list of values
 var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,label:true,nav:true,noscript:true,script:true,select:true,style:true,textarea:true},
-    tagCounts = {__proto__:null,address:-3,article:30,blockquote:3,body:-5,dd:-3,div:5,dl:-3,dt:-3,form:-3,h2:-5,h3:-5,h4:-5,h5:-5,h6:-5,li:-3,ol:-3,pre:3,section:15,td:3,th:-5,ul:-3},
     removeIfEmpty = {__proto__:null,blockquote:true,li:true,p:true,pre:true,tbody:true,td:true,th:true,thead:true,tr:true},
     embeds = {__proto__:null,embed:true,object:true,iframe:true}, //iframe added for html5 players
     goodAttributes = {__proto__:null,alt:true,href:true,src:true,title:true/*,style:true*/},
     cleanConditionally = {__proto__:null,div:true,form:true,ol:true,table:true,ul:true},
     unpackDivs = {__proto__:embeds,div:true,img:true},
-    noContent = {__proto__:formatTags,font:false,input:false,link:false,meta:false,span:false},
     formatTags = {__proto__:null,br:new Element("br"),hr:new Element("hr")},
+    noContent = {__proto__:formatTags,font:false,input:false,link:false,meta:false,span:false},
+    
     headerTags = {__proto__:null,h1:true,h2:true,h3:true,h4:true,h5:true,h6:true},
-    newLinesAfter = {__proto__:headerTags,br:true,li:true,p:true},
 
     divToPElements = ["a","blockquote","dl","img","ol","p","pre","table","ul"],
     okayIfEmpty = ["audio","embed","iframe","img","object","video"],
@@ -182,19 +48,16 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,label:true,nav
     re_cleanPaths = /\/\.(?!\.)|\/[^\/]*\/\.\./,
 
     re_closing = /\/?(?:#.*)?$/,
-    re_imgUrl = /\.(gif|jpe?g|png|webp)$/i,
+    re_imgUrl = /\.(?:gif|jpe?g|png|webp)$/i;
 
-    re_commas = /,[\s\,]*/g;
-
-//3. the readability class
-var Readability = function(settings){
+function Readability(settings){
 	//the root node
 	this._currentElement = new Element("document");
 	this._topCandidate = null;
 	this._origTitle = this._headerTitle = "";
 	this._scannedLinks = {};
 	if(settings) this._processSettings(settings);
-};
+}
 
 Readability.prototype._settings = {
 	stripUnlikelyCandidates: true,
@@ -340,7 +203,7 @@ Readability.prototype._scanLink = function(elem){
 	    posMatch = true,
 	    negMatch = true;
 
-	while(current = current.parent){
+	while((current = current.parent)){
 		if(current.elementData === "") continue;
 		if(posMatch && re_pages.test(current.elementData)){
 			score += 25;
@@ -462,15 +325,18 @@ Readability.prototype.onclosetag = function(tagName){
 	}
 
 	if(tagName in tagsToSkip) return;
-	if(this._settings.stripUnlikelyCandidates
-		&& re_unlikelyCandidates.test(elem.elementData)
-		&& !re_okMaybeItsACandidate.test(elem.elementData)){
+	if(
+		this._settings.stripUnlikelyCandidates &&
+		re_unlikelyCandidates.test(elem.elementData) &&
+		!re_okMaybeItsACandidate.test(elem.elementData)
+	){
 			return;
 	}
-	if(tagName === "div"
-		&& elem.children.length === 1
-		&& typeof elem.children[0] === "object"
-		&& elem.children[0].name in unpackDivs
+	if(
+		tagName === "div" &&
+		elem.children.length === 1 &&
+		typeof elem.children[0] === "object" &&
+		elem.children[0].name in unpackDivs
 	){
 		//unpack divs
 		elem.parent.children.push(elem.children[0]);
@@ -496,29 +362,37 @@ Readability.prototype.onclosetag = function(tagName){
 			if(elem.children.length === 0) return;
 			if(elem.children.length === 1 && typeof elem.children[0] === "string") return;
 		}
-		if((elem.info.tagCount.li - 100) > p && tagName !== "ul" && tagName !== "ol") return;
-		if(contentLength < 25 && (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2) ) return;
-		if(elem.info.density > .5) return;
-		if(elem.attributeScore < 25 && elem.info.density > .2) return;
-		if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) return;
+		if(
+			((elem.info.tagCount.li - 100) > p && tagName !== "ul" && tagName !== "ol") ||
+			(contentLength < 25 && (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2)) || 
+			elem.info.density > .5 ||
+			(elem.attributeScore < 25 && elem.info.density > .2) ||
+			((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1)
+		) return;
 	}
 
-	filterEmpty: if(
-		(tagName in removeIfEmpty || !this._settings.cleanConditionally && tagName in cleanConditionally)
-		&& (elem.info.linkLength + elem.info.textLength === 0)
-		&& elem.children.length !== 0
-	) {
+	filterEmpty:
+	if(
+		(
+			tagName in removeIfEmpty ||
+			!this._settings.cleanConditionally &&
+			tagName in cleanConditionally
+		) && (
+			elem.info.linkLength + elem.info.textLength === 0
+		) && elem.children.length !== 0
+	){
 		for(i = 0, j = okayIfEmpty.length; i < j; i++){
 			if(okayIfEmpty[i] in elem.info.tagCount) break filterEmpty;
 		}
 		return;
 	}
 
-	if(this._settings.replaceImgs
-		&& tagName === "a"
-		&& elem.children.length === 1
-		&& elem.children[0].name === "img"
-		&& re_imgUrl.test(elem.attributes.href)
+	if(
+		this._settings.replaceImgs &&
+		tagName === "a" &&
+		elem.children.length === 1 &&
+		elem.children[0].name === "img" &&
+		re_imgUrl.test(elem.attributes.href)
 	){
 		elem = elem.children[0];
 		elem.attributes.src = elem.parent.attributes.href;
@@ -547,7 +421,7 @@ Readability.prototype.onclosetag = function(tagName){
 
 Readability.prototype.onreset = Readability;
 
-var getCandidateSiblings = function(candidate){
+function getCandidateSiblings(candidate){
 	//check all siblings
 	var ret = [],
 	    childs = candidate.parent.children,
@@ -572,7 +446,7 @@ var getCandidateSiblings = function(candidate){
 		ret.push(childs[i]);
 	}
 	return ret;
-};
+}
 
 
 
@@ -702,16 +576,3 @@ Readability.prototype.getArticle = function(type){
 
 	return ret;
 };
-
-if(typeof module !== "undefined" && "exports" in module){
-	module.exports = Readability;
-} else {
-	if(typeof define === "function" && define.amd){
-		define("Readability", function(){
-			return Readability;
-		});
-	}
-	global.Readability = Readability;
-}
-
-})(typeof window === "object" ? window : this);
