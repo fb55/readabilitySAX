@@ -291,10 +291,33 @@ Readability.prototype.ontext = function(text){
 	this._currentElement.children.push(text);
 };
 
+Readability.prototype._processHeader = function(elem){
+	var title = elem.toString().trim().replace(re_whitespace, " ");
+
+	if(this._origTitle){
+		if(this._origTitle.indexOf(title) !== -1){
+			if(title.split(" ", 4).length === 4){
+				//It's probably the title, so let's use it!
+				this._headerTitle = title;
+			}
+			return;
+		}
+		return elem.name === "h1";
+	}
+
+	//if there was no title tag, use any h1 as the title
+	if(elem.name === "h1"){
+		this._headerTitle = title;
+		return true;
+	}
+
+	return false;
+};
+
 Readability.prototype.onclosetag = function(tagName){
 	if(tagName in noContent) return;
 
-	var elem = this._currentElement, title, i, j;
+	var elem = this._currentElement, i, j;
 
 	this._currentElement = elem.parent;
 
@@ -307,22 +330,7 @@ Readability.prototype.onclosetag = function(tagName){
 		return;
 	}
 	else if(tagName in headerTags){
-		title = elem.toString().trim().replace(re_whitespace, " ");
-		if(this._origTitle){
-			if(this._origTitle.indexOf(title) !== -1){
-				if(title.split(" ", 4).length === 4){
-					//It's probably the title, so let's use it!
-					this._headerTitle = title;
-				}
-				return;
-			}
-			if(tagName === "h1") return;
-		}
-		//if there was no title tag, use any h1 as the title
-		else if(tagName === "h1"){
-			this._headerTitle = title;
-			return;
-		}
+		if(this._processHeader(elem)) return;
 	}
 
 	if(tagName in tagsToSkip) return;
@@ -365,7 +373,7 @@ Readability.prototype.onclosetag = function(tagName){
 		}
 		if(
 			((elem.info.tagCount.li - 100) > p && tagName !== "ul" && tagName !== "ol") ||
-			(contentLength < 25 && (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2)) || 
+			(contentLength < 25 && (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2)) ||
 			elem.info.density > .5 ||
 			(elem.attributeScore < 25 && elem.info.density > .2) ||
 			((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1)
