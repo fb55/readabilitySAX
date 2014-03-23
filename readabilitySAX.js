@@ -56,10 +56,12 @@ function Readability(settings){
 	this._topCandidate = null;
 	this._origTitle = this._headerTitle = "";
 	this._scannedLinks = {};
-	if(settings) this._processSettings(settings);
+	this._url = settings && settings.pageURL ? parseURL(settings.pageURL) : null;
+	this._baseURL = this._url ? getBaseURL(this._url) : "";
+	this._settings = settings ? processSettings(settings) : defaultSettings;
 }
 
-Readability.prototype._settings = {
+var defaultSettings = {
 	stripUnlikelyCandidates: true,
 	weightClasses: true,
 	cleanConditionally: true,
@@ -68,7 +70,7 @@ Readability.prototype._settings = {
 	searchFurtherPages: true,
 	linksToSkip: {},	//pages that are already parsed
 	//pageURL: null,	//URL of the page which is parsed
-	//type: "html",		//default type of output
+	type: "html",		//default type of output
 	resolvePaths: false
 };
 
@@ -103,22 +105,22 @@ Readability.prototype._convertLinks = function(path){
 	return this._url.protocol + "//" + this._url.domain + "/" + path;
 };
 
-Readability.prototype._getBaseURL = function(){
-	if(this._url.path.length === 0){
+function getBaseURL(url){
+	if(url.path.pathname === "/"){
 		//return what we got
-		return this._url.full.replace(re_params,"");
+		return url.full.replace(re_params,"");
 	}
 
 	var cleaned = "",
-	    elementNum = this._url.path.length - 1;
+	    elementNum = url.path.length - 1;
 
 	for(var i = 0; i < elementNum; i++){
 		// Split off and save anything that looks like a file type and "00,"-trash.
-		cleaned += "/" + this._url.path[i].replace(re_extension, "");
+		cleaned += "/" + url.path[i].replace(re_extension, "");
 	}
 
-	var first = this._url.full.replace(re_params, "").replace(/.*\//, ""),
-	    second = this._url.path[elementNum];
+	var first = url.full.replace(re_params, "").replace(/.*\//, ""),
+	    second = url.path[elementNum];
 
 	if(!(second.length < 3 && re_noLetters.test(first)) && !re_justDigits.test(second)){
 		if(re_pageInURL.test(second)){
@@ -135,33 +137,32 @@ Readability.prototype._getBaseURL = function(){
 	}
 
 	// This is our final, cleaned, base article URL.
-	return this._url.protocol + "//" + this._url.domain + cleaned;
-};
+	return url.protocol + "//" + url.domain + cleaned;
+}
 
-Readability.prototype._processSettings = function(settings){
-	var Settings = this._settings;
-	this._settings = {};
+function processSettings(settings){
+	var newSettings = {};
 
-	for(var i in Settings){
+	for(var i in defaultSettings){
 		if(typeof settings[i] !== "undefined"){
-			this._settings[i] = settings[i];
+			newSettings[i] = settings[i];
 		}
-		else this._settings[i] = Settings[i];
+		else newSettings[i] = defaultSettings[i];
 	}
 
-	var path;
-	if(settings.pageURL){
-		path = settings.pageURL.split(re_slashes);
-		this._url = {
-			protocol: path[0],
-			domain: path[1],
-			path: path.slice(2, -1),
-			full: settings.pageURL.replace(re_closing,"")
-		};
-		this._baseURL = this._getBaseURL();
-	}
-	if(settings.type) this._settings.type = settings.type;
-};
+	return newSettings;
+}
+
+function parseURL(url){
+	var path = url.split(re_slashes);
+
+	return {
+		protocol: path[0],
+		domain: path[1],
+		path: path.slice(2, -1),
+		full: url.replace(re_closing,"")
+	};
+}
 
 Readability.prototype._scanLink = function(elem){
 	var href = elem.attributes.href;
