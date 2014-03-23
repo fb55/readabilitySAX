@@ -291,8 +291,12 @@ Readability.prototype.ontext = function(text){
 	this._currentElement.children.push(text);
 };
 
+function getHeaderText(elem){
+	return elem.toString().trim().replace(re_whitespace, " ");
+}
+
 Readability.prototype._processHeader = function(elem){
-	var title = elem.toString().trim().replace(re_whitespace, " ");
+	var title = getHeaderText(elem);
 
 	if(this._origTitle){
 		if(this._origTitle.indexOf(title) !== -1){
@@ -345,7 +349,7 @@ Readability.prototype.onclosetag = function(tagName){
 		this._scanLink(elem);
 	}
 	else if(tagName === "title"){
-		this._origTitle = elem.toString().trim().replace(re_whitespace, " ");
+		this._origTitle = getHeaderText(elem);
 		return;
 	}
 	else if(tagName in headerTags){
@@ -462,8 +466,6 @@ function getCandidateSiblings(candidate){
 	return ret;
 }
 
-
-
 Readability.prototype._getCandidateNode = function(){
 	var elem = this._topCandidate, elems;
 	if(!elem) elem = this._topCandidate = this._currentElement.getTopCandidate();
@@ -504,30 +506,35 @@ Readability.prototype.setSkipLevel = function(skipLevel){
 	if(skipLevel > 2) this._settings.cleanConditionally = false;
 };
 
-Readability.prototype.getTitle = function(){
-	if(this._headerTitle) return this._headerTitle;
-	if(!this._origTitle) return "";
+function cleanTitle(original){
+	var current = original;
 
-	var curTitle = this._origTitle;
+	if(/ [\|\-] /.test(current)){
+		current = current.replace(/(.*) [\|\-] .*/g, "$1");
 
-	if(/ [\|\-] /.test(curTitle)){
-		curTitle = curTitle.replace(/(.*) [\|\-] .*/g, "$1");
-
-		if(curTitle.split(" ", 3).length !== 3)
-			curTitle = this._origTitle.replace(/.*?[\|\-] /,"");
+		if(current.split(" ", 3).length !== 3){
+			current = original.replace(/.*?[\|\-] /,"");
+		}
 	}
-	else if(curTitle.indexOf(": ") !== -1){
-		curTitle = curTitle.substr(curTitle.lastIndexOf(": ") + 2);
+	else if(current.indexOf(": ") !== -1){
+		current = current.substr(current.lastIndexOf(": ") + 2);
 
-		if(curTitle.split(" ", 3).length !== 3)
-			curTitle = this._origTitle.substr(this._origTitle.indexOf(": "));
+		if(current.split(" ", 3).length !== 3){
+			current = original.substr(original.indexOf(": "));
+		}
 	}
 	//TODO: support arrow ("\u00bb")
 
-	curTitle = curTitle.trim();
+	current = current.trim();
 
-	if(curTitle.split(" ", 5).length !== 5) return this._origTitle;
-	return curTitle;
+	if(current.split(" ", 5).length !== 5) return original;
+	return current;
+}
+
+Readability.prototype.getTitle = function(){
+	if(this._headerTitle) return this._headerTitle;
+	if(!this._origTitle) return "";
+	return cleanTitle(this._origTitle);
 };
 
 Readability.prototype.getNextPage = function(){
