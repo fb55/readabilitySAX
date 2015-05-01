@@ -25,10 +25,10 @@ function saxParser(elem, callbacks){
 		
 		for(var i = 0; i < num; i++){
 			nodeType = childs[i].nodeType;
-			if(nodeType === 3 /*text*/)
-				callbacks.ontext(childs[i].textContent);
-			else if(nodeType === 1 /*element*/) parse(childs[i]);
-			/*else if(nodeType === 8) //comment
+			if(nodeType === Node.TEXT_NODE)
+				callbacks.ontext(childs[i]);
+			else if(nodeType === Node.ELEMENT_NODE) parse(childs[i]);
+			/*else if(nodeType === Node.COMMENT_NODE)
 				if(callbacks.oncomment) callbacks.oncomment(childs[i].toString());
 			[...]
 			*/
