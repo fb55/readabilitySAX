@@ -150,7 +150,7 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,label:true,nav
     divToPElements = ["a","blockquote","dl","img","ol","p","pre","table","ul"],
     okayIfEmpty = ["audio","embed","iframe","img","object","video"],
 
-    re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/,
+    re_videos = /https?:\/\/(?:www\.)?(?:youtube|vimeo)\.com/,
     re_nextLink = /[>»]|continue|next|weiter(?:[^\|]|$)/i,
     re_prevLink = /[<«]|earl|new|old|prev/i,
     re_extraneous = /all|archive|comment|discuss|e-?mail|login|print|reply|share|sign|single/i,
@@ -206,7 +206,10 @@ Readability.prototype._settings = {
 	linksToSkip: {},	//pages that are already parsed
 	//pageURL: null,	//URL of the page which is parsed
 	//type: "html",		//default type of output
-	resolvePaths: false
+	resolvePaths: false,
+    includeEmbeds: function(src) {
+        return re_videos.test(src);    
+    }
 };
 
 Readability.prototype._convertLinks = function(path){
@@ -481,8 +484,8 @@ Readability.prototype.onclosetag = function(tagName){
 
 	//clean conditionally
 	if(tagName in embeds){
-		//check if tag is wanted (youtube or vimeo)
-		if(!("src" in elem.attributes && re_videos.test(elem.attributes.src))) return;
+		//check if tag is wanted (default: youtube or vimeo)
+		if(!("src" in elem.attributes && this._settings.includeEmbeds && this._settings.includeEmbeds(elem.attributes.src))) return;
 	}
 	else if(tagName === "h2" || tagName === "h3"){
 		//clean headers
