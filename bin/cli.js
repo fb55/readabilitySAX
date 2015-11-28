@@ -9,7 +9,7 @@ if(process.argv.length < 3 || !/^https?:\/\//.test(process.argv[2])){
 	return;
 }
 
-require("./getURL.js")(process.argv[2], process.argv[3] === "html" ? "html" : "text", function(result){
+require("./../lib/getURL.js")(process.argv[2], process.argv[3] === "html" ? "html" : "text", function(result){
 	if(result.error) return write("ERROR:", result.text);
 
 	//else

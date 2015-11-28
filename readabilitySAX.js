@@ -150,7 +150,7 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,label:true,nav
     divToPElements = ["a","blockquote","dl","img","ol","p","pre","table","ul"],
     okayIfEmpty = ["audio","embed","iframe","img","object","video"],
 
-    re_videos = /https?:\/\/(?:www\.)?(?:youtube|vimeo)\.com/,
+    re_videos = /https?:\/\/(?:www\.)?(?:youtube|vimeo)\.(?:com)/,
     re_nextLink = /[>»]|continue|next|weiter(?:[^\|]|$)/i,
     re_prevLink = /[<«]|earl|new|old|prev/i,
     re_extraneous = /all|archive|comment|discuss|e-?mail|login|print|reply|share|sign|single/i,
@@ -494,18 +494,18 @@ Readability.prototype.onclosetag = function(tagName){
 	else if(this._settings.cleanConditionally && tagName in cleanConditionally){
 		var p = elem.info.tagCount.p || 0,
 		    contentLength = elem.info.textLength + elem.info.linkLength;
-
+        
 		if(contentLength === 0){
 			if(elem.children.length === 0) return;
 			if(elem.children.length === 1 && typeof elem.children[0] === "string") return;
 		}
 		if((elem.info.tagCount.li - 100) > p && tagName !== "ul" && tagName !== "ol") return;
-		if(contentLength < 25 && (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2) ) return;
+		if(contentLength < 25 && ((!("img" in elem.info.tagCount) && !("iframe" in elem.info.tagCount)) || elem.info.tagCount.img > 2 || elem.info.tagCount.iframe > 2) ) return;
 		if(elem.info.density > .5) return;
 		if(elem.attributeScore < 25 && elem.info.density > .2) return;
 		if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) return;
 	}
-
+    
 	filterEmpty: if(
 		(tagName in removeIfEmpty || !this._settings.cleanConditionally && tagName in cleanConditionally)
 		&& (elem.info.linkLength + elem.info.textLength === 0)
@@ -516,7 +516,7 @@ Readability.prototype.onclosetag = function(tagName){
 		}
 		return;
 	}
-
+    
 	if(this._settings.replaceImgs
 		&& tagName === "a"
 		&& elem.children.length === 1
@@ -526,7 +526,7 @@ Readability.prototype.onclosetag = function(tagName){
 		elem = elem.children[0];
 		elem.attributes.src = elem.parent.attributes.href;
 	}
-
+    
 	elem.parent.children.push(elem);
 
 	//should node be scored?
@@ -539,7 +539,7 @@ Readability.prototype.onclosetag = function(tagName){
 		elem.name = "p";
 	}
 	else return;
-
+    
 	if((elem.info.textLength + elem.info.linkLength) > 24 && elem.parent && elem.parent.parent){
 		elem.parent.isCandidate = elem.parent.parent.isCandidate = true;
 		var addScore = 1 + elem.info.commas + Math.min( Math.floor( (elem.info.textLength + elem.info.linkLength) / 100 ), 3);
