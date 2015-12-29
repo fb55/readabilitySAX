@@ -438,7 +438,7 @@ Readability.prototype.onclosetag = function(tagName){
 	if(this._settings.searchFurtherPages && tagName === "a"){
 		this._scanLink(elem);
 	}
-	else if(tagName === "title"){
+	else if(tagName === "title" && !this._origTitle){
 		this._origTitle = elem.toString().trim().replace(re_whitespace, " ");
 		return;
 	}
