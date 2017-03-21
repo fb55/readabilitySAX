@@ -38,9 +38,10 @@ Element.prototype = {
 		    elem;
 		for(var i=0; i < childNum; i++){
 			elem = childs[i];
-			if(typeof elem === "string"){
-				info.textLength += elem.trim()./*replace(re_whitespace, " ").*/length;
-				if(re_commas.test(elem)) info.commas += elem.split(re_commas).length - 1;
+			if(elem.nodeType === Node.TEXT_NODE){
+				txt = elem.textContent;
+				info.textLength += txt.trim()./*replace(re_whitespace, " ").*/length;
+				if(re_commas.test(txt)) info.commas += txt.split(re_commas).length - 1;
 			}
 			else {
 				if(elem.name === "a"){
@@ -84,7 +85,7 @@ Element.prototype = {
 		var nodes = this.children, ret = "";
 
 		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret += nodes[i];
+			if(nodes[i].nodeType === Node.TEXT_NODE) ret += nodes[i].textContent;
 			else ret += nodes[i].getOuterHTML();
 		}
 		return ret;
@@ -92,7 +93,8 @@ Element.prototype = {
 	getFormattedText: function(){
 		var nodes = this.children, ret = "";
 		for(var i = 0, j = nodes.length; i < j; i++){
-			if(typeof nodes[i] === "string") ret += nodes[i].replace(re_whitespace, " ");
+			if(nodes[i] && nodes[i].nodeType === Node.TEXT_NODE)
+				ret += nodes[i].textContent.replace(re_whitespace, " ");
 			else {
 				if(nodes[i].name === "p" || nodes[i].name in headerTags) ret += "\n";
 				ret += nodes[i].getFormattedText();
@@ -101,8 +103,32 @@ Element.prototype = {
 		}
 		return ret;
 	},
+	getNodes: function(){
+		var nodes = this.children;
+		var ret = [];
+		for(var i = 0; i < nodes.length; i++){
+			if (nodes[i] && nodes[i].nodeType === Node.TEXT_NODE) {
+				if (nodes[i].textContent.length > 0)
+					ret.push(nodes[i]);
+			} else {
+				var more = nodes[i].getNodes();
+				for (var j = 0; j < more.length; j++) {
+					ret.push(more[j]);
+				}
+			}
+		}
+		return ret;
+	},
 	toString: function(){
-		return this.children.join("");
+		text = [];
+		for (var i = 0; i < this.children.length; i++) {
+			var child = this.children[i];
+			if (child.nodeType === Node.TEXT_NODE)
+				text.push(child.textContent);
+			else
+				text.push(child.toString());
+		}
+		return text.join("");
 	},
 	getTopCandidate: function(){
 		var childs = this.children,
@@ -111,7 +137,7 @@ Element.prototype = {
 		    topCandidate, elem;
 
 		for(var i = 0, j = childs.length; i < j; i++){
-			if(typeof childs[i] === "string") continue;
+			if(childs[i].nodeType === Node.TEXT_NODE) continue;
 			if(childs[i].isCandidate){
 				elem = childs[i];
 				//add points for the tags name
@@ -423,8 +449,8 @@ Readability.prototype.onattribute = function(name, value){
 	else elem.attributes[name] = value;
 };
 
-Readability.prototype.ontext = function(text){
-	this._currentElement.children.push(text);
+Readability.prototype.ontext = function(textNode){
+	this._currentElement.children.push(textNode);
 };
 
 Readability.prototype.onclosetag = function(tagName){
@@ -494,7 +520,7 @@ Readability.prototype.onclosetag = function(tagName){
 
 		if(contentLength === 0){
 			if(elem.children.length === 0) return;
-			if(elem.children.length === 1 && typeof elem.children[0] === "string") return;
+			if(elem.children.length === 1 && elem.children[0].nodeType === Node.TEXT_NODE) return;
 		}
 		if((elem.info.tagCount.li - 100) > p && tagName !== "ul" && tagName !== "ol") return;
 		if(contentLength < 25 && (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2) ) return;
@@ -555,7 +581,7 @@ var getCandidateSiblings = function(candidate){
 	    siblingScoreThreshold = Math.max(10, candidate.totalScore * .2);
 
 	for(var i = 0; i < childNum; i++){
-		if(typeof childs[i] === "string") continue;
+		if(childs[i].nodeType === Node.TEXT_NODE) continue;
 
 		if(childs[i] === candidate);
 		else if(candidate.elementData === childs[i].elementData){ //TODO: just the class name should be checked
@@ -594,7 +620,7 @@ Readability.prototype._getCandidateNode = function(){
 	}
 
 	while(elem.children.length === 1){
-		if(typeof elem.children[0] === "object"){
+		if(typeof elem.children[0] === "object" && elem.children[0].nodeType !== Node.TEXT_NODE){
 			elem = elem.children[0];
 		} else break;
 	}
@@ -672,11 +698,16 @@ Readability.prototype.getText = function(node){
 	return node.getFormattedText().trim().replace(/\n+(?=\n{2})/g, "");
 };
 
+Readability.prototype.getNodes = function(node){
+	if(!node) node = this._getCandidateNode();
+	return node.getNodes();
+};
+
 Readability.prototype.getEvents = function(cbs){
 	(function process(node){
 		cbs.onopentag(node.name, node.attributes);
 		for(var i = 0, j = node.children.length; i < j; i++){
-			if(typeof node.children[i] === "string"){
+			if(node.children[i].nodeType === Node.TEXT_NODE){
 				cbs.ontext(node.children[i]);
 			}
 			else process(node.children[i]);
@@ -698,6 +729,7 @@ Readability.prototype.getArticle = function(type){
 	if(!type && this._settings.type) type = this._settings.type;
 
 	if(type === "text") ret.text = this.getText(elem);
+	else if (type === "nodes") ret.nodes = this.getNodes(elem);
 	else ret.html = this.getHTML(elem);
 
 	return ret;
