@@ -204,6 +204,7 @@ Readability.prototype._settings = {
 	replaceImgs: true,
 	searchFurtherPages: true,
 	linksToSkip: {},	//pages that are already parsed
+	scoreMin: 49,           //nextPage score min value
 	//pageURL: null,	//URL of the page which is parsed
 	//type: "html",		//default type of output
 	resolvePaths: false
@@ -253,22 +254,17 @@ Readability.prototype._getBaseURL = function(){
 		// Split off and save anything that looks like a file type and "00,"-trash.
 		cleaned += "/" + this._url.path[i].replace(re_extension, "");
 	}
-
+	
 	var first = this._url.full.replace(re_params, "").replace(/.*\//, ""),
 	    second = this._url.path[elementNum];
 
-	if(!(second.length < 3 && re_noLetters.test(first)) && !re_justDigits.test(second)){
-		if(re_pageInURL.test(second)){
-			second = second.replace(re_pageInURL, "");
-		}
-		cleaned += "/" + second;
-	}
-
-	if(!re_badFirst.test(first)){
-		if(re_pageInURL.test(first)){
-			first = first.replace(re_pageInURL, "");
-		}
-		cleaned += "/" + first;
+	if(re_badFirst.test(first) || /\./.test(first)){
+	  cleaned += "/"+ second;
+	} else if ((second.length < 3 && re_noLetters.test(first)) || re_justDigits.test(second)) {
+	  cleaned += "/" + first.replace(re_pageInURL, "");
+	} else {
+	  cleaned += "/" + second.replace(re_pageInURL, "");
+	  cleaned += "/" + first.replace(re_pageInURL, "");
 	}
 
 	// This is our final, cleaned, base article URL.
@@ -305,12 +301,12 @@ Readability.prototype._scanLink = function(elem){
 
 	if(!href) return;
 	href = href.replace(re_closing, "");
+	href = href.trim();
 
 	if(href in this._settings.linksToSkip) return;
 	if(href === this._baseURL || (this._url && href === this._url.full)) return;
 
 	var match = href.match(re_domain);
-
 	if(!match) return;
 	if(this._url && match[1] !== this._url.domain) return;
 
@@ -320,6 +316,8 @@ Readability.prototype._scanLink = function(elem){
 
 	var score = 0,
 	    linkData = text + elem.elementData;
+
+	if(href.indexOf(this._baseURL) === -1) score -= 5;
 
 	if(re_nextLink.test(linkData)) score += 50;
 	if(re_pages.test(linkData)) score += 25;
@@ -502,7 +500,6 @@ Readability.prototype.onclosetag = function(tagName){
 		if(elem.attributeScore < 25 && elem.info.density > .2) return;
 		if((elem.info.tagCount.embed === 1 && contentLength < 75) || elem.info.tagCount.embed > 1) return;
 	}
-
 	filterEmpty: if(
 		(tagName in removeIfEmpty || !this._settings.cleanConditionally && tagName in cleanConditionally)
 		&& (elem.info.linkLength + elem.info.textLength === 0)
@@ -643,7 +640,7 @@ Readability.prototype.getTitle = function(){
 };
 
 Readability.prototype.getNextPage = function(){
-	var topScore = 49, topLink = "";
+	var topScore = this._settings.scoreMin, topLink = "";
 	for(var link in this._scannedLinks){
 		if(this._scannedLinks[link].score > topScore){
 			topLink = link;
