@@ -417,7 +417,7 @@ Readability.prototype.onattribute = function(name, value){
 			elem.parent.attributeScore += 5;
 		}
 	}
-	else if(this._settings.cleanAttributes){
+	if(this._settings.cleanAttributes){
 		if(name in goodAttributes) elem.attributes[name] = value;
 	}
 	else elem.attributes[name] = value;
