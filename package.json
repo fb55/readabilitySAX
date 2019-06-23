@@ -10,7 +10,7 @@
 		, "url": "git://github.com/fb55/readabilitysax.git"
 	},
     "dependencies": {
-        "htmlparser2": "3.0",
+        "htmlparser2": "3.10",
         "minreq": "0.2",
         "entities": "0",
         "readable-stream": "1.0"
