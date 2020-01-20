@@ -13,7 +13,7 @@
         "htmlparser2": "3.10",
         "minreq": "0.2",
         "entities": "2",
-        "readable-stream": "1.0"
+        "readable-stream": "3.5"
     },
     "bin" : {
         "readability" : "bin/cli.js"
