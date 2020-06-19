@@ -165,7 +165,7 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,label:true,nav
     re_unlikelyCandidates =  /ad-break|agegate|auth?or|bookmark|cat|com(?:bx|ment|munity)|date|disqus|extra|foot|header|ignore|links|menu|nav|pag(?:er|ination)|popup|related|remark|rss|share|shoutbox|sidebar|similar|social|sponsor|teaserlist|time|tweet|twitter/,
     re_okMaybeItsACandidate = /and|article|body|column|main|shadow/,
 
-    re_sentence = /\. |\.$/,
+    re_sentence = /\u3002|[\u002E\u0589\u06D4\u0701\u0702\u1362\u166E\u1803\u1809\u2CF9\u2CFE\u2E3C\uA4FF\uA60E\uA6F3\uFE12\uFE52\uFF0E\uFF61] |[\u002E\u0589\u06D4\u0701\u0702\u1362\u166E\u1803\u1809\u2CF9\u2CFE\u2E3C\uA4FF\uA60E\uA6F3\uFE12\uFE52\uFF0E\uFF61]$/,
     re_whitespace = /\s+/g,
 
     re_pageInURL = /[_\-]?p[a-zA-Z]*[_\-]?\d{1,2}$/,
@@ -184,7 +184,7 @@ var tagsToSkip = {__proto__:null,aside:true,footer:true,head:true,label:true,nav
     re_closing = /\/?(?:#.*)?$/,
     re_imgUrl = /\.(gif|jpe?g|png|webp)$/i,
 
-    re_commas = /,[\s\,]*/g;
+    re_commas = /[\u002C\u055D\u060C\u07F8\u1363\u1802\u1808\u3001\uA4FE\uA60D\uA6F5\uFE10\uFE11\uFE50\uFE51\uFF0C\uFF64][\s\u002C\u055D\u060C\u07F8\u1363\u1802\u1808\u3001\uA4FE\uA60D\uA6F5\uFE10\uFE11\uFE50\uFE51\uFF0C\uFF64]*/g;
 
 //3. the readability class
 var Readability = function(settings){
