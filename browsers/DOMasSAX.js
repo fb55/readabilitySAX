@@ -1,40 +1,41 @@
 /*
-	Explenation:
-		DOM port of E4XasSAX
-		use the document root to initialise it
-*/
+ *	DOM port of E4XasSAX
+ *	Use the document root to initialise it
+ */
 
-function saxParser(elem, callbacks){
-	if(typeof callbacks !== 'object')
-		throw 'please provide callbacks!';
+function saxParser(elem, callbacks) {
+    if (typeof callbacks !== "object") throw "please provide callbacks!";
 
-	//todo: support further events, options for trim & space normalisation
-	
-	function parse(node){
-		var name = node.tagName.toLowerCase(),
-		    attributeNodes = node.attributes;
-		
-		callbacks.onopentagname(name);
-		
-		for(var i = 0, j = attributeNodes.length; i < j; i++){
-			callbacks.onattribute(attributeNodes[i].name+'', attributeNodes[i].value);
-		}
-		
-		var childs = node.childNodes,
-		    num = childs.length, nodeType;
-		
-		for(var i = 0; i < num; i++){
-			nodeType = childs[i].nodeType;
-			if(nodeType === 3 /*text*/)
-				callbacks.ontext(childs[i].textContent);
-			else if(nodeType === 1 /*element*/) parse(childs[i]);
-			/*else if(nodeType === 8) //comment
-				if(callbacks.oncomment) callbacks.oncomment(childs[i].toString());
-			[...]
-			*/
-		}
-		callbacks.onclosetag(name);
-	}
-	
-	parse(elem);
+    // TODO: Support additional events, options for trim & space normalisation
+
+    function parse(node) {
+        const name = node.tagName.toLowerCase();
+        const attributeNodes = node.attributes;
+
+        callbacks.onopentagname(name);
+
+        for (let i = 0; i < attributeNodes.length; i++) {
+            callbacks.onattribute(
+                `${attributeNodes[i].name}`,
+                attributeNodes[i].value
+            );
+        }
+
+        const childs = node.childNodes;
+
+        for (let i = 0; i < childs.length; i++) {
+            const { nodeType } = childs[i];
+            if (nodeType === 3 /* Text*/) {
+                callbacks.ontext(childs[i].textContent);
+            } else if (nodeType === 1 /* Element*/) parse(childs[i]);
+            /*
+             *Else if(nodeType === 8) //comment
+             *if(callbacks.oncomment) callbacks.oncomment(childs[i].toString());
+             *[...]
+             */
+        }
+        callbacks.onclosetag(name);
+    }
+
+    parse(elem);
 }

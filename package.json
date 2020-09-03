@@ -3,23 +3,45 @@
     "version": "1.6.1",
     "description": "the readability script ported to a sax parser",
     "author": "Felix Boehm <me@feedic.com>",
-    "keywords": ["html", "content extraction", "readability", "instapaper"],
+    "keywords": [
+        "html",
+        "content extraction",
+        "readability",
+        "instapaper"
+    ],
     "main": "lib/",
     "repository": {
-		  "type": "git"
-		, "url": "git://github.com/fb55/readabilitysax.git"
-	},
+        "type": "git",
+        "url": "git://github.com/fb55/readabilitysax.git"
+    },
     "dependencies": {
-        "htmlparser2": "3.10",
-        "minreq": "0.2",
         "entities": "2",
+        "htmlparser2": "4.1.0",
+        "minreq": "0.2",
         "readable-stream": "3.6"
     },
-    "bin" : {
-        "readability" : "bin/cli.js"
+    "devDependencies": {
+        "@types/jest": "^26.0.0",
+        "@types/node": "^14.0.5",
+        "@typescript-eslint/eslint-plugin": "^2.31.0",
+        "@typescript-eslint/parser": "^2.31.0",
+        "coveralls": "^3.0.1",
+        "eslint": "^7.0.0",
+        "eslint-config-prettier": "^6.0.0",
+        "jest": "^26.0.1",
+        "prettier": "^2.0.5",
+        "ts-jest": "^26.0.0",
+        "typescript": "^3.5.3"
+    },
+    "bin": {
+        "readability": "bin/cli.js"
     },
     "scripts": {
-    	"test": "node tests/test_output.js"
+        "test": "node tests/test_output.js",
+        "lint": "eslint ."
     },
-    "license": "BSD-like"
+    "license": "BSD-like",
+    "prettier": {
+        "tabWidth": 4
+    }
 }
