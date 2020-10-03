@@ -16,7 +16,7 @@
     },
     "dependencies": {
         "entities": "2",
-        "htmlparser2": "4.1.0",
+        "htmlparser2": "5.0.0",
         "minreq": "0.2",
         "readable-stream": "3.6"
     },
