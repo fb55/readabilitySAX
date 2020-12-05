@@ -27,7 +27,7 @@
         "@typescript-eslint/parser": "^2.31.0",
         "coveralls": "^3.0.1",
         "eslint": "^7.0.0",
-        "eslint-config-prettier": "^6.0.0",
+        "eslint-config-prettier": "^7.0.0",
         "jest": "^26.0.1",
         "prettier": "^2.0.5",
         "ts-jest": "^26.0.0",
