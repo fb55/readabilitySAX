@@ -15,23 +15,16 @@
         "url": "git://github.com/fb55/readabilitysax.git"
     },
     "dependencies": {
-        "entities": "2",
-        "htmlparser2": "6.0.0",
-        "minreq": "0.2",
-        "readable-stream": "3.6"
+        "entities": "^2.2.0",
+        "htmlparser2": "^6.0.0",
+        "minreq": "^0.2.3",
+        "readable-stream": "^3.6.0"
     },
     "devDependencies": {
-        "@types/jest": "^26.0.0",
-        "@types/node": "^14.0.5",
-        "@typescript-eslint/eslint-plugin": "^4.10.0",
-        "@typescript-eslint/parser": "^4.10.0",
-        "coveralls": "^3.0.1",
-        "eslint": "^7.0.0",
+        "coveralls": "^3.1.0",
+        "eslint": "^7.20.0",
         "eslint-config-prettier": "^8.1.0",
-        "jest": "^26.0.1",
-        "prettier": "^2.0.5",
-        "ts-jest": "^26.0.0",
-        "typescript": "^3.5.3"
+        "prettier": "^2.2.1"
     },
     "bin": {
         "readability": "bin/cli.js"
