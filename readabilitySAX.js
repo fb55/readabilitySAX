@@ -35,7 +35,8 @@ class Element {
         for (let i = 0; i < childs.length; i++) {
             elem = childs[i];
             if (typeof elem === "string") {
-                info.textLength += elem.trim()./* `replace(re_whitespace, " ").` */ length;
+                info.textLength +=
+                    elem.trim()./* `replace(re_whitespace, " ").` */ length;
                 if (re_commas.test(elem)) {
                     info.commas += elem.split(re_commas).length - 1;
                 }
@@ -226,16 +227,20 @@ const okayIfEmpty = ["audio", "embed", "iframe", "img", "object", "video"];
 const re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/;
 const re_nextLink = /[>»]|continue|next|weiter(?:[^|]|$)/i;
 const re_prevLink = /[<«]|earl|new|old|prev/i;
-const re_extraneous = /all|archive|comment|discuss|e-?mail|login|print|reply|share|sign|single/i;
+const re_extraneous =
+    /all|archive|comment|discuss|e-?mail|login|print|reply|share|sign|single/i;
 const re_pages = /pag(?:e|ing|inat)/i;
 const re_pagenum = /p[ag]{0,2}(?:e|ing|ination)?[=/]\d{1,2}/i;
 
 const re_safe = /article-body|hentry|instapaper_body/;
 const re_final = /first|last/i;
 
-const re_positive = /article|blog|body|content|entry|main|news|pag(?:e|ination)|post|story|text/;
-const re_negative = /com(?:bx|ment|-)|contact|foot(?:er|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/;
-const re_unlikelyCandidates = /ad-break|agegate|auth?or|bookmark|cat|com(?:bx|ment|munity)|date|disqus|extra|foot|header|ignore|links|menu|nav|pag(?:er|ination)|popup|related|remark|rss|share|shoutbox|sidebar|similar|social|sponsor|teaserlist|time|tweet|twitter/;
+const re_positive =
+    /article|blog|body|content|entry|main|news|pag(?:e|ination)|post|story|text/;
+const re_negative =
+    /com(?:bx|ment|-)|contact|foot(?:er|note)?|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/;
+const re_unlikelyCandidates =
+    /ad-break|agegate|auth?or|bookmark|cat|com(?:bx|ment|munity)|date|disqus|extra|foot|header|ignore|links|menu|nav|pag(?:er|ination)|popup|related|remark|rss|share|shoutbox|sidebar|similar|social|sponsor|teaserlist|time|tweet|twitter/;
 const re_okMaybeItsACandidate = /and|article|body|column|main|shadow/;
 
 const re_sentence = /\. |\.$/;
