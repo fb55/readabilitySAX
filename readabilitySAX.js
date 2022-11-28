@@ -44,7 +44,7 @@ const cleanConditionally = new Set(["div", "form", "ol", "table", "ul"]);
 const unpackDivs = new Set([...embeds, "div", "img"]);
 
 const noContent = new Set([
-    ...Object.keys(formatTags),
+    ...formatTags.keys(),
     "font",
     "input",
     "link",
@@ -308,8 +308,8 @@ class Readability {
     // Parser methods
     onopentagname(name) {
         if (noContent.has(name)) {
-            if (name in formatTags) {
-                this._currentElement.children.push(formatTags[name]);
+            if (formatTags.has(name)) {
+                this._currentElement.children.push(formatTags.get(name));
             }
         } else this._currentElement = new Element(name, this._currentElement);
     }
