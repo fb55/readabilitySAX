@@ -4,143 +4,12 @@
  *	3. The Readability class that provides the interface & logic (usable as a htmlparser2 handler)
  */
 
-/**
- * `Element` is a light-weight class that is used
- * instead of the DOM (and provides some DOM-like functionality)
- */
-class Element {
-    constructor(tagName, parent) {
-        this.name = tagName;
-        this.parent = parent;
-        this.attributes = {};
-        this.children = [];
-        this.tagScore = 0;
-        this.attributeScore = 0;
-        this.totalScore = 0;
-        this.elementData = "";
-        this.info = {
-            textLength: 0,
-            linkLength: 0,
-            commas: 0,
-            density: 0,
-            tagCount: {},
-        };
-        this.isCandidate = false;
-    }
-
-    addInfo() {
-        const { info } = this;
-        const childs = this.children;
-        let elem;
-        for (let i = 0; i < childs.length; i++) {
-            elem = childs[i];
-            if (typeof elem === "string") {
-                info.textLength +=
-                    elem.trim()./* `replace(re_whitespace, " ").` */ length;
-                if (re_commas.test(elem)) {
-                    info.commas += elem.split(re_commas).length - 1;
-                }
-            } else {
-                if (elem.name === "a") {
-                    info.linkLength +=
-                        elem.info.textLength + elem.info.linkLength;
-                } else {
-                    info.textLength += elem.info.textLength;
-                    info.linkLength += elem.info.linkLength;
-                }
-                info.commas += elem.info.commas;
-
-                for (const j in elem.info.tagCount) {
-                    if (j in info.tagCount) {
-                        info.tagCount[j] += elem.info.tagCount[j];
-                    } else info.tagCount[j] = elem.info.tagCount[j];
-                }
-
-                if (elem.name in info.tagCount) info.tagCount[elem.name] += 1;
-                else info.tagCount[elem.name] = 1;
-            }
-        }
-
-        if (info.linkLength !== 0) {
-            info.density =
-                info.linkLength / (info.textLength + info.linkLength);
-        }
-    }
-
-    getOuterHTML() {
-        let ret = `<${this.name}`;
-
-        for (const i in this.attributes) {
-            ret += ` ${i}="${this.attributes[i]}"`;
-        }
-
-        if (this.children.length === 0) {
-            if (this.name in formatTags) return `${ret}/>`;
-            return `${ret}></${this.name}>`;
-        }
-
-        return `${ret}>${this.getInnerHTML()}</${this.name}>`;
-    }
-
-    getInnerHTML() {
-        return this.children
-            .map((child) =>
-                typeof child === "string" ? child : child.getOuterHTML()
-            )
-            .join("");
-    }
-
-    getFormattedText() {
-        return this.children
-            .map((child) =>
-                typeof child === "string"
-                    ? child.replace(re_whitespace, " ")
-                    : child.getFormattedText() +
-                      (newLinesAfter.has(child.name) ? "\n" : "")
-            )
-            .join("");
-    }
-
-    toString() {
-        return this.children.join("");
-    }
-
-    getTopCandidate() {
-        const childs = this.children;
-        let topScore = -Infinity;
-        let score = 0;
-        let topCandidate;
-        let elem;
-
-        for (let i = 0; i < childs.length; i++) {
-            if (typeof childs[i] === "string") continue;
-            if (childs[i].isCandidate) {
-                elem = childs[i];
-                // Add points for the tags name
-                if (elem.name in tagScores) {
-                    elem.tagScore += tagScores[elem.name];
-                }
-
-                score = Math.floor(
-                    (elem.tagScore + elem.attributeScore) *
-                        (1 - elem.info.density)
-                );
-                if (topScore < score) {
-                    elem.totalScore = topScore = score;
-                    topCandidate = elem;
-                }
-            }
-            if (
-                (elem = childs[i].getTopCandidate()) &&
-                topScore < elem.totalScore
-            ) {
-                topScore = elem.totalScore;
-                topCandidate = elem;
-            }
-        }
-        return topCandidate;
-    }
-}
+const {
+    Element,
+    formatTags,
+    headerTags,
+    re_whitespace,
+} = require("./lib/element.js");
 
 // 2. list of values
 const tagsToSkip = new Set([
@@ -155,30 +24,7 @@ const tagsToSkip = new Set([
     "style",
     "textarea",
 ]);
-const tagScores = {
-    __proto__: null,
-    address: -3,
-    article: 30,
-    blockquote: 3,
-    body: -5,
-    dd: -3,
-    div: 5,
-    dl: -3,
-    dt: -3,
-    form: -3,
-    h2: -5,
-    h3: -5,
-    h4: -5,
-    h5: -5,
-    h6: -5,
-    li: -3,
-    ol: -3,
-    pre: 3,
-    section: 15,
-    td: 3,
-    th: -5,
-    ul: -3,
-};
+
 const removeIfEmpty = new Set([
     "blockquote",
     "li",
@@ -195,11 +41,7 @@ const embeds = new Set(["embed", "object", "iframe"]);
 const goodAttributes = new Set(["alt", "href", "src", "title"]);
 const cleanConditionally = new Set(["div", "form", "ol", "table", "ul"]);
 const unpackDivs = new Set([...embeds, "div", "img"]);
-const formatTags = {
-    __proto__: null,
-    br: new Element("br"),
-    hr: new Element("hr"),
-};
+
 const noContent = {
     __proto__: formatTags,
     font: false,
@@ -208,8 +50,6 @@ const noContent = {
     meta: false,
     span: false,
 };
-const headerTags = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
-const newLinesAfter = new Set([...headerTags, "br", "li", "p"]);
 
 const divToPElements = [
     "a",
@@ -261,8 +101,6 @@ const re_cleanPaths = /\/\.(?!\.)|\/[^/]*\/\.\./;
 
 const re_closing = /\/?(?:#.*)?$/;
 const re_imgUrl = /\.(gif|jpe?g|png|webp)$/i;
-
-const re_commas = /,[\s,]*/g;
 
 function getCandidateSiblings(candidate) {
     // Check all siblings
