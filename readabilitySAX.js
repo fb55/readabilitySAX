@@ -43,14 +43,14 @@ const goodAttributes = new Set(["alt", "href", "src", "title"]);
 const cleanConditionally = new Set(["div", "form", "ol", "table", "ul"]);
 const unpackDivs = new Set([...embeds, "div", "img"]);
 
-const noContent = {
-    __proto__: formatTags,
-    font: false,
-    input: false,
-    link: false,
-    meta: false,
-    span: false,
-};
+const noContent = new Set([
+    ...Object.keys(formatTags),
+    "font",
+    "input",
+    "link",
+    "meta",
+    "span",
+]);
 
 const divToPElements = [
     "a",
@@ -307,7 +307,7 @@ class Readability {
 
     // Parser methods
     onopentagname(name) {
-        if (name in noContent) {
+        if (noContent.has(name)) {
             if (name in formatTags) {
                 this._currentElement.children.push(formatTags[name]);
             }
@@ -363,7 +363,7 @@ class Readability {
     }
 
     onclosetag(tagName) {
-        if (tagName in noContent) return;
+        if (noContent.has(tagName)) return;
 
         let elem = this._currentElement;
 
