@@ -141,8 +141,10 @@ const defaultSettings = {
     searchFurtherPages: true,
     linksToSkip: {}, // Pages that are already parsed
     /*
-     * PageURL: null,	//URL of the page which is parsed
-     * type: "html",		//default type of output
+     * `
+     * pageURL: null,	// URL of the page which is parsed
+     * type: "html",	//default type of output
+     * `
      */
     resolvePaths: false,
 };
