@@ -436,7 +436,7 @@ class Readability {
             this._settings.cleanConditionally &&
             cleanConditionally.has(tagName)
         ) {
-            const p = elem.info.tagCount.p || 0;
+            const p = elem.info.tagCount.get("p") || 0;
             const contentLength = elem.info.textLength + elem.info.linkLength;
 
             if (contentLength === 0) {
@@ -449,24 +449,19 @@ class Readability {
                 }
             }
             if (
-                elem.info.tagCount.li - 100 > p &&
+                elem.info.tagCount.get("li") - 100 > p &&
                 tagName !== "ul" &&
                 tagName !== "ol"
             ) {
                 return;
             }
-            if (
-                contentLength < 25 &&
-                (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2)
-            ) {
+            if (contentLength < 25 && elem.info.tagCount.get("img") !== 1) {
                 return;
             }
             if (elem.info.density > 0.5) return;
             if (elem.attributeScore < 25 && elem.info.density > 0.2) return;
-            if (
-                (elem.info.tagCount.embed === 1 && contentLength < 75) ||
-                elem.info.tagCount.embed > 1
-            ) {
+            const embedCount = elem.info.tagCount.get("embed");
+            if ((embedCount === 1 && contentLength < 75) || embedCount > 1) {
                 return;
             }
         }
@@ -478,7 +473,7 @@ class Readability {
             elem.info.linkLength === 0 &&
             elem.info.textLength === 0 &&
             elem.children.length !== 0 &&
-            !okayIfEmpty.some((tag) => tag in elem.info.tagCount)
+            !okayIfEmpty.some((tag) => elem.info.tagCount.has(tag))
         ) {
             return;
         }
@@ -500,7 +495,7 @@ class Readability {
         if (tagName === "p" || tagName === "pre" || tagName === "td");
         else if (tagName === "div") {
             // Check if div should be converted to a p
-            if (divToPElements.some((name) => name in elem.info.tagCount)) {
+            if (divToPElements.some((name) => elem.info.tagCount.has(name))) {
                 return;
             }
             elem.name = "p";
