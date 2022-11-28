@@ -10,6 +10,7 @@ const {
     headerTags,
     re_whitespace,
 } = require("./lib/element.js");
+const { getBaseURL } = require("./lib/get-base-url.js");
 
 // 2. list of values
 const tagsToSkip = new Set([
@@ -84,15 +85,8 @@ const re_unlikelyCandidates =
 const re_okMaybeItsACandidate = /and|article|body|column|main|shadow/;
 
 const re_sentence = /\. |\.$/;
-const re_whitespace = /\s+/g;
 
-const re_pageInURL = /[_-]?p[a-zA-Z]*[_-]?\d{1,2}$/;
-const re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i;
-const re_noLetters = /[^a-zA-Z]/;
-const re_params = /\?.*/;
-const re_extension = /00,|\.[a-zA-Z]+$/g;
 const re_digits = /\d/;
-const re_justDigits = /^\d{1,2}$/;
 const re_slashes = /\/+/;
 const re_domain = /\/([^/]+)/;
 
@@ -187,7 +181,7 @@ class Readability {
                 path: path.slice(2, -1),
                 full: settings.pageURL.replace(re_closing, ""),
             };
-            this._baseURL = this._getBaseURL();
+            this._baseURL = getBaseURL(this._url);
         }
         if (settings.type) this._settings.type = settings.type;
     }
@@ -221,46 +215,6 @@ class Readability {
         }
 
         return `${this._url.protocol}//${this._url.domain}/${path}`;
-    }
-
-    _getBaseURL() {
-        if (this._url.path.length === 0) {
-            // Return what we got
-            return this._url.full.replace(re_params, "");
-        }
-
-        let cleaned = "";
-        const elementNum = this._url.path.length - 1;
-
-        for (let i = 0; i < elementNum; i++) {
-            // Split off and save anything that looks like a file type and "00,"-trash.
-            cleaned += `/${this._url.path[i].replace(re_extension, "")}`;
-        }
-
-        const first = this._url.full.replace(re_params, "").replace(/.*\//, "");
-        const second = this._url.path[elementNum];
-
-        if (
-            !(second.length < 3 && re_noLetters.test(first)) &&
-            !re_justDigits.test(second)
-        ) {
-            cleaned += `/${
-                re_pageInURL.test(second)
-                    ? second.replace(re_pageInURL, "")
-                    : second
-            }`;
-        }
-
-        if (!re_badFirst.test(first)) {
-            cleaned += `/${
-                re_pageInURL.test(first)
-                    ? first.replace(re_pageInURL, "")
-                    : first
-            }`;
-        }
-
-        // This is our final, cleaned, base article URL.
-        return `${this._url.protocol}//${this._url.domain}${cleaned}`;
     }
 
     _scanLink(elem) {
