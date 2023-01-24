@@ -4,143 +4,13 @@
  *	3. The Readability class that provides the interface & logic (usable as a htmlparser2 handler)
  */
 
-/**
- * `Element` is a light-weight class that is used
- * instead of the DOM (and provides some DOM-like functionality)
- */
-class Element {
-    constructor(tagName, parent) {
-        this.name = tagName;
-        this.parent = parent;
-        this.attributes = {};
-        this.children = [];
-        this.tagScore = 0;
-        this.attributeScore = 0;
-        this.totalScore = 0;
-        this.elementData = "";
-        this.info = {
-            textLength: 0,
-            linkLength: 0,
-            commas: 0,
-            density: 0,
-            tagCount: {},
-        };
-        this.isCandidate = false;
-    }
-
-    addInfo() {
-        const { info } = this;
-        const childs = this.children;
-        let elem;
-        for (let i = 0; i < childs.length; i++) {
-            elem = childs[i];
-            if (typeof elem === "string") {
-                info.textLength +=
-                    elem.trim()./* `replace(re_whitespace, " ").` */ length;
-                if (re_commas.test(elem)) {
-                    info.commas += elem.split(re_commas).length - 1;
-                }
-            } else {
-                if (elem.name === "a") {
-                    info.linkLength +=
-                        elem.info.textLength + elem.info.linkLength;
-                } else {
-                    info.textLength += elem.info.textLength;
-                    info.linkLength += elem.info.linkLength;
-                }
-                info.commas += elem.info.commas;
-
-                for (const j in elem.info.tagCount) {
-                    if (j in info.tagCount) {
-                        info.tagCount[j] += elem.info.tagCount[j];
-                    } else info.tagCount[j] = elem.info.tagCount[j];
-                }
-
-                if (elem.name in info.tagCount) info.tagCount[elem.name] += 1;
-                else info.tagCount[elem.name] = 1;
-            }
-        }
-
-        if (info.linkLength !== 0) {
-            info.density =
-                info.linkLength / (info.textLength + info.linkLength);
-        }
-    }
-
-    getOuterHTML() {
-        let ret = `<${this.name}`;
-
-        for (const i in this.attributes) {
-            ret += ` ${i}="${this.attributes[i]}"`;
-        }
-
-        if (this.children.length === 0) {
-            if (this.name in formatTags) return `${ret}/>`;
-            return `${ret}></${this.name}>`;
-        }
-
-        return `${ret}>${this.getInnerHTML()}</${this.name}>`;
-    }
-
-    getInnerHTML() {
-        return this.children
-            .map((child) =>
-                typeof child === "string" ? child : child.getOuterHTML()
-            )
-            .join("");
-    }
-
-    getFormattedText() {
-        return this.children
-            .map((child) =>
-                typeof child === "string"
-                    ? child.replace(re_whitespace, " ")
-                    : child.getFormattedText() +
-                      (newLinesAfter.has(child.name) ? "\n" : "")
-            )
-            .join("");
-    }
-
-    toString() {
-        return this.children.join("");
-    }
-
-    getTopCandidate() {
-        const childs = this.children;
-        let topScore = -Infinity;
-        let score = 0;
-        let topCandidate;
-        let elem;
-
-        for (let i = 0; i < childs.length; i++) {
-            if (typeof childs[i] === "string") continue;
-            if (childs[i].isCandidate) {
-                elem = childs[i];
-                // Add points for the tags name
-                if (elem.name in tagScores) {
-                    elem.tagScore += tagScores[elem.name];
-                }
-
-                score = Math.floor(
-                    (elem.tagScore + elem.attributeScore) *
-                        (1 - elem.info.density)
-                );
-                if (topScore < score) {
-                    elem.totalScore = topScore = score;
-                    topCandidate = elem;
-                }
-            }
-            if (
-                (elem = childs[i].getTopCandidate()) &&
-                topScore < elem.totalScore
-            ) {
-                topScore = elem.totalScore;
-                topCandidate = elem;
-            }
-        }
-        return topCandidate;
-    }
-}
+const {
+    Element,
+    formatTags,
+    headerTags,
+    re_whitespace,
+} = require("./lib/element.js");
+const { getBaseURL } = require("./lib/get-base-url.js");
 
 // 2. list of values
 const tagsToSkip = new Set([
@@ -155,30 +25,7 @@ const tagsToSkip = new Set([
     "style",
     "textarea",
 ]);
-const tagScores = {
-    __proto__: null,
-    address: -3,
-    article: 30,
-    blockquote: 3,
-    body: -5,
-    dd: -3,
-    div: 5,
-    dl: -3,
-    dt: -3,
-    form: -3,
-    h2: -5,
-    h3: -5,
-    h4: -5,
-    h5: -5,
-    h6: -5,
-    li: -3,
-    ol: -3,
-    pre: 3,
-    section: 15,
-    td: 3,
-    th: -5,
-    ul: -3,
-};
+
 const removeIfEmpty = new Set([
     "blockquote",
     "li",
@@ -195,21 +42,15 @@ const embeds = new Set(["embed", "object", "iframe"]);
 const goodAttributes = new Set(["alt", "href", "src", "title"]);
 const cleanConditionally = new Set(["div", "form", "ol", "table", "ul"]);
 const unpackDivs = new Set([...embeds, "div", "img"]);
-const formatTags = {
-    __proto__: null,
-    br: new Element("br"),
-    hr: new Element("hr"),
-};
-const noContent = {
-    __proto__: formatTags,
-    font: false,
-    input: false,
-    link: false,
-    meta: false,
-    span: false,
-};
-const headerTags = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
-const newLinesAfter = new Set([...headerTags, "br", "li", "p"]);
+
+const noContent = new Set([
+    ...formatTags.keys(),
+    "font",
+    "input",
+    "link",
+    "meta",
+    "span",
+]);
 
 const divToPElements = [
     "a",
@@ -244,15 +85,8 @@ const re_unlikelyCandidates =
 const re_okMaybeItsACandidate = /and|article|body|column|main|shadow/;
 
 const re_sentence = /\. |\.$/;
-const re_whitespace = /\s+/g;
 
-const re_pageInURL = /[_-]?p[a-zA-Z]*[_-]?\d{1,2}$/;
-const re_badFirst = /^(?:[^a-z]{0,3}|index|\d+)$/i;
-const re_noLetters = /[^a-zA-Z]/;
-const re_params = /\?.*/;
-const re_extension = /00,|\.[a-zA-Z]+$/g;
 const re_digits = /\d/;
-const re_justDigits = /^\d{1,2}$/;
 const re_slashes = /\/+/;
 const re_domain = /\/([^/]+)/;
 
@@ -261,8 +95,6 @@ const re_cleanPaths = /\/\.(?!\.)|\/[^/]*\/\.\./;
 
 const re_closing = /\/?(?:#.*)?$/;
 const re_imgUrl = /\.(gif|jpe?g|png|webp)$/i;
-
-const re_commas = /,[\s,]*/g;
 
 function getCandidateSiblings(candidate) {
     // Check all siblings
@@ -309,8 +141,10 @@ const defaultSettings = {
     searchFurtherPages: true,
     linksToSkip: {}, // Pages that are already parsed
     /*
-     * PageURL: null,	//URL of the page which is parsed
-     * type: "html",		//default type of output
+     * `
+     * pageURL: null,	// URL of the page which is parsed
+     * type: "html",	//default type of output
+     * `
      */
     resolvePaths: false,
 };
@@ -349,7 +183,7 @@ class Readability {
                 path: path.slice(2, -1),
                 full: settings.pageURL.replace(re_closing, ""),
             };
-            this._baseURL = this._getBaseURL();
+            this._baseURL = getBaseURL(this._url);
         }
         if (settings.type) this._settings.type = settings.type;
     }
@@ -383,46 +217,6 @@ class Readability {
         }
 
         return `${this._url.protocol}//${this._url.domain}/${path}`;
-    }
-
-    _getBaseURL() {
-        if (this._url.path.length === 0) {
-            // Return what we got
-            return this._url.full.replace(re_params, "");
-        }
-
-        let cleaned = "";
-        const elementNum = this._url.path.length - 1;
-
-        for (let i = 0; i < elementNum; i++) {
-            // Split off and save anything that looks like a file type and "00,"-trash.
-            cleaned += `/${this._url.path[i].replace(re_extension, "")}`;
-        }
-
-        const first = this._url.full.replace(re_params, "").replace(/.*\//, "");
-        const second = this._url.path[elementNum];
-
-        if (
-            !(second.length < 3 && re_noLetters.test(first)) &&
-            !re_justDigits.test(second)
-        ) {
-            cleaned += `/${
-                re_pageInURL.test(second)
-                    ? second.replace(re_pageInURL, "")
-                    : second
-            }`;
-        }
-
-        if (!re_badFirst.test(first)) {
-            cleaned += `/${
-                re_pageInURL.test(first)
-                    ? first.replace(re_pageInURL, "")
-                    : first
-            }`;
-        }
-
-        // This is our final, cleaned, base article URL.
-        return `${this._url.protocol}//${this._url.domain}${cleaned}`;
     }
 
     _scanLink(elem) {
@@ -515,9 +309,9 @@ class Readability {
 
     // Parser methods
     onopentagname(name) {
-        if (name in noContent) {
-            if (name in formatTags) {
-                this._currentElement.children.push(formatTags[name]);
+        if (noContent.has(name)) {
+            if (formatTags.has(name)) {
+                this._currentElement.children.push(formatTags.get(name));
             }
         } else this._currentElement = new Element(name, this._currentElement);
     }
@@ -571,7 +365,7 @@ class Readability {
     }
 
     onclosetag(tagName) {
-        if (tagName in noContent) return;
+        if (noContent.has(tagName)) return;
 
         let elem = this._currentElement;
 
@@ -644,7 +438,7 @@ class Readability {
             this._settings.cleanConditionally &&
             cleanConditionally.has(tagName)
         ) {
-            const p = elem.info.tagCount.p || 0;
+            const p = elem.info.tagCount.get("p") || 0;
             const contentLength = elem.info.textLength + elem.info.linkLength;
 
             if (contentLength === 0) {
@@ -657,24 +451,19 @@ class Readability {
                 }
             }
             if (
-                elem.info.tagCount.li - 100 > p &&
+                elem.info.tagCount.get("li") - 100 > p &&
                 tagName !== "ul" &&
                 tagName !== "ol"
             ) {
                 return;
             }
-            if (
-                contentLength < 25 &&
-                (!("img" in elem.info.tagCount) || elem.info.tagCount.img > 2)
-            ) {
+            if (contentLength < 25 && elem.info.tagCount.get("img") !== 1) {
                 return;
             }
             if (elem.info.density > 0.5) return;
             if (elem.attributeScore < 25 && elem.info.density > 0.2) return;
-            if (
-                (elem.info.tagCount.embed === 1 && contentLength < 75) ||
-                elem.info.tagCount.embed > 1
-            ) {
+            const embedCount = elem.info.tagCount.get("embed");
+            if ((embedCount === 1 && contentLength < 75) || embedCount > 1) {
                 return;
             }
         }
@@ -686,7 +475,7 @@ class Readability {
             elem.info.linkLength === 0 &&
             elem.info.textLength === 0 &&
             elem.children.length !== 0 &&
-            !okayIfEmpty.some((tag) => tag in elem.info.tagCount)
+            !okayIfEmpty.some((tag) => elem.info.tagCount.has(tag))
         ) {
             return;
         }
@@ -708,7 +497,7 @@ class Readability {
         if (tagName === "p" || tagName === "pre" || tagName === "td");
         else if (tagName === "div") {
             // Check if div should be converted to a p
-            if (divToPElements.some((name) => name in elem.info.tagCount)) {
+            if (divToPElements.some((name) => elem.info.tagCount.has(name))) {
                 return;
             }
             elem.name = "p";
