@@ -22,19 +22,26 @@
     },
     "devDependencies": {
         "coveralls": "^3.1.1",
-        "eslint": "^8.30.0",
+        "eslint": "^8.32.0",
         "eslint-config-prettier": "^8.6.0",
-        "prettier": "^2.8.0"
+        "prettier": "^2.8.3"
     },
     "bin": {
         "readability": "bin/cli.js"
     },
     "scripts": {
         "test": "node tests/test_output.js",
-        "lint": "eslint ."
+        "lint": "npm run lint:es && npm run lint:prettier",
+        "lint:es": "eslint .",
+        "lint:prettier": "npm run prettier -- --check",
+        "format": "npm run format:es && npm run format:prettier",
+        "format:es": "npm run lint:es -- --fix",
+        "format:prettier": "npm run prettier -- --write",
+        "prettier": "prettier '**/*.{ts,md,json,yml}'"
     },
     "license": "BSD-like",
     "prettier": {
+        "proseWrap": "always",
         "tabWidth": 4
     }
 }
