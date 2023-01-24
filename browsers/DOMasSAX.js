@@ -39,3 +39,5 @@ function saxParser(elem, callbacks) {
 
     parse(elem);
 }
+
+module.exports = saxParser;
