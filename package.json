@@ -24,7 +24,7 @@
         "coveralls": "^3.1.1",
         "eslint": "^8.32.0",
         "eslint-config-prettier": "^8.6.0",
-        "prettier": "^2.8.3"
+        "prettier": "^2.8.7"
     },
     "bin": {
         "readability": "bin/cli.js"
