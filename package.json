@@ -9,10 +9,10 @@
         "readability",
         "instapaper"
     ],
-    "main": "lib/",
+    "main": "./dist/lib/index.js",
     "repository": {
         "type": "git",
-        "url": "git://github.com/fb55/readabilitysax.git"
+        "url": "https://github.com/fb55/readabilitysax.git"
     },
     "dependencies": {
         "entities": "^4.5.0",
@@ -21,18 +21,29 @@
         "readable-stream": "^4.4.0"
     },
     "devDependencies": {
+        "@types/node": "^25.3.3",
+        "@typescript-eslint/parser": "^8.56.1",
         "coveralls": "^3.1.1",
         "eslint": "^8.46.0",
         "eslint-config-prettier": "^9.0.0",
-        "prettier": "^2.8.3"
+        "prettier": "^2.8.3",
+        "typescript": "^5.9.3"
     },
     "bin": {
-        "readability": "bin/cli.js"
+        "readability": "./dist/bin/cli.js"
     },
+    "files": [
+        "dist",
+        "LICENSE",
+        "readme.md"
+    ],
     "scripts": {
-        "test": "node tests/test_output.js",
+        "clean": "rm -rf dist",
+        "build": "npm run clean && tsc",
+        "typecheck": "tsc --noEmit",
+        "test": "npm run build && node --test dist/tests/*.test.js",
         "lint": "npm run lint:es && npm run lint:prettier",
-        "lint:es": "eslint .",
+        "lint:es": "eslint . --ext .ts",
         "lint:prettier": "npm run prettier -- --check",
         "format": "npm run format:es && npm run format:prettier",
         "format:es": "npm run lint:es -- --fix",
@@ -40,6 +51,9 @@
         "prettier": "prettier '**/*.{ts,md,json,yml}'"
     },
     "license": "BSD-like",
+    "engines": {
+        "node": ">=18"
+    },
     "prettier": {
         "proseWrap": "always",
         "tabWidth": 4

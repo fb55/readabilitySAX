@@ -2,13 +2,23 @@
 
 if (process.argv.length < 3 || !/^https?:\/\//.test(process.argv[2])) {
     console.log("Usage: readability http://domain.tld/sub [format]");
-    return;
+    process.exit(0);
 }
 
-require("./getURL.js")(
+type CLIResult = {
+    error?: boolean;
+    text?: string;
+    title?: string;
+    score?: number;
+    nextPage?: string;
+    textLength?: number;
+    html?: string;
+};
+
+require("../lib/getURL")(
     process.argv[2],
     process.argv[3] === "html" ? "html" : "text",
-    (result) => {
+    (result: CLIResult) => {
         if (result.error) return console.log("ERROR:", result.text);
 
         // Else
@@ -22,7 +32,7 @@ require("./getURL.js")(
         if ("text" in result) {
             text = require("entities").decodeHTML5(result.text);
         } else {
-            text = result.html.replace(/\s+/g, " ");
+            text = (result.html ?? "").replace(/\s+/g, " ");
         }
         process.stdout.write(`${text}\n`);
 

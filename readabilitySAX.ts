@@ -1,3 +1,4 @@
+// @ts-nocheck
 /*
  * The code is structured into three main parts:
  *	2. A list of properties that help readability to determine how a "good" element looks like
@@ -9,8 +10,8 @@ const {
     formatTags,
     headerTags,
     re_whitespace,
-} = require("./lib/element.js");
-const { getBaseURL } = require("./lib/get-base-url.js");
+} = require("./lib/element");
+const { getBaseURL } = require("./lib/get-base-url");
 
 // 2. list of values
 const tagsToSkip = new Set([
@@ -105,8 +106,9 @@ function getCandidateSiblings(candidate) {
     for (let i = 0; i < childs.length; i++) {
         if (typeof childs[i] === "string") continue;
 
-        if (childs[i] === candidate);
-        else if (candidate.elementData === childs[i].elementData) {
+        if (childs[i] === candidate) {
+            // Empty
+        } else if (candidate.elementData === childs[i].elementData) {
             // TODO: just the class name should be checked
             if (
                 childs[i].totalScore + candidate.totalScore * 0.2 >=
@@ -118,13 +120,15 @@ function getCandidateSiblings(candidate) {
             if (
                 childs[i].info.textLength >= 80 &&
                 childs[i].info.density < 0.25
-            );
-            else if (
+            ) {
+                // Empty
+            } else if (
                 childs[i].info.textLength < 80 &&
                 childs[i].info.density === 0 &&
                 re_sentence.test(childs[i].toString())
-            );
-            else continue;
+            ) {
+                // Empty
+            } else continue;
         } else continue;
 
         ret.push(childs[i]);
@@ -151,7 +155,7 @@ const defaultSettings = {
 
 // 3. the readability class
 class Readability {
-    constructor(settings) {
+    constructor(settings = {}) {
         this.onreset();
         this._processSettings(settings);
     }
@@ -164,7 +168,7 @@ class Readability {
         this._scannedLinks = new Map();
     }
 
-    _processSettings(settings) {
+    _processSettings(settings = {}) {
         this._settings = {};
 
         for (const i in defaultSettings) {
@@ -328,8 +332,9 @@ class Readability {
             else elem.attributes[name] = this._convertLinks(value);
         } else if (name === "id" || name === "class") {
             value = value.toLowerCase();
-            if (!this._settings.weightClasses);
-            else if (re_safe.test(value)) {
+            if (!this._settings.weightClasses) {
+                // Empty
+            } else if (re_safe.test(value)) {
                 elem.attributeScore += 300;
                 elem.isCandidate = true;
             } else if (re_negative.test(value)) elem.attributeScore -= 25;
@@ -341,8 +346,9 @@ class Readability {
             (name === "width" || name === "height")
         ) {
             value = parseInt(value, 10);
-            if (value !== value);
-            else if (value <= 32) {
+            if (value !== value) {
+                // Empty
+            } else if (value <= 32) {
                 /*
                  * NaN (skip)
                  * skip the image
@@ -494,8 +500,9 @@ class Readability {
         elem.parent.children.push(elem);
 
         // Should node be scored?
-        if (tagName === "p" || tagName === "pre" || tagName === "td");
-        else if (tagName === "div") {
+        if (tagName === "p" || tagName === "pre" || tagName === "td") {
+            // Empty
+        } else if (tagName === "div") {
             // Check if div should be converted to a p
             if (divToPElements.some((name) => elem.info.tagCount.has(name))) {
                 return;

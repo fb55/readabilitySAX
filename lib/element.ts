@@ -1,3 +1,4 @@
+// @ts-nocheck
 const re_commas = /,[\s,]*/g;
 const re_whitespace = /\s+/g;
 

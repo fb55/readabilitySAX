@@ -5,7 +5,7 @@ const input = `${dir}finalrun-input/`;
 const output = `${dir}finalrun-output/`;
 const ents = require("entities");
 
-fs.readdirSync(input).forEach((name) => {
+fs.readdirSync(input).forEach((name: string) => {
     if (!name || name.charAt(0) === ".") return;
 
     const ret = getReadableContent(fs.readFileSync(input + name).toString(), {

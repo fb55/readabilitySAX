@@ -1,3 +1,5 @@
+import type { ArticleResult } from "../lib/types";
+
 const { createWritableStream } = require("../");
 const fs = require("fs");
 const dir = "/Users/felix/Downloads/CleanEval/finalrun-input/";
@@ -8,13 +10,13 @@ let skipped = 0;
 let min = 1 / 0;
 let max = -1 / 0;
 
-function run(name) {
+function run(name: string | undefined) {
     if (!name || name.charAt(0) === ".") return proc();
 
     const file = fs.readFileSync(dir + name).toString();
     const start = Date.now();
 
-    createWritableStream((ret) => {
+    createWritableStream((ret: ArticleResult) => {
         if (!ret.score) skipped++;
         else {
             const took = Date.now() - start;

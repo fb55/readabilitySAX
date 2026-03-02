@@ -1,10 +1,16 @@
 {
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "sourceType": "module"
+    },
     "extends": ["eslint:recommended", "prettier"],
     "env": {
         "node": true,
         "es6": true
     },
     "rules": {
+        "no-undef": 0,
+        "no-unused-vars": 0,
         "eqeqeq": [2, "smart"],
         "no-caller": 2,
         "dot-notation": 2,

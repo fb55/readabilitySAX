@@ -5,7 +5,14 @@ const re_params = /\?.*/;
 const re_extension = /00,|\.[a-zA-Z]+$/g;
 const re_justDigits = /^\d{1,2}$/;
 
-function getBaseURL(url) {
+type URLInfo = {
+    path: string[];
+    full: string;
+    protocol: string;
+    domain: string;
+};
+
+function getBaseURL(url: URLInfo): string {
     if (url.path.length === 0) {
         // Return what we got
         return url.full.replace(re_params, "");
