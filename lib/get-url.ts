@@ -1,3 +1,5 @@
+import minreq from "minreq";
+import WritableStream from "./writable-stream";
 import type {
     ArticleCallback,
     ArticleResult,
@@ -5,27 +7,29 @@ import type {
     ReadabilitySettings,
 } from "./types";
 
-const WritableStream = require("./WritableStream");
-const minreq = require("minreq");
-
-type RequestLike = {
+interface RequestLike {
     response: {
         location: string;
     };
-    on(event: "error", cb: (err: Error | string) => void): RequestLike;
+    on(event: "error", callback: (error: Error | string) => void): RequestLike;
     on(
         event: "response",
-        cb: (resp: { headers: Record<string, string> }) => void
+        callback: (response: { headers: Record<string, string> }) => void
     ): RequestLike;
-    pipe(stream: NodeJS.WritableStream): void;
-};
+    pipe(stream: unknown): void;
+}
 
-module.exports = function (
+/**
+ * Fetch a URL and stream it through readability.
+ * @param uri Target URL.
+ * @param settings Readability settings or output type.
+ * @param callback Callback that receives the parsed article.
+ */
+export default function getURL(
     uri: string,
     settings: ReadabilitySettings | OutputType | ArticleCallback,
-    cb?: ArticleCallback
+    callback?: ArticleCallback
 ) {
-    let callback = cb;
     if (typeof settings === "function") {
         callback = settings;
         settings = {};
@@ -33,21 +37,21 @@ module.exports = function (
         settings = { type: settings };
     }
 
-    let calledCB = false;
-    function onErr(err: Error | string) {
-        if (calledCB) return;
-        calledCB = true;
+    let callbackHasRun = false;
+    function onError(error: Error | string) {
+        if (callbackHasRun) return;
+        callbackHasRun = true;
 
-        err = String(err);
+        const message = String(error);
         callback!({
             title: "Error",
-            text: err,
-            html: `<b>${err}</b>`,
+            text: message,
+            html: `<b>${message}</b>`,
             error: true,
         });
     }
 
-    const req = minreq({
+    const request = minreq({
         uri,
         only2xx: true,
         headers: {
@@ -55,28 +59,31 @@ module.exports = function (
                 "Mozilla/5.0 (compatible; readabilitySAX/1.5; +https://github.com/fb55/readabilitySAX)",
         },
     }) as RequestLike;
-    req.on("error", onErr).on("response", (resp) => {
+
+    request.on("error", onError).on("response", (response) => {
         if (
-            "content-type" in resp.headers &&
-            resp.headers["content-type"].substr(0, 5) !== "text/"
+            "content-type" in response.headers &&
+            !response.headers["content-type"].startsWith("text/")
         ) {
-            // TODO we're actually only interested in text/html, but text/plain shouldn't result in an error (as it will be forwarded)
-            onErr("document isn't text");
+            // Text/plain should still be allowed to flow through readability.
+            onError("document isn't text");
             return;
         }
-        settings.pageURL = req.response.location;
 
+        settings.pageURL = request.response.location;
         const stream = new WritableStream(
             settings,
             (article: ArticleResult) => {
-                if (calledCB) {
-                    console.log("got article with called cb");
+                if (callbackHasRun) {
+                    console.log("got article with called callback");
                     return;
                 }
-                article.link = req.response.location;
+
+                article.link = request.response.location;
                 callback!(article);
             }
-        ) as NodeJS.WritableStream;
-        req.pipe(stream);
+        );
+
+        request.pipe(stream);
     });
-};
+}

@@ -1,34 +1,35 @@
+import fs from "node:fs";
+import { createWritableStream } from "../lib";
 import type { ArticleResult } from "../lib/types";
 
-const { createWritableStream } = require("../");
-const fs = require("fs");
-const dir = "/Users/felix/Downloads/CleanEval/finalrun-input/";
-const files = fs.readdirSync(dir);
+const directory = "/Users/felix/Downloads/CleanEval/finalrun-input/";
+const files = fs.readdirSync(directory);
 let time = 0;
 const total = files.length;
 let skipped = 0;
-let min = 1 / 0;
-let max = -1 / 0;
+let min = Number.POSITIVE_INFINITY;
+let max = Number.NEGATIVE_INFINITY;
 
 function run(name: string | undefined) {
-    if (!name || name.charAt(0) === ".") return proc();
+    if (!name || name.startsWith(".")) return proc();
 
-    const file = fs.readFileSync(dir + name).toString();
+    const file = fs.readFileSync(directory + name).toString();
     const start = Date.now();
 
-    createWritableStream((ret: ArticleResult) => {
-        if (!ret.score) skipped++;
-        else {
+    createWritableStream((article: ArticleResult) => {
+        if (article.score) {
             const took = Date.now() - start;
             time += took;
             if (took < min) min = took;
             if (took > max) max = took;
+        } else {
+            skipped++;
         }
     }).end(file);
 }
 
 function proc() {
-    if (!files.length) return;
+    if (files.length === 0) return;
     run(files.pop());
     process.nextTick(proc);
     if (files.length % 10 === total % 10) {

@@ -1,15 +1,11 @@
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const test = require("node:test");
-const { Parser } = require("htmlparser2");
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import test from "node:test";
+import { Parser } from "htmlparser2";
+import { process as processArticle } from "../lib";
+import Readability from "../readability-sax";
 
-const Readability = require("../readabilitySAX");
-const { process: processArticle } = require("../lib");
-
-const fixture = fs.readFileSync(
-    `${__dirname}/../../tests/testpage.html`,
-    "utf8"
-);
+const fixture = fs.readFileSync(`${__dirname}/../../tests/testpage.html`, "utf8");
 
 function parseFixture(settings = {}) {
     const readable = new Readability(
@@ -45,9 +41,9 @@ test("extracts article metadata and content from fixture", () => {
     assert.equal(article.score, 82);
     assert.equal(readable._scannedLinks.size, 2);
 
-    assert.ok(article.html.includes("<h2>System Requirements</h2>"));
-    assert.ok(article.html.includes("<h2>Security</h2>"));
-    assert.ok(article.html.includes("<h2>Dependencies</h2>"));
+    assert.ok(article.html?.includes("<h2>System Requirements</h2>"));
+    assert.ok(article.html?.includes("<h2>Security</h2>"));
+    assert.ok(article.html?.includes("<h2>Dependencies</h2>"));
 });
 
 test("resolves relative URLs based on pageURL", () => {
@@ -85,6 +81,6 @@ test("high-level process API returns text output", () => {
     });
 
     assert.equal(typeof article.text, "string");
-    assert.ok(article.text.includes("System Requirements"));
+    assert.ok(article.text?.includes("System Requirements"));
     assert.equal(article.title, "How To Node - NodeJS");
 });

@@ -1,3 +1,7 @@
+import { Writable } from "node:stream";
+import type { Handler } from "htmlparser2/lib/Parser";
+import { Parser } from "htmlparser2";
+import Readability from "../readability-sax";
 import type {
     ArticleCallback,
     ReadabilityConstructor,
@@ -5,23 +9,15 @@ import type {
     ReadabilitySettings,
 } from "./types";
 
-const Readability = require("../readabilitySAX");
-const { Parser, CollectingHandler } = require("htmlparser2");
-const { Writable } = require("readable-stream");
 const parserOptions = {
     lowerCaseTags: true,
 };
 
-module.exports = class WritableStream extends Writable {
-    _cb?: ArticleCallback;
-    _readability: ReadabilityLike;
-    _handler: {
-        restart(): void;
-    };
-    _parser: {
-        write(chunk: string | Buffer | Uint8Array): void;
-        end(chunk?: string | Buffer | Uint8Array): void;
-    };
+/** Writable stream wrapper that emits a readability article at end of input. */
+export default class WritableStream extends Writable {
+    private readonly _callback?: ArticleCallback;
+    private readonly _readability: ReadabilityLike;
+    private readonly _chunks: Uint8Array[];
 
     constructor(
         settings: ReadabilitySettings | ArticleCallback,
@@ -33,39 +29,47 @@ module.exports = class WritableStream extends Writable {
             callback = settings;
             settings = {};
         }
-        this._cb = callback;
 
         const ReadabilityClass = Readability as ReadabilityConstructor;
         this._readability = new ReadabilityClass(settings);
-        this._handler = new CollectingHandler(this._readability);
-        this._parser = new Parser(this._handler, parserOptions);
+        this._callback = callback;
+        this._chunks = [];
     }
 
-    _write(
+    override _write(
         chunk: string | Buffer | Uint8Array,
         encoding: BufferEncoding,
-        cb: (error?: Error | null) => void
+        callback: (error?: Error | null) => void
     ) {
-        this._parser.write(chunk);
-        cb();
+        if (typeof chunk === "string") {
+            this._chunks.push(Buffer.from(chunk, encoding));
+        } else {
+            this._chunks.push(Buffer.from(chunk));
+        }
+        callback();
     }
 
-    end(chunk?: string | Buffer | Uint8Array) {
-        this._parser.end(chunk);
-        super.end();
+    override _final(callback: (error?: Error | null) => void) {
+        const input = Buffer.concat(this._chunks).toString();
 
-        for (
-            let skipLevel = 1;
-            this._readability._getCandidateNode().info.textLength < 250 &&
-            skipLevel < 4;
-            skipLevel++
-        ) {
-            this._readability.setSkipLevel(skipLevel);
-            this._handler.restart();
+        for (let skipLevel = 0; skipLevel < 4; skipLevel++) {
+            if (skipLevel > 0) this._readability.setSkipLevel(skipLevel);
+
+            const parser = new Parser(
+                this._readability as unknown as Partial<Handler>,
+                parserOptions
+            );
+            parser.parseComplete(input);
+
+            if ((this._readability.getArticle().textLength ?? 0) >= 250) {
+                break;
+            }
         }
 
-        if (this._cb) {
-            this._cb(this._readability.getArticle());
+        if (this._callback) {
+            this._callback(this._readability.getArticle());
         }
+
+        callback();
     }
-};
+}

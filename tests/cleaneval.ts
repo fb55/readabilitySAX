@@ -1,32 +1,34 @@
-const getReadableContent = require("../").process;
-const fs = require("fs");
-const dir = "/Users/felix/Downloads/CleanEval/";
-const input = `${dir}finalrun-input/`;
-const output = `${dir}finalrun-output/`;
-const ents = require("entities");
+import { spawn } from "node:child_process";
+import fs from "node:fs";
+import { decodeHTML5 } from "entities";
+import { process as getReadableContent } from "../lib";
 
-fs.readdirSync(input).forEach((name: string) => {
-    if (!name || name.charAt(0) === ".") return;
+const directory = "/Users/felix/Downloads/CleanEval/";
+const input = `${directory}finalrun-input/`;
+const output = `${directory}finalrun-output/`;
 
-    const ret = getReadableContent(fs.readFileSync(input + name).toString(), {
+for (const name of fs.readdirSync(input)) {
+    if (!name || name.startsWith(".")) continue;
+
+    const article = getReadableContent(fs.readFileSync(input + name).toString(), {
         type: "text",
     });
 
-    // If(ret.score < 100) return;
+    // If (article.score < 100) continue;
 
     fs.writeFileSync(
         output + name.replace(".html", ".txt"),
-        (ret.title ? `${ret.title}\n\n` : "") + ents.decodeHTML5(ret.text)
+        (article.title ? `${article.title}\n\n` : "") + decodeHTML5(article.text ?? "")
     );
-});
+}
 
 console.log("Finished all files!");
 
-const check = require("child_process").spawn("python", [
-    `${dir}cleaneval.py`,
+const check = spawn("python", [
+    `${directory}cleaneval.py`,
     "-t",
     output,
-    `${dir}GoldStandard/`,
+    `${directory}GoldStandard/`,
 ]);
 
 check.stdout.pipe(process.stdout);

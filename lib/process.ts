@@ -1,22 +1,28 @@
+import type { Handler } from "htmlparser2/lib/Parser";
+import { Parser } from "htmlparser2";
+import Readability from "../readability-sax";
 import type {
     ArticleResult,
     ReadabilityConstructor,
     ReadabilitySettings,
 } from "./types";
 
-const Readability = require("../readabilitySAX");
-const { Parser } = require("htmlparser2");
-
-module.exports = function (
+/**
+ * Parse HTML and return the extracted article.
+ * @param data HTML source.
+ * @param settings Readability settings.
+ * @param skipLevel Initial skip level for fallback parsing passes.
+ */
+export default function process(
     data: string,
     settings: ReadabilitySettings,
     skipLevel?: number
 ): ArticleResult {
-    if (!skipLevel) skipLevel = 0;
+    skipLevel ??= 0;
 
     const ReadabilityClass = Readability as ReadabilityConstructor;
     const readable = new ReadabilityClass(settings);
-    const parser = new Parser(readable);
+    const parser = new Parser(readable as unknown as Partial<Handler>);
     let article: ArticleResult;
 
     do {
@@ -29,4 +35,4 @@ module.exports = function (
     } while ((article.textLength ?? 0) < 250 && skipLevel < 4);
 
     return article;
-};
+}

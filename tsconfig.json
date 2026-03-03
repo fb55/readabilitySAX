@@ -17,7 +17,7 @@
     "include": [
         "bin/**/*.ts",
         "lib/**/*.ts",
-        "readabilitySAX.ts",
+        "readability-sax.ts",
         "tests/**/*.ts"
     ],
     "exclude": ["node_modules"]

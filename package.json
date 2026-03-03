@@ -3,6 +3,8 @@
     "version": "1.6.1",
     "description": "the readability script ported to a sax parser",
     "author": "Felix Boehm <me@feedic.com>",
+    "sideEffects": false,
+    "type": "commonjs",
     "keywords": [
         "html",
         "content extraction",
@@ -21,36 +23,36 @@
         "readable-stream": "^4.4.0"
     },
     "devDependencies": {
+        "@eslint/compat": "^2.0.2",
+        "@feedic/eslint-config": "^0.2.3",
         "@types/node": "^25.3.3",
-        "@typescript-eslint/parser": "^8.56.1",
         "coveralls": "^3.1.1",
-        "eslint": "^8.46.0",
-        "eslint-config-prettier": "^9.0.0",
+        "eslint": "^10.0.2",
+        "globals": "^17.4.0",
         "prettier": "^2.8.3",
-        "typescript": "^5.9.3"
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.56.1"
     },
     "bin": {
         "readability": "./dist/bin/cli.js"
     },
     "files": [
-        "dist",
-        "LICENSE",
-        "readme.md"
+        "dist"
     ],
     "scripts": {
-        "clean": "rm -rf dist",
         "build": "npm run clean && tsc",
-        "typecheck": "tsc --noEmit",
-        "test": "npm run build && node --test dist/tests/*.test.js",
-        "lint": "npm run lint:es && npm run lint:prettier",
-        "lint:es": "eslint . --ext .ts",
-        "lint:prettier": "npm run prettier -- --check",
+        "clean": "rm -rf dist",
         "format": "npm run format:es && npm run format:prettier",
         "format:es": "npm run lint:es -- --fix",
         "format:prettier": "npm run prettier -- --write",
-        "prettier": "prettier '**/*.{ts,md,json,yml}'"
+        "lint": "npm run lint:es && npm run lint:prettier",
+        "lint:es": "eslint .",
+        "lint:prettier": "npm run prettier -- --check",
+        "prettier": "prettier '**/*.{ts,md,json,yml}'",
+        "test": "npm run build && node --test dist/tests/*.test.js",
+        "typecheck": "tsc --noEmit"
     },
-    "license": "BSD-like",
+    "license": "BSD-2-Clause",
     "engines": {
         "node": ">=18"
     },

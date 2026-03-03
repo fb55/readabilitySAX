@@ -1,11 +1,7 @@
-#!/usr/bin/env node
+import { decodeHTML5 } from "entities";
+import getURL from "../lib/get-url";
 
-if (process.argv.length < 3 || !/^https?:\/\//.test(process.argv[2])) {
-    console.log("Usage: readability http://domain.tld/sub [format]");
-    process.exit(0);
-}
-
-type CLIResult = {
+interface CLIResult {
     error?: boolean;
     text?: string;
     title?: string;
@@ -13,29 +9,34 @@ type CLIResult = {
     nextPage?: string;
     textLength?: number;
     html?: string;
-};
+}
 
-require("../lib/getURL")(
-    process.argv[2],
-    process.argv[3] === "html" ? "html" : "text",
-    (result: CLIResult) => {
-        if (result.error) return console.log("ERROR:", result.text);
+function main() {
+    if (process.argv.length < 3 || !/^https?:\/\//.test(process.argv[2])) {
+        console.log("Usage: readability http://domain.tld/sub [format]");
+        process.exitCode = 1;
+        return;
+    }
 
-        // Else
+    const outputFormat = process.argv[3] === "html" ? "html" : "text";
+    getURL(process.argv[2], outputFormat, (result: CLIResult) => {
+        if (result.error) {
+            console.log("ERROR:", result.text);
+            return;
+        }
+
         console.log("TITLE:", result.title);
         console.log("SCORE:", result.score);
         if (result.nextPage) console.log("NEXT PAGE:", result.nextPage);
         console.log("LENGTH:", result.textLength);
         console.log("");
 
-        let text;
-        if ("text" in result) {
-            text = require("entities").decodeHTML5(result.text);
-        } else {
-            text = (result.html ?? "").replace(/\s+/g, " ");
-        }
+        const text =
+            "text" in result
+                ? decodeHTML5(result.text ?? "")
+                : (result.html ?? "").replace(/\s+/g, " ");
         process.stdout.write(`${text}\n`);
+    });
+}
 
-        process.exit();
-    }
-);
+main();
