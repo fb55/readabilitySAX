@@ -46,33 +46,25 @@ interface ElementInfo {
  */
 export class Element {
     name: string;
-    parent: Element | null;
-    attributes: Record<string, string>;
-    children: ChildNode[];
-    tagScore: number;
-    attributeScore: number;
-    totalScore: number;
-    elementData: string;
-    info: ElementInfo;
-    isCandidate: boolean;
+    parent: Element | null = null;
+    attributes: Record<string, string> = {};
+    children: ChildNode[] = [];
+    tagScore = 0;
+    attributeScore = 0;
+    totalScore = 0;
+    elementData = "";
+    info: ElementInfo = {
+        textLength: 0,
+        linkLength: 0,
+        commas: 0,
+        density: 0,
+        tagCount: new Map<string, number>(),
+    };
+    isCandidate = false;
 
     constructor(tagName: string, parent?: Element) {
         this.name = tagName;
         this.parent = parent ?? null;
-        this.attributes = {};
-        this.children = [];
-        this.tagScore = 0;
-        this.attributeScore = 0;
-        this.totalScore = 0;
-        this.elementData = "";
-        this.info = {
-            textLength: 0,
-            linkLength: 0,
-            commas: 0,
-            density: 0,
-            tagCount: new Map<string, number>(),
-        };
-        this.isCandidate = false;
     }
 
     addInfo() {

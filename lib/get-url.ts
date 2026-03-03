@@ -1,4 +1,4 @@
-import minreq from "minreq";
+import * as undici from "undici";
 import WritableStream from "./writable-stream";
 import type {
     ArticleCallback,
@@ -7,16 +7,8 @@ import type {
     ReadabilitySettings,
 } from "./types";
 
-interface RequestLike {
-    response: {
-        location: string;
-    };
-    on(event: "error", callback: (error: Error | string) => void): RequestLike;
-    on(
-        event: "response",
-        callback: (response: { headers: Record<string, string> }) => void
-    ): RequestLike;
-    pipe(stream: unknown): void;
+interface RedirectContext {
+    history?: URL[];
 }
 
 /**
@@ -51,39 +43,60 @@ export default function getURL(
         });
     }
 
-    const request = minreq({
-        uri,
-        only2xx: true,
-        headers: {
-            "user-agent":
-                "Mozilla/5.0 (compatible; readabilitySAX/1.5; +https://github.com/fb55/readabilitySAX)",
-        },
-    }) as RequestLike;
+    const urlObject = new URL(uri);
+    const client = new undici.Client(urlObject.origin).compose(
+        undici.interceptors.redirect({ maxRedirections: 5 })
+    );
 
-    request.on("error", onError).on("response", (response) => {
-        if (
-            "content-type" in response.headers &&
-            !response.headers["content-type"].startsWith("text/")
-        ) {
-            // Text/plain should still be allowed to flow through readability.
-            onError("document isn't text");
-            return;
-        }
-
-        settings.pageURL = request.response.location;
-        const stream = new WritableStream(
-            settings,
-            (article: ArticleResult) => {
-                if (callbackHasRun) {
-                    console.log("got article with called callback");
-                    return;
+    void client
+        .stream(
+            {
+                method: "GET",
+                path: urlObject.pathname + urlObject.search,
+                headers: {
+                    "user-agent":
+                        "Mozilla/5.0 (compatible; readabilitySAX/1.5; +https://github.com/fb55/readabilitySAX)",
+                },
+            },
+            ({ statusCode, headers, context }) => {
+                if (statusCode < 200 || statusCode >= 300) {
+                    throw new undici.errors.ResponseError(
+                        "Response Error",
+                        statusCode,
+                        { headers }
+                    );
                 }
 
-                article.link = request.response.location;
-                callback!(article);
-            }
-        );
+                const contentTypeHeader = headers["content-type"];
+                const contentType = Array.isArray(contentTypeHeader)
+                    ? contentTypeHeader[0]
+                    : contentTypeHeader;
 
-        request.pipe(stream);
-    });
+                if (contentType && !contentType.startsWith("text/")) {
+                    throw new Error("document isn't text");
+                }
+
+                const { history } = context as RedirectContext;
+                const redirectedURL =
+                    history && history.length > 0
+                        ? history[history.length - 1]
+                        : null;
+                const finalURL = redirectedURL ? redirectedURL.toString() : uri;
+                settings.pageURL = finalURL;
+
+                return new WritableStream(settings, (article: ArticleResult) => {
+                    if (callbackHasRun) {
+                        console.log("got article with called callback");
+                        return;
+                    }
+
+                    article.link = finalURL;
+                    callback!(article);
+                });
+            }
+        )
+        .catch(onError)
+        .finally(() => {
+            void client.close();
+        });
 }

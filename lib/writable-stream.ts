@@ -1,5 +1,4 @@
 import { Writable } from "node:stream";
-import type { Handler } from "htmlparser2/lib/Parser";
 import { Parser } from "htmlparser2";
 import Readability from "../readability-sax";
 import type {
@@ -17,7 +16,7 @@ const parserOptions = {
 export default class WritableStream extends Writable {
     private readonly _callback?: ArticleCallback;
     private readonly _readability: ReadabilityLike;
-    private readonly _chunks: Uint8Array[];
+    private readonly _chunks: Uint8Array[] = [];
 
     constructor(
         settings: ReadabilitySettings | ArticleCallback,
@@ -33,7 +32,6 @@ export default class WritableStream extends Writable {
         const ReadabilityClass = Readability as ReadabilityConstructor;
         this._readability = new ReadabilityClass(settings);
         this._callback = callback;
-        this._chunks = [];
     }
 
     override _write(
@@ -55,10 +53,7 @@ export default class WritableStream extends Writable {
         for (let skipLevel = 0; skipLevel < 4; skipLevel++) {
             if (skipLevel > 0) this._readability.setSkipLevel(skipLevel);
 
-            const parser = new Parser(
-                this._readability as unknown as Partial<Handler>,
-                parserOptions
-            );
+            const parser = new Parser(this._readability, parserOptions);
             parser.parseComplete(input);
 
             if ((this._readability.getArticle().textLength ?? 0) >= 250) {

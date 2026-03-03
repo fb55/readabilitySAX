@@ -1,4 +1,3 @@
-import type { Handler } from "htmlparser2/lib/Parser";
 import { Parser } from "htmlparser2";
 import Readability from "../readability-sax";
 import type {
@@ -22,7 +21,7 @@ export default function process(
 
     const ReadabilityClass = Readability as ReadabilityConstructor;
     const readable = new ReadabilityClass(settings);
-    const parser = new Parser(readable as unknown as Partial<Handler>);
+    const parser = new Parser(readable);
     let article: ArticleResult;
 
     do {

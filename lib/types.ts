@@ -1,3 +1,5 @@
+import type { Handler } from "htmlparser2";
+
 /** Output format supported by readability. */
 export type OutputType = "text" | "html";
 
@@ -32,12 +34,7 @@ export interface ArticleResult {
 export type ArticleCallback = (article: ArticleResult) => void;
 
 /** Minimal shape of the readability class used by stream/process helpers. */
-export interface ReadabilityLike {
-    onreset?(): void;
-    onopentagname?(name: string): void;
-    onattribute?(name: string, value: string): void;
-    ontext?(text: string): void;
-    onclosetag?(name: string): void;
+interface ReadabilityMethods {
     setSkipLevel(skipLevel: number): void;
     getArticle(type?: OutputType): ArticleResult;
     getHTML?(node?: unknown): string;
@@ -48,6 +45,9 @@ export interface ReadabilityLike {
         };
     };
 }
+
+/** Parser handler callbacks plus readability-specific methods. */
+export type ReadabilityLike = Partial<Handler> & ReadabilityMethods;
 
 /** Constructor signature for the readability implementation. */
 export type ReadabilityConstructor = new (
