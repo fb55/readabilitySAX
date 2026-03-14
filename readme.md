@@ -19,26 +19,25 @@ interesting uses. And it works within a browser.
 The Readability extraction algorithm was completely ported, but some adjustments
 were made:
 
--   `<article>` and `<section>` tags are recognized and gain a higher value
+- `<article>` and `<section>` tags are recognized and gain a higher value
 
--   If a heading is part of the pages `<title>`, it is removed (Readability
-    removed any single `<h2>`, and ignored other tags)
+- If a heading is part of the pages `<title>`, it is removed (Readability
+  removed any single `<h2>`, and ignored other tags)
 
--   `henry` and `instapaper-body` are classes to show an algorithm like this
-    where the content is. readabilitySAX recognizes them and adds additional
-    points
+- `henry` and `instapaper-body` are classes to show an algorithm like this where
+  the content is. readabilitySAX recognizes them and adds additional points
 
--   Every bit of code that was taken from the original algorithm was optimized,
-    eg. RegExps should now perform faster (they were optimized & use
-    `RegExp#test` instead of `String#match`, which doesn't force the interpreter
-    to build an array)
+- Every bit of code that was taken from the original algorithm was optimized,
+  eg. RegExps should now perform faster (they were optimized & use `RegExp#test`
+  instead of `String#match`, which doesn't force the interpreter to build an
+  array)
 
--   Some improvements made by
-    [GGReadability](https://github.com/curthard89/COCOA-Stuff/tree/master/GGReadability)
-    (an Obj-C port of Readability) were adopted
-    -   Images get additional scores when their `height` or `width` attributes
-        are high - icon sized images (<= 32px) get skipped
-    -   Additional classes & ids are checked
+- Some improvements made by
+  [GGReadability](https://github.com/curthard89/COCOA-Stuff/tree/master/GGReadability)
+  (an Obj-C port of Readability) were adopted
+    - Images get additional scores when their `height` or `width` attributes are
+      high - icon sized images (<= 32px) get skipped
+    - Additional classes & ids are checked
 
 ## How To
 
@@ -70,24 +69,24 @@ The format is optional (it's either `text` or `html`, the default value is
 Just run `require("readabilitySAX")`. You'll get an object containing three
 methods:
 
--   `Readability(settings)`: The readability constructor. It works as a handler
-    for `htmlparser2`. Read more about it
-    [in the wiki](https://github.com/FB55/readabilitySAX/wiki/The-Readability-constructor)!
+- `Readability(settings)`: The readability constructor. It works as a handler
+  for `htmlparser2`. Read more about it
+  [in the wiki](https://github.com/FB55/readabilitySAX/wiki/The-Readability-constructor)!
 
--   `WritableStream(settings, cb)`: A constructor that unites `htmlparser2` and
-    the `Readability` constructor. It's a writable stream, so simply `.write`
-    all your data to it. Your callback will be called once `.end` was called.
-    Bonus: You can also `.pipe` data into it!
+- `WritableStream(settings, cb)`: A constructor that unites `htmlparser2` and
+  the `Readability` constructor. It's a writable stream, so simply `.write` all
+  your data to it. Your callback will be called once `.end` was called. Bonus:
+  You can also `.pipe` data into it!
 
--   `createWritableStream(settings, cb)`: Returns a new instance of the
-    `WritableStream`. (It's a simple factory method.)
+- `createWritableStream(settings, cb)`: Returns a new instance of the
+  `WritableStream`. (It's a simple factory method.)
 
 There are two methods available that are deprecated and **will be removed** in a
 future version:
 
--   `get(link, [settings], callback)`: Gets a webpage and process it.
+- `get(link, [settings], callback)`: Gets a webpage and process it.
 
--   `process(data)`: Takes a string, runs readabilitySAX and returns the page.
+- `process(data)`: Takes a string, runs readabilitySAX and returns the page.
 
 **Please don't use those two methods anymore**. Streams are the way you should
 build interfaces in node, and that's what I want encourage people to use.
@@ -139,7 +138,7 @@ The main goal of CleanEval is to evaluate the accuracy of an algorithm.
 
 ## Todo
 
--   Add documentation & examples
--   Add support for URLs containing hash-bangs (`#!`)
--   Allow fetching articles with more than one page
--   Don't remove all images inside `<a>` tags
+- Add documentation & examples
+- Add support for URLs containing hash-bangs (`#!`)
+- Allow fetching articles with more than one page
+- Don't remove all images inside `<a>` tags

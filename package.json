@@ -3,43 +3,57 @@
     "version": "1.6.1",
     "description": "the readability script ported to a sax parser",
     "author": "Felix Boehm <me@feedic.com>",
+    "sideEffects": false,
+    "type": "commonjs",
     "keywords": [
         "html",
         "content extraction",
         "readability",
         "instapaper"
     ],
-    "main": "lib/",
+    "main": "./dist/lib/index.js",
     "repository": {
         "type": "git",
-        "url": "git://github.com/fb55/readabilitysax.git"
+        "url": "https://github.com/fb55/readabilitysax.git"
     },
     "dependencies": {
-        "entities": "^4.5.0",
-        "htmlparser2": "^9.0.0",
-        "minreq": "^0.2.3",
-        "readable-stream": "^4.4.0"
+        "entities": "^7.0.1",
+        "htmlparser2": "^10.1.0",
+        "undici": "^7.22.0"
     },
     "devDependencies": {
-        "coveralls": "^3.1.1",
-        "eslint": "^8.46.0",
-        "eslint-config-prettier": "^9.0.0",
-        "prettier": "^2.8.3"
+        "@eslint/compat": "^2.0.2",
+        "@feedic/eslint-config": "^0.3.1",
+        "@types/node": "^25.3.3",
+        "eslint": "^10.0.2",
+        "globals": "^17.4.0",
+        "prettier": "^3.8.1",
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.56.1"
     },
     "bin": {
-        "readability": "bin/cli.js"
+        "readability": "./dist/bin/cli.js"
     },
+    "files": [
+        "dist"
+    ],
     "scripts": {
-        "test": "node tests/test_output.js",
-        "lint": "npm run lint:es && npm run lint:prettier",
-        "lint:es": "eslint .",
-        "lint:prettier": "npm run prettier -- --check",
+        "build": "npm run clean && tsc",
+        "clean": "rm -rf dist",
         "format": "npm run format:es && npm run format:prettier",
         "format:es": "npm run lint:es -- --fix",
         "format:prettier": "npm run prettier -- --write",
-        "prettier": "prettier '**/*.{ts,md,json,yml}'"
+        "lint": "npm run lint:es && npm run lint:prettier",
+        "lint:es": "eslint .",
+        "lint:prettier": "npm run prettier -- --check",
+        "prettier": "prettier '**/*.{ts,md,json,yml}'",
+        "test": "npm run build && node --test dist/tests/*.test.js",
+        "typecheck": "tsc --noEmit"
     },
-    "license": "BSD-like",
+    "license": "BSD-2-Clause",
+    "engines": {
+        "node": ">=18"
+    },
     "prettier": {
         "proseWrap": "always",
         "tabWidth": 4

@@ -4,13 +4,15 @@
  *	3. The Readability class that provides the interface & logic (usable as a htmlparser2 handler)
  */
 
-const {
-    Element,
-    formatTags,
-    headerTags,
-    re_whitespace,
-} = require("./lib/element.js");
-const { getBaseURL } = require("./lib/get-base-url.js");
+import { Element, formatTags, headerTags, reWhitespace } from "./lib/element";
+import type { URLInfo } from "./lib/get-base-url";
+import { getBaseURL } from "./lib/get-base-url";
+import type {
+    ArticleResult,
+    OutputType,
+    ReadabilityLike,
+    ReadabilitySettings,
+} from "./lib/types";
 
 // 2. list of values
 const tagsToSkip = new Set([
@@ -67,7 +69,7 @@ const okayIfEmpty = ["audio", "embed", "iframe", "img", "object", "video"];
 
 const re_videos = /http:\/\/(?:www\.)?(?:youtube|vimeo)\.com/;
 const re_nextLink = /[>»]|continue|next|weiter(?:[^|]|$)/i;
-const re_prevLink = /[<«]|earl|new|old|prev/i;
+const re_previousLink = /[<«]|earl|new|old|prev/i;
 const re_extraneous =
     /all|archive|comment|discuss|e-?mail|login|print|reply|share|sign|single/i;
 const re_pages = /pag(?:e|ing|inat)/i;
@@ -96,43 +98,68 @@ const re_cleanPaths = /\/\.(?!\.)|\/[^/]*\/\.\./;
 const re_closing = /\/?(?:#.*)?$/;
 const re_imgUrl = /\.(gif|jpe?g|png|webp)$/i;
 
-function getCandidateSiblings(candidate) {
-    // Check all siblings
-    const ret = [];
-    const childs = candidate.parent.children;
-    const siblingScoreThreshold = Math.max(10, candidate.totalScore * 0.2);
-
-    for (let i = 0; i < childs.length; i++) {
-        if (typeof childs[i] === "string") continue;
-
-        if (childs[i] === candidate);
-        else if (candidate.elementData === childs[i].elementData) {
-            // TODO: just the class name should be checked
-            if (
-                childs[i].totalScore + candidate.totalScore * 0.2 >=
-                siblingScoreThreshold
-            ) {
-                if (childs[i].name !== "p") childs[i].name = "div";
-            } else continue;
-        } else if (childs[i].name === "p") {
-            if (
-                childs[i].info.textLength >= 80 &&
-                childs[i].info.density < 0.25
-            );
-            else if (
-                childs[i].info.textLength < 80 &&
-                childs[i].info.density === 0 &&
-                re_sentence.test(childs[i].toString())
-            );
-            else continue;
-        } else continue;
-
-        ret.push(childs[i]);
-    }
-    return ret;
+interface ScannedLink {
+    score: number;
+    text: string;
 }
 
-const defaultSettings = {
+interface EventCallbacks {
+    onopentag(name: string, attributes: Record<string, string>): void;
+    ontext(text: string): void;
+    onclosetag(name: string): void;
+}
+
+interface InternalSettings {
+    stripUnlikelyCandidates: boolean;
+    weightClasses: boolean;
+    cleanConditionally: boolean;
+    cleanAttributes: boolean;
+    replaceImgs: boolean;
+    searchFurtherPages: boolean;
+    linksToSkip: Record<string, boolean>;
+    resolvePaths: boolean;
+    type?: OutputType;
+}
+
+function getCandidateSiblings(candidate: Element): Element[] {
+    // Check all siblings
+    const returnValue: Element[] = [];
+    const { parent } = candidate;
+    if (!parent) return returnValue;
+    const childs = parent.children;
+    const siblingScoreThreshold = Math.max(10, candidate.totalScore * 0.2);
+
+    for (const child of childs) {
+        if (typeof child === "string") continue;
+
+        if (child === candidate) {
+            // Empty
+        } else if (candidate.elementData === child.elementData) {
+            // TODO: just the class name should be checked
+            if (
+                child.totalScore + candidate.totalScore * 0.2 >=
+                siblingScoreThreshold
+            ) {
+                if (child.name !== "p") child.name = "div";
+            } else continue;
+        } else if (child.name === "p") {
+            if (child.info.textLength >= 80 && child.info.density < 0.25) {
+                // Empty
+            } else if (
+                child.info.textLength < 80 &&
+                child.info.density === 0 &&
+                re_sentence.test(child.toString())
+            ) {
+                // Empty
+            } else continue;
+        } else continue;
+
+        returnValue.push(child);
+    }
+    return returnValue;
+}
+
+const defaultSettings: InternalSettings = {
     stripUnlikelyCandidates: true,
     weightClasses: true,
     cleanConditionally: true,
@@ -147,16 +174,27 @@ const defaultSettings = {
      * `
      */
     resolvePaths: false,
+    type: undefined,
 };
 
 // 3. the readability class
-class Readability {
-    constructor(settings) {
+/** HTML parser handler that scores and extracts the main article content. */
+export default class Readability implements ReadabilityLike {
+    _currentElement: Element = new Element("document");
+    _topCandidate: Element | null = null;
+    _origTitle = "";
+    _headerTitle = "";
+    _scannedLinks: Map<string, ScannedLink> = new Map();
+    _settings: InternalSettings = { ...defaultSettings };
+    _url: URLInfo | null = null;
+    _baseURL = "";
+
+    constructor(settings: ReadabilitySettings = {}) {
         this.onreset();
         this._processSettings(settings);
     }
 
-    onreset() {
+    onreset(): void {
         // The root node
         this._currentElement = new Element("document");
         this._topCandidate = null;
@@ -164,17 +202,28 @@ class Readability {
         this._scannedLinks = new Map();
     }
 
-    _processSettings(settings) {
-        this._settings = {};
+    _processSettings(settings: ReadabilitySettings = {}): void {
+        this._settings = {
+            stripUnlikelyCandidates:
+                settings.stripUnlikelyCandidates ??
+                defaultSettings.stripUnlikelyCandidates,
+            weightClasses:
+                settings.weightClasses ?? defaultSettings.weightClasses,
+            cleanConditionally:
+                settings.cleanConditionally ??
+                defaultSettings.cleanConditionally,
+            cleanAttributes:
+                settings.cleanAttributes ?? defaultSettings.cleanAttributes,
+            replaceImgs: settings.replaceImgs ?? defaultSettings.replaceImgs,
+            searchFurtherPages:
+                settings.searchFurtherPages ??
+                defaultSettings.searchFurtherPages,
+            linksToSkip: settings.linksToSkip ?? defaultSettings.linksToSkip,
+            resolvePaths: settings.resolvePaths ?? defaultSettings.resolvePaths,
+            type: settings.type ?? defaultSettings.type,
+        };
 
-        for (const i in defaultSettings) {
-            this._settings[i] =
-                typeof settings[i] !== "undefined"
-                    ? settings[i]
-                    : defaultSettings[i];
-        }
-
-        let path;
+        let path: string[] | undefined;
         if (settings.pageURL) {
             path = settings.pageURL.split(re_slashes);
             this._url = {
@@ -188,7 +237,7 @@ class Readability {
         if (settings.type) this._settings.type = settings.type;
     }
 
-    _convertLinks(path) {
+    _convertLinks(path: string): string {
         if (!this._url) return path;
         if (!path) return this._url.full;
 
@@ -219,8 +268,8 @@ class Readability {
         return `${this._url.protocol}//${this._url.domain}/${path}`;
     }
 
-    _scanLink(elem) {
-        let { href } = elem.attributes;
+    _scanLink(element: Element): void {
+        let { href } = element.attributes;
 
         if (!href) return;
         href = href.replace(re_closing, "");
@@ -235,38 +284,32 @@ class Readability {
         if (!match) return;
         if (this._url && match[1] !== this._url.domain) return;
 
-        const text = elem.toString();
+        const text = element.toString();
         if (text.length > 25 || re_extraneous.test(text)) return;
         if (!re_digits.test(href.replace(this._baseURL, ""))) return;
 
         let score = 0;
-        const linkData = text + elem.elementData;
+        const linkData = text + element.elementData;
 
         if (re_nextLink.test(linkData)) score += 50;
         if (re_pages.test(linkData)) score += 25;
 
-        if (re_final.test(linkData)) {
-            if (!re_nextLink.test(text)) {
-                if (
-                    !(
-                        this._scannedLinks.has(href) &&
-                        re_nextLink.test(this._scannedLinks.get(href).text)
-                    )
-                ) {
-                    score -= 65;
-                }
+        if (re_final.test(linkData) && !re_nextLink.test(text)) {
+            const existingLink = this._scannedLinks.get(href);
+            if (!(existingLink && re_nextLink.test(existingLink.text))) {
+                score -= 65;
             }
         }
 
         if (re_negative.test(linkData) || re_extraneous.test(linkData)) {
             score -= 50;
         }
-        if (re_prevLink.test(linkData)) score -= 200;
+        if (re_previousLink.test(linkData)) score -= 200;
 
         if (re_pagenum.test(href) || re_pages.test(href)) score += 25;
         if (re_extraneous.test(href)) score -= 15;
 
-        let current = elem;
+        let current: Element | null = element;
         let posMatch = true;
         let negMatch = true;
 
@@ -274,8 +317,11 @@ class Readability {
             if (current.elementData === "") continue;
             if (posMatch && re_pages.test(current.elementData)) {
                 score += 25;
-                if (!negMatch) break;
-                else posMatch = false;
+                if (negMatch) {
+                    posMatch = false;
+                } else {
+                    break;
+                }
             }
             if (
                 negMatch &&
@@ -283,15 +329,18 @@ class Readability {
                 !re_positive.test(current.elementData)
             ) {
                 score -= 25;
-                if (!posMatch) break;
-                else negMatch = false;
+                if (posMatch) {
+                    negMatch = false;
+                } else {
+                    break;
+                }
             }
         }
 
-        const parsedNum = parseInt(text, 10);
-        if (parsedNum < 10) {
-            if (parsedNum === 1) score -= 10;
-            else score += 10 - parsedNum;
+        const parsedNumber = Number.parseInt(text, 10);
+        if (parsedNumber < 10) {
+            if (parsedNumber === 1) score -= 10;
+            else score += 10 - parsedNumber;
         }
 
         const link = this._scannedLinks.get(href);
@@ -308,80 +357,91 @@ class Readability {
     }
 
     // Parser methods
-    onopentagname(name) {
+    onopentagname(name: string): void {
         if (noContent.has(name)) {
             if (formatTags.has(name)) {
-                this._currentElement.children.push(formatTags.get(name));
+                const formatTag = formatTags.get(name);
+                if (formatTag) this._currentElement.children.push(formatTag);
             }
         } else this._currentElement = new Element(name, this._currentElement);
     }
 
-    onattribute(name, value) {
+    onattribute(name: string, value: string): void {
         if (!value) return;
         name = name.toLowerCase();
 
-        const elem = this._currentElement;
+        const element = this._currentElement;
 
         if (name === "href" || name === "src") {
             // Fix links
-            if (re_protocol.test(value)) elem.attributes[name] = value;
-            else elem.attributes[name] = this._convertLinks(value);
+            element.attributes[name] = re_protocol.test(value)
+                ? value
+                : this._convertLinks(value);
         } else if (name === "id" || name === "class") {
             value = value.toLowerCase();
-            if (!this._settings.weightClasses);
-            else if (re_safe.test(value)) {
-                elem.attributeScore += 300;
-                elem.isCandidate = true;
-            } else if (re_negative.test(value)) elem.attributeScore -= 25;
-            else if (re_positive.test(value)) elem.attributeScore += 25;
+            if (!this._settings.weightClasses) {
+                // Empty
+            } else if (re_safe.test(value)) {
+                element.attributeScore += 300;
+                element.isCandidate = true;
+            } else if (re_negative.test(value)) element.attributeScore -= 25;
+            else if (re_positive.test(value)) element.attributeScore += 25;
 
-            elem.elementData += ` ${value}`;
+            element.elementData += ` ${value}`;
         } else if (
-            elem.name === "img" &&
+            element.name === "img" &&
             (name === "width" || name === "height")
         ) {
-            value = parseInt(value, 10);
-            if (value !== value);
-            else if (value <= 32) {
+            const numericValue = Number.parseInt(value, 10);
+            if (Number.isNaN(numericValue)) {
+                // Empty
+            } else if (numericValue <= 32) {
                 /*
                  * NaN (skip)
                  * skip the image
                  * (use a tagname that's part of tagsToSkip)
                  */
-                elem.name = "script";
-            } else if (name === "width" ? value >= 390 : value >= 290) {
+                element.name = "script";
+            } else if (
+                name === "width" ? numericValue >= 390 : numericValue >= 290
+            ) {
                 // Increase score of parent
-                elem.parent.attributeScore += 20;
-            } else if (name === "width" ? value >= 200 : value >= 150) {
-                elem.parent.attributeScore += 5;
+                if (element.parent) element.parent.attributeScore += 20;
+            } else if (
+                (name === "width"
+                    ? numericValue >= 200
+                    : numericValue >= 150) &&
+                element.parent
+            ) {
+                element.parent.attributeScore += 5;
             }
         } else if (this._settings.cleanAttributes) {
-            if (goodAttributes.has(name)) elem.attributes[name] = value;
-        } else elem.attributes[name] = value;
+            if (goodAttributes.has(name)) element.attributes[name] = value;
+        } else element.attributes[name] = value;
     }
 
-    ontext(text) {
+    ontext(text: string): void {
         this._currentElement.children.push(text);
     }
 
-    onclosetag(tagName) {
+    onclosetag(tagName: string): void {
         if (noContent.has(tagName)) return;
 
-        let elem = this._currentElement;
-
-        this._currentElement = elem.parent;
+        let element = this._currentElement;
+        if (!element.parent) return;
+        this._currentElement = element.parent;
 
         // Prepare title
         if (this._settings.searchFurtherPages && tagName === "a") {
-            this._scanLink(elem);
+            this._scanLink(element);
         } else if (tagName === "title" && !this._origTitle) {
-            this._origTitle = elem
+            this._origTitle = element
                 .toString()
                 .trim()
-                .replace(re_whitespace, " ");
+                .replace(reWhitespace, " ");
             return;
         } else if (headerTags.has(tagName)) {
-            const title = elem.toString().trim().replace(re_whitespace, " ");
+            const title = element.toString().trim().replace(reWhitespace, " ");
             if (this._origTitle) {
                 if (this._origTitle.includes(title)) {
                     if (title.split(" ").length === 4) {
@@ -402,67 +462,75 @@ class Readability {
         if (tagsToSkip.has(tagName)) return;
         if (
             this._settings.stripUnlikelyCandidates &&
-            re_unlikelyCandidates.test(elem.elementData) &&
-            !re_okMaybeItsACandidate.test(elem.elementData)
+            re_unlikelyCandidates.test(element.elementData) &&
+            !re_okMaybeItsACandidate.test(element.elementData)
         ) {
             return;
         }
         if (
             tagName === "div" &&
-            elem.children.length === 1 &&
-            typeof elem.children[0] === "object" &&
-            unpackDivs.has(elem.children[0].name)
+            element.children.length === 1 &&
+            typeof element.children[0] === "object" &&
+            unpackDivs.has(element.children[0].name)
         ) {
             // Unpack divs
-            elem.parent.children.push(elem.children[0]);
+            element.parent.children.push(element.children[0]);
             return;
         }
 
-        elem.addInfo();
+        element.addInfo();
 
         // Clean conditionally
         if (embeds.has(tagName)) {
             // Check if tag is wanted (youtube or vimeo)
             if (
                 !(
-                    "src" in elem.attributes &&
-                    re_videos.test(elem.attributes.src)
+                    "src" in element.attributes &&
+                    re_videos.test(element.attributes.src)
                 )
             ) {
                 return;
             }
         } else if (tagName === "h2" || tagName === "h3") {
             // Clean headers
-            if (elem.attributeScore < 0 || elem.info.density > 0.33) return;
+            if (element.attributeScore < 0 || element.info.density > 0.33) {
+                return;
+            }
         } else if (
             this._settings.cleanConditionally &&
             cleanConditionally.has(tagName)
         ) {
-            const p = elem.info.tagCount.get("p") || 0;
-            const contentLength = elem.info.textLength + elem.info.linkLength;
+            const p = element.info.tagCount.get("p") ?? 0;
+            const contentLength =
+                element.info.textLength + element.info.linkLength;
 
             if (contentLength === 0) {
-                if (elem.children.length === 0) return;
+                if (element.children.length === 0) return;
                 if (
-                    elem.children.length === 1 &&
-                    typeof elem.children[0] === "string"
+                    element.children.length === 1 &&
+                    typeof element.children[0] === "string"
                 ) {
                     return;
                 }
             }
             if (
-                elem.info.tagCount.get("li") - 100 > p &&
+                (element.info.tagCount.get("li") ?? 0) - 100 > p &&
                 tagName !== "ul" &&
                 tagName !== "ol"
             ) {
                 return;
             }
-            if (contentLength < 25 && elem.info.tagCount.get("img") !== 1) {
+            if (
+                contentLength < 25 &&
+                (element.info.tagCount.get("img") ?? 0) !== 1
+            ) {
                 return;
             }
-            if (elem.info.density > 0.5) return;
-            if (elem.attributeScore < 25 && elem.info.density > 0.2) return;
-            const embedCount = elem.info.tagCount.get("embed");
+            if (element.info.density > 0.5) return;
+            if (element.attributeScore < 25 && element.info.density > 0.2) {
+                return;
+            }
+            const embedCount = element.info.tagCount.get("embed") ?? 0;
             if ((embedCount === 1 && contentLength < 75) || embedCount > 1) {
                 return;
             }
@@ -472,10 +540,10 @@ class Readability {
             (removeIfEmpty.has(tagName) ||
                 (!this._settings.cleanConditionally &&
                     cleanConditionally.has(tagName))) &&
-            elem.info.linkLength === 0 &&
-            elem.info.textLength === 0 &&
-            elem.children.length !== 0 &&
-            !okayIfEmpty.some((tag) => elem.info.tagCount.has(tag))
+            element.info.linkLength === 0 &&
+            element.info.textLength === 0 &&
+            element.children.length > 0 &&
+            !okayIfEmpty.some((tag) => element.info.tagCount.has(tag))
         ) {
             return;
         }
@@ -483,76 +551,84 @@ class Readability {
         if (
             this._settings.replaceImgs &&
             tagName === "a" &&
-            elem.children.length === 1 &&
-            elem.children[0].name === "img" &&
-            re_imgUrl.test(elem.attributes.href)
+            element.children.length === 1 &&
+            typeof element.children[0] === "object" &&
+            element.children[0].name === "img" &&
+            Boolean(element.attributes.href) &&
+            re_imgUrl.test(element.attributes.href)
         ) {
-            elem = elem.children[0];
-            elem.attributes.src = elem.parent.attributes.href;
+            element = element.children[0];
+            if (element.parent) {
+                element.attributes.src = element.parent.attributes.href;
+            }
         }
 
-        elem.parent.children.push(elem);
+        if (!element.parent) return;
+        element.parent.children.push(element);
 
         // Should node be scored?
-        if (tagName === "p" || tagName === "pre" || tagName === "td");
-        else if (tagName === "div") {
+        if (tagName === "p" || tagName === "pre" || tagName === "td") {
+            // Empty
+        } else if (tagName === "div") {
             // Check if div should be converted to a p
-            if (divToPElements.some((name) => elem.info.tagCount.has(name))) {
+            if (
+                divToPElements.some((name) => element.info.tagCount.has(name))
+            ) {
                 return;
             }
-            elem.name = "p";
+            element.name = "p";
         } else return;
 
-        if (
-            elem.info.textLength + elem.info.linkLength > 24 &&
-            elem.parent &&
-            elem.parent.parent
-        ) {
-            elem.parent.isCandidate = elem.parent.parent.isCandidate = true;
+        if (element.info.textLength + element.info.linkLength > 24) {
+            const parentElement = element.parent as Element;
+            const grandparentElement = parentElement.parent;
+            parentElement.isCandidate = true;
             const addScore =
                 1 +
-                elem.info.commas +
+                element.info.commas +
                 Math.min(
                     Math.floor(
-                        (elem.info.textLength + elem.info.linkLength) / 100
+                        (element.info.textLength + element.info.linkLength) /
+                            100,
                     ),
-                    3
+                    3,
                 );
-            elem.parent.tagScore += addScore;
-            elem.parent.parent.tagScore += addScore / 2;
+            parentElement.tagScore += addScore;
+            if (grandparentElement) {
+                grandparentElement.isCandidate = true;
+                grandparentElement.tagScore += addScore / 2;
+            }
         }
     }
 
-    _getCandidateNode() {
-        let elem = this._topCandidate;
-        let elems;
-        if (!elem) {
-            elem = this._topCandidate = this._currentElement.getTopCandidate();
-        }
+    _getCandidateNode(): Element {
+        let element = this._topCandidate;
+        let elements: Element[];
+        element ??= this._topCandidate = this._currentElement.getTopCandidate();
 
-        if (!elem) {
+        if (!element) {
             // Select root node
-            elem = this._currentElement;
-        } else if (elem.parent.children.length > 1) {
-            elems = getCandidateSiblings(elem);
+            element = this._currentElement;
+        } else if (element.parent && element.parent.children.length > 1) {
+            elements = getCandidateSiblings(element);
 
             // Create a new object so that the prototype methods are callable
-            elem = new Element("div");
-            elem.children = elems;
-            elem.addInfo();
+            element = new Element("div");
+            element.children = elements;
+            element.addInfo();
         }
 
-        while (elem.children.length === 1) {
-            if (typeof elem.children[0] === "object") {
-                elem = elem.children[0];
+        while (element.children.length === 1) {
+            if (typeof element.children[0] === "object") {
+                element = element.children[0];
             } else break;
         }
 
-        return elem;
+        return element;
     }
 
     // SkipLevel is a shortcut to allow more elements of the page
-    setSkipLevel(skipLevel) {
+    setSkipLevel(skipLevel: number): void {
         if (skipLevel === 0) return;
 
         // If the prototype is still used for settings, change that
@@ -565,36 +641,38 @@ class Readability {
         if (skipLevel > 2) this._settings.cleanConditionally = false;
     }
 
-    getTitle() {
+    getTitle(): string {
         if (this._headerTitle) return this._headerTitle;
         if (!this._origTitle) return "";
 
-        let curTitle = this._origTitle;
+        let currentTitle = this._origTitle;
 
-        if (/ [|-] /.test(curTitle)) {
-            curTitle = curTitle.replace(/(.*) [|-] .*/g, "$1");
+        if (/ [|-] /.test(currentTitle)) {
+            currentTitle = currentTitle.replace(/(.*) [|-] .*/g, "$1");
 
-            if (curTitle.split(" ").length !== 3) {
-                curTitle = this._origTitle.replace(/.*?[|-] /, "");
+            if (currentTitle.split(" ").length !== 3) {
+                currentTitle = this._origTitle.replace(/.*?[|-] /, "");
             }
-        } else if (curTitle.includes(": ")) {
-            curTitle = curTitle.substr(curTitle.lastIndexOf(": ") + 2);
+        } else if (currentTitle.includes(": ")) {
+            currentTitle = currentTitle.substr(
+                currentTitle.lastIndexOf(": ") + 2,
+            );
 
-            if (curTitle.split(" ").length !== 3) {
-                curTitle = this._origTitle.substr(
-                    this._origTitle.indexOf(": ")
+            if (currentTitle.split(" ").length !== 3) {
+                currentTitle = this._origTitle.substr(
+                    this._origTitle.indexOf(": "),
                 );
             }
         }
         // TODO: support arrow ("\u00bb")
 
-        curTitle = curTitle.trim();
+        currentTitle = currentTitle.trim();
 
-        if (curTitle.split(" ").length !== 5) return this._origTitle;
-        return curTitle;
+        if (currentTitle.split(" ").length !== 5) return this._origTitle;
+        return currentTitle;
     }
 
-    getNextPage() {
+    getNextPage(): string {
         let topScore = 49;
         let topLink = "";
         for (const [href, link] of this._scannedLinks) {
@@ -607,8 +685,8 @@ class Readability {
         return topLink;
     }
 
-    getHTML(node) {
-        if (!node) node = this._getCandidateNode();
+    getHTML(node?: Element): string {
+        node ??= this._getCandidateNode();
         return (
             node
                 .getInnerHTML() // => clean it
@@ -623,40 +701,42 @@ class Readability {
         );
     }
 
-    getText(node = this._getCandidateNode()) {
+    getText(node: Element = this._getCandidateNode()): string {
         return node
             .getFormattedText()
             .trim()
             .replace(/\n+(?=\n{2})/g, "");
     }
 
-    getEvents(cbs) {
-        (function process(node) {
+    getEvents(cbs: EventCallbacks): void {
+        (function process(node: Element) {
             cbs.onopentag(node.name, node.attributes);
-            node.children.forEach((child) =>
-                typeof child === "string" ? cbs.ontext(child) : process(child)
-            );
+            for (const child of node.children) {
+                if (typeof child === "string") cbs.ontext(child);
+                else process(child);
+            }
             cbs.onclosetag(node.name);
         })(this._getCandidateNode());
     }
 
-    getArticle(type) {
-        const elem = this._getCandidateNode();
+    getArticle(type?: OutputType): ArticleResult {
+        const element = this._getCandidateNode();
 
-        const ret = {
-            title: this._headerTitle || this.getTitle(),
+        const returnValue: ArticleResult = {
+            title:
+                this._headerTitle.length > 0
+                    ? this._headerTitle
+                    : this.getTitle(),
             nextPage: this.getNextPage(),
-            textLength: elem.info.textLength,
+            textLength: element.info.textLength,
             score: this._topCandidate ? this._topCandidate.totalScore : 0,
         };
 
         if (!type && this._settings.type) ({ type } = this._settings);
 
-        if (type === "text") ret.text = this.getText(elem);
-        else ret.html = this.getHTML(elem);
+        if (type === "text") returnValue.text = this.getText(element);
+        else returnValue.html = this.getHTML(element);
 
-        return ret;
+        return returnValue;
     }
 }
-
-module.exports = Readability;

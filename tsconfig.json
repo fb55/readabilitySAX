@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "target": "es2019",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "lib": ["es2019"],
+        "moduleDetection": "force",
+        "strict": true,
+        "declaration": true,
+        "sourceMap": false,
+        "outDir": "dist",
+        "rootDir": ".",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "types": ["node"]
+    },
+    "include": [
+        "bin/**/*.ts",
+        "lib/**/*.ts",
+        "readability-sax.ts",
+        "tests/**/*.ts"
+    ],
+    "exclude": ["node_modules"]
+}
