@@ -15,7 +15,6 @@ export interface ReadabilitySettings {
     pageURL?: string;
     type?: OutputType;
     resolvePaths?: boolean;
-    log?: boolean;
 }
 
 /** Readability extraction result for one document. */
@@ -34,7 +33,7 @@ export interface ArticleResult {
 export type ArticleCallback = (article: ArticleResult) => void;
 
 /** Minimal shape of the readability class used by stream/process helpers. */
-interface ReadabilityMethods {
+export interface ReadabilityLike extends Partial<Handler> {
     setSkipLevel(skipLevel: number): void;
     getArticle(type?: OutputType): ArticleResult;
     getHTML?(node?: unknown): string;
@@ -45,11 +44,3 @@ interface ReadabilityMethods {
         };
     };
 }
-
-/** Parser handler callbacks plus readability-specific methods. */
-export type ReadabilityLike = Partial<Handler> & ReadabilityMethods;
-
-/** Constructor signature for the readability implementation. */
-export type ReadabilityConstructor = new (
-    settings?: ReadabilitySettings
-) => ReadabilityLike;

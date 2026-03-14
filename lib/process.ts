@@ -1,10 +1,6 @@
 import { Parser } from "htmlparser2";
 import Readability from "../readability-sax";
-import type {
-    ArticleResult,
-    ReadabilityConstructor,
-    ReadabilitySettings,
-} from "./types";
+import type { ArticleResult, ReadabilitySettings } from "./types";
 
 /**
  * Parse HTML and return the extracted article.
@@ -15,12 +11,11 @@ import type {
 export default function process(
     data: string,
     settings: ReadabilitySettings,
-    skipLevel?: number
+    skipLevel?: number,
 ): ArticleResult {
     skipLevel ??= 0;
 
-    const ReadabilityClass = Readability as ReadabilityConstructor;
-    const readable = new ReadabilityClass(settings);
+    const readable = new Readability(settings);
     const parser = new Parser(readable);
     let article: ArticleResult;
 

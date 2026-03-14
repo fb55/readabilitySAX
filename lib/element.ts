@@ -1,4 +1,4 @@
-const reCommas = /,[\s,]*/g;
+const reCommas = /,[\s,]*/;
 /** Matches runs of whitespace in text nodes. */
 export const reWhitespace = /\s+/g;
 
@@ -79,7 +79,8 @@ export class Element {
             }
 
             if (child.name === "a") {
-                info.linkLength += child.info.textLength + child.info.linkLength;
+                info.linkLength +=
+                    child.info.textLength + child.info.linkLength;
             } else {
                 info.textLength += child.info.textLength;
                 info.linkLength += child.info.linkLength;
@@ -97,7 +98,8 @@ export class Element {
         }
 
         if (info.linkLength > 0) {
-            info.density = info.linkLength / (info.textLength + info.linkLength);
+            info.density =
+                info.linkLength / (info.textLength + info.linkLength);
         }
     }
 
@@ -119,7 +121,7 @@ export class Element {
     getInnerHTML(): string {
         return this.children
             .map((child) =>
-                typeof child === "string" ? child : child.getOuterHTML()
+                typeof child === "string" ? child : child.getOuterHTML(),
             )
             .join("");
     }
@@ -130,7 +132,7 @@ export class Element {
                 typeof child === "string"
                     ? child.replace(reWhitespace, " ")
                     : child.getFormattedText() +
-                      (newLinesAfter.has(child.name) ? "\n" : "")
+                      (newLinesAfter.has(child.name) ? "\n" : ""),
             )
             .join("");
     }
@@ -151,7 +153,7 @@ export class Element {
                 child.tagScore += tagScores.get(child.name) ?? 0;
                 const score = Math.floor(
                     (child.tagScore + child.attributeScore) *
-                        (1 - child.info.density)
+                        (1 - child.info.density),
                 );
 
                 if (topScore < score) {

@@ -3,7 +3,6 @@ import { Parser } from "htmlparser2";
 import Readability from "../readability-sax";
 import type {
     ArticleCallback,
-    ReadabilityConstructor,
     ReadabilityLike,
     ReadabilitySettings,
 } from "./types";
@@ -20,7 +19,7 @@ export default class WritableStream extends Writable {
 
     constructor(
         settings: ReadabilitySettings | ArticleCallback,
-        callback?: ArticleCallback
+        callback?: ArticleCallback,
     ) {
         super();
 
@@ -29,15 +28,14 @@ export default class WritableStream extends Writable {
             settings = {};
         }
 
-        const ReadabilityClass = Readability as ReadabilityConstructor;
-        this._readability = new ReadabilityClass(settings);
+        this._readability = new Readability(settings);
         this._callback = callback;
     }
 
     override _write(
         chunk: string | Buffer | Uint8Array,
         encoding: BufferEncoding,
-        callback: (error?: Error | null) => void
+        callback: (error?: Error | null) => void,
     ) {
         if (typeof chunk === "string") {
             this._chunks.push(Buffer.from(chunk, encoding));

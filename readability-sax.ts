@@ -7,7 +7,12 @@
 import { Element, formatTags, headerTags, reWhitespace } from "./lib/element";
 import type { URLInfo } from "./lib/get-base-url";
 import { getBaseURL } from "./lib/get-base-url";
-import type { ArticleResult, OutputType, ReadabilitySettings } from "./lib/types";
+import type {
+    ArticleResult,
+    OutputType,
+    ReadabilityLike,
+    ReadabilitySettings,
+} from "./lib/types";
 
 // 2. list of values
 const tagsToSkip = new Set([
@@ -138,10 +143,7 @@ function getCandidateSiblings(candidate: Element): Element[] {
                 if (child.name !== "p") child.name = "div";
             } else continue;
         } else if (child.name === "p") {
-            if (
-                child.info.textLength >= 80 &&
-                child.info.density < 0.25
-            ) {
+            if (child.info.textLength >= 80 && child.info.density < 0.25) {
                 // Empty
             } else if (
                 child.info.textLength < 80 &&
@@ -177,7 +179,7 @@ const defaultSettings: InternalSettings = {
 
 // 3. the readability class
 /** HTML parser handler that scores and extracts the main article content. */
-export default class Readability {
+export default class Readability implements ReadabilityLike {
     _currentElement: Element = new Element("document");
     _topCandidate: Element | null = null;
     _origTitle = "";
@@ -205,14 +207,17 @@ export default class Readability {
             stripUnlikelyCandidates:
                 settings.stripUnlikelyCandidates ??
                 defaultSettings.stripUnlikelyCandidates,
-            weightClasses: settings.weightClasses ?? defaultSettings.weightClasses,
+            weightClasses:
+                settings.weightClasses ?? defaultSettings.weightClasses,
             cleanConditionally:
-                settings.cleanConditionally ?? defaultSettings.cleanConditionally,
+                settings.cleanConditionally ??
+                defaultSettings.cleanConditionally,
             cleanAttributes:
                 settings.cleanAttributes ?? defaultSettings.cleanAttributes,
             replaceImgs: settings.replaceImgs ?? defaultSettings.replaceImgs,
             searchFurtherPages:
-                settings.searchFurtherPages ?? defaultSettings.searchFurtherPages,
+                settings.searchFurtherPages ??
+                defaultSettings.searchFurtherPages,
             linksToSkip: settings.linksToSkip ?? defaultSettings.linksToSkip,
             resolvePaths: settings.resolvePaths ?? defaultSettings.resolvePaths,
             type: settings.type ?? defaultSettings.type,
@@ -369,7 +374,9 @@ export default class Readability {
 
         if (name === "href" || name === "src") {
             // Fix links
-            element.attributes[name] = re_protocol.test(value) ? value : this._convertLinks(value);
+            element.attributes[name] = re_protocol.test(value)
+                ? value
+                : this._convertLinks(value);
         } else if (name === "id" || name === "class") {
             value = value.toLowerCase();
             if (!this._settings.weightClasses) {
@@ -401,7 +408,9 @@ export default class Readability {
                 // Increase score of parent
                 if (element.parent) element.parent.attributeScore += 20;
             } else if (
-                (name === "width" ? numericValue >= 200 : numericValue >= 150) &&
+                (name === "width"
+                    ? numericValue >= 200
+                    : numericValue >= 150) &&
                 element.parent
             ) {
                 element.parent.attributeScore += 5;
@@ -484,13 +493,15 @@ export default class Readability {
             }
         } else if (tagName === "h2" || tagName === "h3") {
             // Clean headers
-            if (element.attributeScore < 0 || element.info.density > 0.33) return;
+            if (element.attributeScore < 0 || element.info.density > 0.33)
+                return;
         } else if (
             this._settings.cleanConditionally &&
             cleanConditionally.has(tagName)
         ) {
             const p = element.info.tagCount.get("p") ?? 0;
-            const contentLength = element.info.textLength + element.info.linkLength;
+            const contentLength =
+                element.info.textLength + element.info.linkLength;
 
             if (contentLength === 0) {
                 if (element.children.length === 0) return;
@@ -515,7 +526,8 @@ export default class Readability {
                 return;
             }
             if (element.info.density > 0.5) return;
-            if (element.attributeScore < 25 && element.info.density > 0.2) return;
+            if (element.attributeScore < 25 && element.info.density > 0.2)
+                return;
             const embedCount = element.info.tagCount.get("embed") ?? 0;
             if ((embedCount === 1 && contentLength < 75) || embedCount > 1) {
                 return;
@@ -557,7 +569,9 @@ export default class Readability {
             // Empty
         } else if (tagName === "div") {
             // Check if div should be converted to a p
-            if (divToPElements.some((name) => element.info.tagCount.has(name))) {
+            if (
+                divToPElements.some((name) => element.info.tagCount.has(name))
+            ) {
                 return;
             }
             element.name = "p";
@@ -565,19 +579,23 @@ export default class Readability {
 
         if (element.info.textLength + element.info.linkLength > 24) {
             const parentElement = element.parent as Element;
-            const grandparentElement = parentElement.parent as Element;
-            parentElement.isCandidate = grandparentElement.isCandidate = true;
+            const grandparentElement = parentElement.parent;
+            parentElement.isCandidate = true;
             const addScore =
                 1 +
                 element.info.commas +
                 Math.min(
                     Math.floor(
-                        (element.info.textLength + element.info.linkLength) / 100
+                        (element.info.textLength + element.info.linkLength) /
+                            100,
                     ),
-                    3
+                    3,
                 );
             parentElement.tagScore += addScore;
-            grandparentElement.tagScore += addScore / 2;
+            if (grandparentElement) {
+                grandparentElement.isCandidate = true;
+                grandparentElement.tagScore += addScore / 2;
+            }
         }
     }
 
@@ -634,11 +652,13 @@ export default class Readability {
                 currentTitle = this._origTitle.replace(/.*?[|-] /, "");
             }
         } else if (currentTitle.includes(": ")) {
-            currentTitle = currentTitle.substr(currentTitle.lastIndexOf(": ") + 2);
+            currentTitle = currentTitle.substr(
+                currentTitle.lastIndexOf(": ") + 2,
+            );
 
             if (currentTitle.split(" ").length !== 3) {
                 currentTitle = this._origTitle.substr(
-                    this._origTitle.indexOf(": ")
+                    this._origTitle.indexOf(": "),
                 );
             }
         }

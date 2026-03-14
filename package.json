@@ -19,7 +19,6 @@
     "dependencies": {
         "entities": "^7.0.1",
         "htmlparser2": "^10.1.0",
-        "readable-stream": "^4.7.0",
         "undici": "^7.22.0"
     },
     "devDependencies": {
