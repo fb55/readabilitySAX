@@ -69,7 +69,7 @@ if (process.argv.length > 2) {
             process.exitCode = 1;
         });
 } else {
-    const file = fs.readFileSync(`${__dirname}/testpage.html`, "utf8");
+    const file = fs.readFileSync(`${__dirname}/../../tests/testpage.html`, "utf8");
     processContent(file, {
         pageURL: "http://howtonode.org/heat-tracer",
         log: false,
