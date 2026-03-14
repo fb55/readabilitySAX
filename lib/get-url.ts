@@ -35,7 +35,7 @@ export default function getURL(
         callbackHasRun = true;
 
         const message = String(error);
-        callback!({
+        callback?.({
             title: "Error",
             text: message,
             html: `<b>${message}</b>`,
@@ -93,7 +93,7 @@ export default function getURL(
                         }
 
                         article.link = finalURL;
-                        callback!(article);
+                        callback?.(article);
                     },
                 );
             },
