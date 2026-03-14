@@ -10,7 +10,10 @@ interface SAXCallbacks {
     onclosetag(name: string): void;
 }
 
-export default function saxParser(elem: Element, callbacks: SAXCallbacks): void {
+export default function saxParser(
+    elem: Element,
+    callbacks: SAXCallbacks,
+): void {
     // TODO: Support additional events, options for trim & space normalisation
 
     function parse(node: Element): void {

@@ -20,7 +20,7 @@ interface RedirectContext {
 export default function getURL(
     uri: string,
     settings: ReadabilitySettings | OutputType | ArticleCallback,
-    callback?: ArticleCallback
+    callback?: ArticleCallback,
 ) {
     if (typeof settings === "function") {
         callback = settings;
@@ -45,7 +45,7 @@ export default function getURL(
 
     const urlObject = new URL(uri);
     const client = new undici.Client(urlObject.origin).compose(
-        undici.interceptors.redirect({ maxRedirections: 5 })
+        undici.interceptors.redirect({ maxRedirections: 5 }),
     );
 
     void client
@@ -63,7 +63,7 @@ export default function getURL(
                     throw new undici.errors.ResponseError(
                         "Response Error",
                         statusCode,
-                        { headers }
+                        { headers },
                     );
                 }
 
@@ -84,16 +84,19 @@ export default function getURL(
                 const finalURL = redirectedURL ? redirectedURL.toString() : uri;
                 settings.pageURL = finalURL;
 
-                return new WritableStream(settings, (article: ArticleResult) => {
-                    if (callbackHasRun) {
-                        console.log("got article with called callback");
-                        return;
-                    }
+                return new WritableStream(
+                    settings,
+                    (article: ArticleResult) => {
+                        if (callbackHasRun) {
+                            console.log("got article with called callback");
+                            return;
+                        }
 
-                    article.link = finalURL;
-                    callback!(article);
-                });
-            }
+                        article.link = finalURL;
+                        callback!(article);
+                    },
+                );
+            },
         )
         .catch(onError)
         .finally(() => {

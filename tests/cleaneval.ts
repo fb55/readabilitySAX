@@ -10,15 +10,19 @@ const output = `${directory}finalrun-output/`;
 for (const name of fs.readdirSync(input)) {
     if (!name || name.startsWith(".")) continue;
 
-    const article = getReadableContent(fs.readFileSync(input + name).toString(), {
-        type: "text",
-    });
+    const article = getReadableContent(
+        fs.readFileSync(input + name).toString(),
+        {
+            type: "text",
+        },
+    );
 
     // If (article.score < 100) continue;
 
     fs.writeFileSync(
         output + name.replace(".html", ".txt"),
-        (article.title ? `${article.title}\n\n` : "") + decodeHTML5(article.text ?? "")
+        (article.title ? `${article.title}\n\n` : "") +
+            decodeHTML5(article.text ?? ""),
     );
 }
 

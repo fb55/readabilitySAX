@@ -58,7 +58,7 @@ test.before(() => {
         writable.end();
 
         return once(writable, "finish").then(
-            () => ({ opaque: undefined as never, trailers: {} }) as never
+            () => ({ opaque: undefined as never, trailers: {} }) as never,
         );
     };
 
@@ -75,7 +75,7 @@ test.after(() => {
 
 async function getArticle(
     url: string,
-    settings: ReadabilitySettings | "text" | "html"
+    settings: ReadabilitySettings | "text" | "html",
 ): Promise<ArticleResult> {
     return await new Promise<ArticleResult>((resolve, reject) => {
         const timeout = setTimeout(() => {

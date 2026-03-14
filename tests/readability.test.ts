@@ -5,7 +5,10 @@ import { Parser } from "htmlparser2";
 import { process as processArticle } from "../lib";
 import Readability from "../readability-sax";
 
-const fixture = fs.readFileSync(`${__dirname}/../../tests/testpage.html`, "utf8");
+const fixture = fs.readFileSync(
+    `${__dirname}/../../tests/testpage.html`,
+    "utf8",
+);
 
 function parseFixture(settings = {}) {
     const readable = new Readability(
@@ -14,8 +17,8 @@ function parseFixture(settings = {}) {
                 pageURL: "http://howtonode.org/heat-tracer/",
                 resolvePaths: true,
             },
-            settings
-        )
+            settings,
+        ),
     );
     const parser = new Parser(readable);
     parser.parseComplete(fixture);
@@ -35,7 +38,7 @@ test("extracts article metadata and content from fixture", () => {
     assert.equal(article.title, "How To Node - NodeJS");
     assert.equal(
         article.nextPage,
-        "http://howtonode.org/heat-tracer/dummy/page/2"
+        "http://howtonode.org/heat-tracer/dummy/page/2",
     );
     assert.equal(article.textLength, 7935);
     assert.equal(article.score, 82);
@@ -61,15 +64,15 @@ test("resolves relative URLs based on pageURL", () => {
     assert.equal(readable._baseURL, "http://foo.bar/this.2/is/a/long/path");
     assert.equal(
         readable._convertLinks("../asdf/foo/"),
-        "http://foo.bar/this.2/is/a/long/asdf/foo/"
+        "http://foo.bar/this.2/is/a/long/asdf/foo/",
     );
     assert.equal(
         readable._convertLinks("/asdf/foo/"),
-        "http://foo.bar/asdf/foo/"
+        "http://foo.bar/asdf/foo/",
     );
     assert.equal(
         readable._convertLinks("foo/"),
-        "http://foo.bar/this.2/is/a/long/path/foo/"
+        "http://foo.bar/this.2/is/a/long/path/foo/",
     );
 });
 

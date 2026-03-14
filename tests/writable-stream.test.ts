@@ -14,7 +14,9 @@ test("writable-stream accepts string chunks", async () => {
     });
 
     stream.write("<html><body><article><p>");
-    stream.end(`${"String chunk coverage ".repeat(20)}</p></article></body></html>`);
+    stream.end(
+        `${"String chunk coverage ".repeat(20)}</p></article></body></html>`,
+    );
     await once(stream, "finish");
 
     assert.ok(articleResult);
@@ -29,7 +31,11 @@ test("writable-stream accepts buffer chunks", async () => {
     });
 
     stream.write(Buffer.from("<html><body><article><p>"));
-    stream.end(Buffer.from(`${"Buffer chunk coverage ".repeat(20)}</p></article></body></html>`));
+    stream.end(
+        Buffer.from(
+            `${"Buffer chunk coverage ".repeat(20)}</p></article></body></html>`,
+        ),
+    );
     await once(stream, "finish");
 
     assert.ok(articleResult);
@@ -63,7 +69,7 @@ test("writable-stream invokes skip-level fallback for short documents", async ()
     };
     const originalSetSkipLevel =
         internalReadable._readability.setSkipLevel.bind(
-            internalReadable._readability
+            internalReadable._readability,
         );
     const skipLevels: number[] = [];
 

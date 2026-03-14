@@ -13,7 +13,7 @@ export { default as WritableStream } from "./writable-stream";
  */
 export function createWritableStream(
     settings: ReadabilitySettings | ArticleCallback,
-    callback?: ArticleCallback
+    callback?: ArticleCallback,
 ) {
     return new WritableStream(settings, callback);
 }

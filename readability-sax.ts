@@ -493,8 +493,9 @@ export default class Readability implements ReadabilityLike {
             }
         } else if (tagName === "h2" || tagName === "h3") {
             // Clean headers
-            if (element.attributeScore < 0 || element.info.density > 0.33)
+            if (element.attributeScore < 0 || element.info.density > 0.33) {
                 return;
+            }
         } else if (
             this._settings.cleanConditionally &&
             cleanConditionally.has(tagName)
@@ -526,8 +527,9 @@ export default class Readability implements ReadabilityLike {
                 return;
             }
             if (element.info.density > 0.5) return;
-            if (element.attributeScore < 25 && element.info.density > 0.2)
+            if (element.attributeScore < 25 && element.info.density > 0.2) {
                 return;
+            }
             const embedCount = element.info.tagCount.get("embed") ?? 0;
             if ((embedCount === 1 && contentLength < 75) || embedCount > 1) {
                 return;
