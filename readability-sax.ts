@@ -691,9 +691,13 @@ export default class Readability implements ReadabilityLike {
             node
                 .getInnerHTML() // => clean it
                 // Remove <br>s in front of opening & closing <p>s
-                .replace(/(?:<br\/>(?:\s|&nbsp;?)*)+(?=<\/?p)/g, "")
+                .replace(/(?:<br\/>(?:\s|&nbsp;?)*)+/g, (m, o, s) =>
+                    /^<\/?p/.test(s.substring(o + m.length)) ? "" : m,
+                )
                 // Remove spaces in front of <br>s
-                .replace(/(?:\s|&nbsp;?)+(?=<br\/>)/g, "")
+                .replace(/(?:\s|&nbsp;?)+/g, (m, o, s) =>
+                    s.startsWith("<br/>", o + m.length) ? "" : m,
+                )
                 // Turn all double+ <br>s into <p>s
                 .replace(/(?:<br\/>){2,}/g, "</p><p>")
                 // Trim the result
