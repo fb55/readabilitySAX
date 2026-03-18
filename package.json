@@ -17,7 +17,7 @@
         "url": "https://github.com/fb55/readabilitysax.git"
     },
     "dependencies": {
-        "entities": "^7.0.1",
+        "entities": "^8.0.0",
         "htmlparser2": "^10.1.0",
         "undici": "^7.22.0"
     },
