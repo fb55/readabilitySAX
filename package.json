@@ -25,7 +25,7 @@
         "@eslint/compat": "^2.0.2",
         "@feedic/eslint-config": "^0.3.1",
         "@types/node": "^25.3.3",
-        "eslint": "^10.0.2",
+        "eslint": "^10.1.0",
         "globals": "^17.4.0",
         "prettier": "^3.8.1",
         "typescript": "^5.9.3",
