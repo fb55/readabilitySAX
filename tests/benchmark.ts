@@ -4,11 +4,13 @@ import type { ArticleResult } from "../lib/types";
 
 const directory = "/Users/felix/Downloads/CleanEval/finalrun-input/";
 const files = fs.readdirSync(directory);
-let time = 0;
 const total = files.length;
-let skipped = 0;
-let min = Number.POSITIVE_INFINITY;
-let max = Number.NEGATIVE_INFINITY;
+const stats = {
+    time: 0,
+    skipped: 0,
+    min: Infinity,
+    max: -Infinity,
+};
 
 function run(name: string | undefined) {
     if (!name || name.startsWith(".")) return proc();
@@ -19,11 +21,11 @@ function run(name: string | undefined) {
     createWritableStream((article: ArticleResult) => {
         if (article.score) {
             const took = Date.now() - start;
-            time += took;
-            if (took < min) min = took;
-            if (took > max) max = took;
+            stats.time += took;
+            if (took < stats.min) stats.min = took;
+            if (took > stats.max) stats.max = took;
         } else {
-            skipped++;
+            stats.skipped++;
         }
     }).end(file);
 }
@@ -31,7 +33,7 @@ function run(name: string | undefined) {
 function proc() {
     if (files.length === 0) return;
     run(files.pop());
-    process.nextTick(proc);
+    queueMicrotask(proc);
     if (files.length % 10 === total % 10) {
         console.log("did", total - files.length);
     }
@@ -40,11 +42,11 @@ function proc() {
 proc();
 
 process.on("exit", () => {
-    const did = total - skipped;
-    console.log("took", time);
+    const did = total - stats.skipped;
+    console.log("took", stats.time);
     console.log("runs", did);
-    console.log("average", Math.round((time / did) * 1e4) / 1e4);
-    console.log("min", min);
-    console.log("max", max);
-    console.log("skipped", skipped);
+    console.log("average", Math.round((stats.time / did) * 1e4) / 1e4);
+    console.log("min", stats.min);
+    console.log("max", stats.max);
+    console.log("skipped", stats.skipped);
 });
