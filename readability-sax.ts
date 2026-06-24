@@ -4,6 +4,8 @@
  *	3. The Readability class that provides the interface & logic (usable as a htmlparser2 handler)
  */
 
+/* eslint-disable unicorn/better-dom-traversing -- `Element` here is a custom tree node, not a DOM node; it has no `firstElementChild`, and `children` mixes elements and strings, so `.children[0]` (with a `typeof === "object"` guard) is the correct access. */
+
 import { Element, formatTags, headerTags, reWhitespace } from "./lib/element";
 import type { URLInfo } from "./lib/get-base-url";
 import { getBaseURL } from "./lib/get-base-url";
@@ -28,7 +30,7 @@ const tagsToSkip = new Set([
     "textarea",
 ]);
 
-const removeIfEmpty = new Set([
+const removableIfEmpty = new Set([
     "blockquote",
     "li",
     "p",
@@ -180,29 +182,25 @@ const defaultSettings: InternalSettings = {
 // 3. the readability class
 /** HTML parser handler that scores and extracts the main article content. */
 export default class Readability implements ReadabilityLike {
-    _currentElement: Element = new Element("document");
-    _topCandidate: Element | null = null;
-    _origTitle = "";
-    _headerTitle = "";
+    #currentElement: Element = new Element("document");
+    #topCandidate: Element | null = null;
+    #origTitle = "";
+    #headerTitle = "";
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- read by tests/readability.test.ts; must stay a public underscore field.
     _scannedLinks: Map<string, ScannedLink> = new Map();
-    _settings: InternalSettings = { ...defaultSettings };
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- read by tests/readability.test.ts; must stay a public underscore field.
     _url: URLInfo | null = null;
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- read by tests/readability.test.ts; must stay a public underscore field.
     _baseURL = "";
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- accessed via `Readability.prototype._settings` in setSkipLevel(); making it private would break that reference and change behavior.
+    _settings: InternalSettings = { ...defaultSettings };
 
     constructor(settings: ReadabilitySettings = {}) {
         this.onreset();
-        this._processSettings(settings);
+        this.#processSettings(settings);
     }
 
-    onreset(): void {
-        // The root node
-        this._currentElement = new Element("document");
-        this._topCandidate = null;
-        this._origTitle = this._headerTitle = "";
-        this._scannedLinks = new Map();
-    }
-
-    _processSettings(settings: ReadabilitySettings = {}): void {
+    #processSettings(settings: ReadabilitySettings = {}): void {
         this._settings = {
             stripUnlikelyCandidates:
                 settings.stripUnlikelyCandidates ??
@@ -223,9 +221,8 @@ export default class Readability implements ReadabilityLike {
             type: settings.type ?? defaultSettings.type,
         };
 
-        let path: string[] | undefined;
         if (settings.pageURL) {
-            path = settings.pageURL.split(re_slashes);
+            const path = settings.pageURL.split(re_slashes);
             this._url = {
                 protocol: path[0],
                 domain: path[1],
@@ -237,6 +234,7 @@ export default class Readability implements ReadabilityLike {
         if (settings.type) this._settings.type = settings.type;
     }
 
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- called by tests/readability.test.ts; must stay a public underscore method.
     _convertLinks(path: string): string {
         if (!this._url) return path;
         if (!path) return this._url.full;
@@ -268,12 +266,14 @@ export default class Readability implements ReadabilityLike {
         return `${this._url.protocol}//${this._url.domain}/${path}`;
     }
 
-    _scanLink(element: Element): void {
+    // eslint-disable-next-line unicorn/consistent-class-member-order -- kept next to the related `_convertLinks`, which the public `ReadabilityLike` API forces to be a public underscore method.
+    #scanLink(element: Element): void {
         let { href } = element.attributes;
 
         if (!href) return;
         href = href.replace(re_closing, "");
 
+        // eslint-disable-next-line unicorn/no-computed-property-existence-check -- `Object.hasOwn` needs lib es2022 (project targets es2019); `in` preserves the existing lookup semantics.
         if (href in this._settings.linksToSkip) return;
         if (href === this._baseURL || (this._url && href === this._url.full)) {
             return;
@@ -310,33 +310,34 @@ export default class Readability implements ReadabilityLike {
         if (re_extraneous.test(href)) score -= 15;
 
         let current: Element | null = element;
-        let posMatch = true;
-        let negMatch = true;
+        let isPosMatch = true;
+        let isNegMatch = true;
 
         while ((current = current.parent)) {
             if (current.elementData === "") continue;
-            if (posMatch && re_pages.test(current.elementData)) {
+            if (isPosMatch && re_pages.test(current.elementData)) {
                 score += 25;
-                if (negMatch) {
-                    posMatch = false;
+                if (isNegMatch) {
+                    isPosMatch = false;
                 } else {
                     break;
                 }
             }
             if (
-                negMatch &&
+                isNegMatch &&
                 re_negative.test(current.elementData) &&
                 !re_positive.test(current.elementData)
             ) {
                 score -= 25;
-                if (posMatch) {
-                    negMatch = false;
+                if (isPosMatch) {
+                    isNegMatch = false;
                 } else {
                     break;
                 }
             }
         }
 
+        // eslint-disable-next-line unicorn/prefer-number-coercion -- parseInt's lenient leading-digit parsing (e.g. "12 comments" -> 12) is intentional; Number() would yield NaN.
         const parsedNumber = Number.parseInt(text, 10);
         if (parsedNumber < 10) {
             if (parsedNumber === 1) score -= 10;
@@ -356,21 +357,55 @@ export default class Readability implements ReadabilityLike {
         }
     }
 
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- part of the public `ReadabilityLike` API; consumed by lib/writable-stream.ts and tests, so cannot be a private field.
+    _getCandidateNode(): Element {
+        let element = this.#topCandidate;
+        element ??= this.#topCandidate = this.#currentElement.getTopCandidate();
+
+        if (!element) {
+            // Select root node
+            element = this.#currentElement;
+        } else if (element.parent && element.parent.children.length > 1) {
+            const elements = getCandidateSiblings(element);
+
+            // Create a new object so that the prototype methods are callable
+            element = new Element("div");
+            element.children = elements;
+            element.addInfo();
+        }
+
+        while (element.children.length === 1) {
+            if (typeof element.children[0] === "object") {
+                element = element.children[0];
+            } else break;
+        }
+
+        return element;
+    }
+
+    onreset(): void {
+        // The root node
+        this.#currentElement = new Element("document");
+        this.#topCandidate = null;
+        this.#origTitle = this.#headerTitle = "";
+        this._scannedLinks = new Map();
+    }
+
     // Parser methods
     onopentagname(name: string): void {
         if (noContent.has(name)) {
             if (formatTags.has(name)) {
                 const formatTag = formatTags.get(name);
-                if (formatTag) this._currentElement.children.push(formatTag);
+                if (formatTag) this.#currentElement.children.push(formatTag);
             }
-        } else this._currentElement = new Element(name, this._currentElement);
+        } else this.#currentElement = new Element(name, this.#currentElement);
     }
 
     onattribute(name: string, value: string): void {
         if (!value) return;
         name = name.toLowerCase();
 
-        const element = this._currentElement;
+        const element = this.#currentElement;
 
         if (name === "href" || name === "src") {
             // Fix links
@@ -392,6 +427,7 @@ export default class Readability implements ReadabilityLike {
             element.name === "img" &&
             (name === "width" || name === "height")
         ) {
+            // eslint-disable-next-line unicorn/prefer-number-coercion -- parseInt's lenient parsing of dimension strings (e.g. "100px" -> 100) is intentional; Number() would yield NaN.
             const numericValue = Number.parseInt(value, 10);
             if (Number.isNaN(numericValue)) {
                 // Empty
@@ -402,15 +438,11 @@ export default class Readability implements ReadabilityLike {
                  * (use a tagname that's part of tagsToSkip)
                  */
                 element.name = "script";
-            } else if (
-                name === "width" ? numericValue >= 390 : numericValue >= 290
-            ) {
+            } else if (numericValue >= (name === "width" ? 390 : 290)) {
                 // Increase score of parent
                 if (element.parent) element.parent.attributeScore += 20;
             } else if (
-                (name === "width"
-                    ? numericValue >= 200
-                    : numericValue >= 150) &&
+                numericValue >= (name === "width" ? 200 : 150) &&
                 element.parent
             ) {
                 element.parent.attributeScore += 5;
@@ -421,32 +453,32 @@ export default class Readability implements ReadabilityLike {
     }
 
     ontext(text: string): void {
-        this._currentElement.children.push(text);
+        this.#currentElement.children.push(text);
     }
 
     onclosetag(tagName: string): void {
         if (noContent.has(tagName)) return;
 
-        let element = this._currentElement;
+        let element = this.#currentElement;
         if (!element.parent) return;
-        this._currentElement = element.parent;
+        this.#currentElement = element.parent;
 
         // Prepare title
         if (this._settings.searchFurtherPages && tagName === "a") {
-            this._scanLink(element);
-        } else if (tagName === "title" && !this._origTitle) {
-            this._origTitle = element
+            this.#scanLink(element);
+        } else if (tagName === "title" && !this.#origTitle) {
+            this.#origTitle = element
                 .toString()
                 .trim()
                 .replace(reWhitespace, " ");
             return;
         } else if (headerTags.has(tagName)) {
             const title = element.toString().trim().replace(reWhitespace, " ");
-            if (this._origTitle) {
-                if (this._origTitle.includes(title)) {
+            if (this.#origTitle) {
+                if (this.#origTitle.includes(title)) {
                     if (title.split(" ").length === 4) {
                         // It's probably the title, so let's use it!
-                        this._headerTitle = title;
+                        this.#headerTitle = title;
                     }
                     return;
                 }
@@ -454,7 +486,7 @@ export default class Readability implements ReadabilityLike {
             }
             // If there was no title tag, use any h1 as the title
             else if (tagName === "h1") {
-                this._headerTitle = title;
+                this.#headerTitle = title;
                 return;
             }
         }
@@ -537,13 +569,13 @@ export default class Readability implements ReadabilityLike {
         }
 
         if (
-            (removeIfEmpty.has(tagName) ||
+            (removableIfEmpty.has(tagName) ||
                 (!this._settings.cleanConditionally &&
                     cleanConditionally.has(tagName))) &&
             element.info.linkLength === 0 &&
             element.info.textLength === 0 &&
             element.children.length > 0 &&
-            !okayIfEmpty.some((tag) => element.info.tagCount.has(tag))
+            okayIfEmpty.every((tag) => !element.info.tagCount.has(tag))
         ) {
             return;
         }
@@ -567,7 +599,7 @@ export default class Readability implements ReadabilityLike {
         element.parent.children.push(element);
 
         // Should node be scored?
-        if (tagName === "p" || tagName === "pre" || tagName === "td") {
+        if (["p", "pre", "td"].includes(tagName)) {
             // Empty
         } else if (tagName === "div") {
             // Check if div should be converted to a p
@@ -583,7 +615,7 @@ export default class Readability implements ReadabilityLike {
             const parentElement = element.parent as Element;
             const grandparentElement = parentElement.parent;
             parentElement.isCandidate = true;
-            const addScore =
+            const scoreIncrement =
                 1 +
                 element.info.commas +
                 Math.min(
@@ -593,38 +625,12 @@ export default class Readability implements ReadabilityLike {
                     ),
                     3,
                 );
-            parentElement.tagScore += addScore;
+            parentElement.tagScore += scoreIncrement;
             if (grandparentElement) {
                 grandparentElement.isCandidate = true;
-                grandparentElement.tagScore += addScore / 2;
+                grandparentElement.tagScore += scoreIncrement / 2;
             }
         }
-    }
-
-    _getCandidateNode(): Element {
-        let element = this._topCandidate;
-        let elements: Element[];
-        element ??= this._topCandidate = this._currentElement.getTopCandidate();
-
-        if (!element) {
-            // Select root node
-            element = this._currentElement;
-        } else if (element.parent && element.parent.children.length > 1) {
-            elements = getCandidateSiblings(element);
-
-            // Create a new object so that the prototype methods are callable
-            element = new Element("div");
-            element.children = elements;
-            element.addInfo();
-        }
-
-        while (element.children.length === 1) {
-            if (typeof element.children[0] === "object") {
-                element = element.children[0];
-            } else break;
-        }
-
-        return element;
     }
 
     // SkipLevel is a shortcut to allow more elements of the page
@@ -633,7 +639,7 @@ export default class Readability implements ReadabilityLike {
 
         // If the prototype is still used for settings, change that
         if (this._settings === Readability.prototype._settings) {
-            this._processSettings({});
+            this.#processSettings({});
         }
 
         if (skipLevel > 0) this._settings.stripUnlikelyCandidates = false;
@@ -642,16 +648,16 @@ export default class Readability implements ReadabilityLike {
     }
 
     getTitle(): string {
-        if (this._headerTitle) return this._headerTitle;
-        if (!this._origTitle) return "";
+        if (this.#headerTitle) return this.#headerTitle;
+        if (!this.#origTitle) return "";
 
-        let currentTitle = this._origTitle;
+        let currentTitle = this.#origTitle;
 
         if (/ [|-] /.test(currentTitle)) {
             currentTitle = currentTitle.replace(/(.*) [|-] .*/g, "$1");
 
             if (currentTitle.split(" ").length !== 3) {
-                currentTitle = this._origTitle.replace(/.*?[|-] /, "");
+                currentTitle = this.#origTitle.replace(/.*?[|-] /, "");
             }
         } else if (currentTitle.includes(": ")) {
             currentTitle = currentTitle.substr(
@@ -659,8 +665,8 @@ export default class Readability implements ReadabilityLike {
             );
 
             if (currentTitle.split(" ").length !== 3) {
-                currentTitle = this._origTitle.substr(
-                    this._origTitle.indexOf(": "),
+                currentTitle = this.#origTitle.substr(
+                    this.#origTitle.indexOf(": "),
                 );
             }
         }
@@ -668,7 +674,7 @@ export default class Readability implements ReadabilityLike {
 
         currentTitle = currentTitle.trim();
 
-        if (currentTitle.split(" ").length !== 5) return this._origTitle;
+        if (currentTitle.split(" ").length !== 5) return this.#origTitle;
         return currentTitle;
     }
 
@@ -676,10 +682,12 @@ export default class Readability implements ReadabilityLike {
         let topScore = 49;
         let topLink = "";
         for (const [href, link] of this._scannedLinks) {
-            if (link.score > topScore) {
-                topLink = href;
-                topScore = link.score;
+            if (link.score <= topScore) {
+                continue;
             }
+
+            topLink = href;
+            topScore = link.score;
         }
 
         return topLink;
@@ -728,12 +736,12 @@ export default class Readability implements ReadabilityLike {
 
         const returnValue: ArticleResult = {
             title:
-                this._headerTitle.length > 0
-                    ? this._headerTitle
+                this.#headerTitle.length > 0
+                    ? this.#headerTitle
                     : this.getTitle(),
             nextPage: this.getNextPage(),
             textLength: element.info.textLength,
-            score: this._topCandidate ? this._topCandidate.totalScore : 0,
+            score: this.#topCandidate ? this.#topCandidate.totalScore : 0,
         };
 
         if (!type && this._settings.type) ({ type } = this._settings);

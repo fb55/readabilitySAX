@@ -142,7 +142,7 @@ export class Element {
     }
 
     getTopCandidate(): Element | null {
-        let topScore = Number.NEGATIVE_INFINITY;
+        let topScore = -Infinity;
         let topCandidate: Element | null = null;
 
         for (const child of this.children) {

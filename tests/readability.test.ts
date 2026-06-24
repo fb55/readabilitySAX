@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prefer-https -- these are test fixtures: the `http://` URLs are inputs/expected outputs that assert the parser preserves the original protocol; rewriting them to https would invalidate the assertions. */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";

@@ -23,7 +23,7 @@
     },
     "devDependencies": {
         "@eslint/compat": "^2.1.0",
-        "@feedic/eslint-config": "^0.3.1",
+        "@feedic/eslint-config": "^0.5.0",
         "@types/node": "^26.0.0",
         "eslint": "^10.5.0",
         "globals": "^17.4.0",
