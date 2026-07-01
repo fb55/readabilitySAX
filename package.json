@@ -19,7 +19,7 @@
     "dependencies": {
         "entities": "^7.0.1",
         "htmlparser2": "^12.0.0",
-        "undici": "^7.28.0"
+        "undici": "^8.5.0"
     },
     "devDependencies": {
         "@eslint/compat": "^2.1.0",
