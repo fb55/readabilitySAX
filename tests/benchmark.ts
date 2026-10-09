@@ -33,7 +33,8 @@ function run(name: string | undefined) {
 function proc() {
     if (files.length === 0) return;
     run(files.pop());
-    queueMicrotask(proc);
+    // eslint-disable-next-line unicorn/prefer-queue-microtask -- let queued stream finish callbacks run before the next file.
+    process.nextTick(proc);
     if (files.length % 10 === total % 10) {
         console.log("did", total - files.length);
     }
