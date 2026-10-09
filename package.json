@@ -52,7 +52,7 @@
     },
     "license": "BSD-2-Clause",
     "engines": {
-        "node": ">=18"
+        "node": ">=22.19.0"
     },
     "prettier": {
         "proseWrap": "always",

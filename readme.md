@@ -2,6 +2,8 @@
 
 a fast and platform independent readability port
 
+Node.js usage requires Node 22.19.0 or newer, matching the Undici dependency.
+
 ## About
 
 This is a port of the algorithm used by the
