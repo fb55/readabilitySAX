@@ -33,6 +33,17 @@ test("supports default constructor settings", () => {
     assert.doesNotThrow(() => new Readability());
 });
 
+test("preserves subclass settings hooks and public title state", () => {
+    class CustomReadability extends Readability {
+        override _processSettings(settings = {}) {
+            super._processSettings(settings);
+            this._origTitle = "Custom title";
+        }
+    }
+
+    assert.equal(new CustomReadability().getTitle(), "Custom title");
+});
+
 test("extracts article metadata and content from fixture", () => {
     const { article, readable } = parseFixture();
 

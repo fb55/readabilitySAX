@@ -182,25 +182,38 @@ const defaultSettings: InternalSettings = {
 // 3. the readability class
 /** HTML parser handler that scores and extracts the main article content. */
 export default class Readability implements ReadabilityLike {
-    #currentElement: Element = new Element("document");
-    #topCandidate: Element | null = null;
-    #origTitle = "";
-    #headerTitle = "";
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- preserve the exported class member and subclass API.
+    _currentElement: Element = new Element("document");
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- preserve the exported class member and subclass API.
+    _topCandidate: Element | null = null;
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- preserve the exported class member and subclass API.
+    _origTitle = "";
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- preserve the exported class member and subclass API.
+    _headerTitle = "";
     // eslint-disable-next-line unicorn/prefer-private-class-fields -- read by tests/readability.test.ts; must stay a public underscore field.
     _scannedLinks: Map<string, ScannedLink> = new Map();
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- accessed via `Readability.prototype._settings` in setSkipLevel(); making it private would break that reference and change behavior.
+    _settings: InternalSettings = { ...defaultSettings };
     // eslint-disable-next-line unicorn/prefer-private-class-fields -- read by tests/readability.test.ts; must stay a public underscore field.
     _url: URLInfo | null = null;
     // eslint-disable-next-line unicorn/prefer-private-class-fields -- read by tests/readability.test.ts; must stay a public underscore field.
     _baseURL = "";
-    // eslint-disable-next-line unicorn/prefer-private-class-fields -- accessed via `Readability.prototype._settings` in setSkipLevel(); making it private would break that reference and change behavior.
-    _settings: InternalSettings = { ...defaultSettings };
 
     constructor(settings: ReadabilitySettings = {}) {
         this.onreset();
-        this.#processSettings(settings);
+        this._processSettings(settings);
     }
 
-    #processSettings(settings: ReadabilitySettings = {}): void {
+    onreset(): void {
+        // The root node
+        this._currentElement = new Element("document");
+        this._topCandidate = null;
+        this._origTitle = this._headerTitle = "";
+        this._scannedLinks = new Map();
+    }
+
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- preserve the exported class member and subclass API.
+    _processSettings(settings: ReadabilitySettings = {}): void {
         this._settings = {
             stripUnlikelyCandidates:
                 settings.stripUnlikelyCandidates ??
@@ -266,8 +279,8 @@ export default class Readability implements ReadabilityLike {
         return `${this._url.protocol}//${this._url.domain}/${path}`;
     }
 
-    // eslint-disable-next-line unicorn/consistent-class-member-order -- kept next to the related `_convertLinks`, which the public `ReadabilityLike` API forces to be a public underscore method.
-    #scanLink(element: Element): void {
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- preserve the exported class member and subclass API.
+    _scanLink(element: Element): void {
         let { href } = element.attributes;
 
         if (!href) return;
@@ -357,55 +370,21 @@ export default class Readability implements ReadabilityLike {
         }
     }
 
-    // eslint-disable-next-line unicorn/prefer-private-class-fields -- part of the public `ReadabilityLike` API; consumed by lib/writable-stream.ts and tests, so cannot be a private field.
-    _getCandidateNode(): Element {
-        let element = this.#topCandidate;
-        element ??= this.#topCandidate = this.#currentElement.getTopCandidate();
-
-        if (!element) {
-            // Select root node
-            element = this.#currentElement;
-        } else if (element.parent && element.parent.children.length > 1) {
-            const elements = getCandidateSiblings(element);
-
-            // Create a new object so that the prototype methods are callable
-            element = new Element("div");
-            element.children = elements;
-            element.addInfo();
-        }
-
-        while (element.children.length === 1) {
-            if (typeof element.children[0] === "object") {
-                element = element.children[0];
-            } else break;
-        }
-
-        return element;
-    }
-
-    onreset(): void {
-        // The root node
-        this.#currentElement = new Element("document");
-        this.#topCandidate = null;
-        this.#origTitle = this.#headerTitle = "";
-        this._scannedLinks = new Map();
-    }
-
     // Parser methods
     onopentagname(name: string): void {
         if (noContent.has(name)) {
             if (formatTags.has(name)) {
                 const formatTag = formatTags.get(name);
-                if (formatTag) this.#currentElement.children.push(formatTag);
+                if (formatTag) this._currentElement.children.push(formatTag);
             }
-        } else this.#currentElement = new Element(name, this.#currentElement);
+        } else this._currentElement = new Element(name, this._currentElement);
     }
 
     onattribute(name: string, value: string): void {
         if (!value) return;
         name = name.toLowerCase();
 
-        const element = this.#currentElement;
+        const element = this._currentElement;
 
         if (name === "href" || name === "src") {
             // Fix links
@@ -453,32 +432,32 @@ export default class Readability implements ReadabilityLike {
     }
 
     ontext(text: string): void {
-        this.#currentElement.children.push(text);
+        this._currentElement.children.push(text);
     }
 
     onclosetag(tagName: string): void {
         if (noContent.has(tagName)) return;
 
-        let element = this.#currentElement;
+        let element = this._currentElement;
         if (!element.parent) return;
-        this.#currentElement = element.parent;
+        this._currentElement = element.parent;
 
         // Prepare title
         if (this._settings.searchFurtherPages && tagName === "a") {
-            this.#scanLink(element);
-        } else if (tagName === "title" && !this.#origTitle) {
-            this.#origTitle = element
+            this._scanLink(element);
+        } else if (tagName === "title" && !this._origTitle) {
+            this._origTitle = element
                 .toString()
                 .trim()
                 .replace(reWhitespace, " ");
             return;
         } else if (headerTags.has(tagName)) {
             const title = element.toString().trim().replace(reWhitespace, " ");
-            if (this.#origTitle) {
-                if (this.#origTitle.includes(title)) {
+            if (this._origTitle) {
+                if (this._origTitle.includes(title)) {
                     if (title.split(" ").length === 4) {
                         // It's probably the title, so let's use it!
-                        this.#headerTitle = title;
+                        this._headerTitle = title;
                     }
                     return;
                 }
@@ -486,7 +465,7 @@ export default class Readability implements ReadabilityLike {
             }
             // If there was no title tag, use any h1 as the title
             else if (tagName === "h1") {
-                this.#headerTitle = title;
+                this._headerTitle = title;
                 return;
             }
         }
@@ -633,13 +612,39 @@ export default class Readability implements ReadabilityLike {
         }
     }
 
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- part of the public `ReadabilityLike` API; consumed by lib/writable-stream.ts and tests, so cannot be a private field.
+    _getCandidateNode(): Element {
+        let element = this._topCandidate;
+        element ??= this._topCandidate = this._currentElement.getTopCandidate();
+
+        if (!element) {
+            // Select root node
+            element = this._currentElement;
+        } else if (element.parent && element.parent.children.length > 1) {
+            const elements = getCandidateSiblings(element);
+
+            // Create a new object so that the prototype methods are callable
+            element = new Element("div");
+            element.children = elements;
+            element.addInfo();
+        }
+
+        while (element.children.length === 1) {
+            if (typeof element.children[0] === "object") {
+                element = element.children[0];
+            } else break;
+        }
+
+        return element;
+    }
+
     // SkipLevel is a shortcut to allow more elements of the page
     setSkipLevel(skipLevel: number): void {
         if (skipLevel === 0) return;
 
         // If the prototype is still used for settings, change that
         if (this._settings === Readability.prototype._settings) {
-            this.#processSettings({});
+            this._processSettings({});
         }
 
         if (skipLevel > 0) this._settings.stripUnlikelyCandidates = false;
@@ -648,16 +653,16 @@ export default class Readability implements ReadabilityLike {
     }
 
     getTitle(): string {
-        if (this.#headerTitle) return this.#headerTitle;
-        if (!this.#origTitle) return "";
+        if (this._headerTitle) return this._headerTitle;
+        if (!this._origTitle) return "";
 
-        let currentTitle = this.#origTitle;
+        let currentTitle = this._origTitle;
 
         if (/ [|-] /.test(currentTitle)) {
             currentTitle = currentTitle.replace(/(.*) [|-] .*/g, "$1");
 
             if (currentTitle.split(" ").length !== 3) {
-                currentTitle = this.#origTitle.replace(/.*?[|-] /, "");
+                currentTitle = this._origTitle.replace(/.*?[|-] /, "");
             }
         } else if (currentTitle.includes(": ")) {
             currentTitle = currentTitle.substr(
@@ -665,8 +670,8 @@ export default class Readability implements ReadabilityLike {
             );
 
             if (currentTitle.split(" ").length !== 3) {
-                currentTitle = this.#origTitle.substr(
-                    this.#origTitle.indexOf(": "),
+                currentTitle = this._origTitle.substr(
+                    this._origTitle.indexOf(": "),
                 );
             }
         }
@@ -674,7 +679,7 @@ export default class Readability implements ReadabilityLike {
 
         currentTitle = currentTitle.trim();
 
-        if (currentTitle.split(" ").length !== 5) return this.#origTitle;
+        if (currentTitle.split(" ").length !== 5) return this._origTitle;
         return currentTitle;
     }
 
@@ -736,12 +741,12 @@ export default class Readability implements ReadabilityLike {
 
         const returnValue: ArticleResult = {
             title:
-                this.#headerTitle.length > 0
-                    ? this.#headerTitle
+                this._headerTitle.length > 0
+                    ? this._headerTitle
                     : this.getTitle(),
             nextPage: this.getNextPage(),
             textLength: element.info.textLength,
-            score: this.#topCandidate ? this.#topCandidate.totalScore : 0,
+            score: this._topCandidate ? this._topCandidate.totalScore : 0,
         };
 
         if (!type && this._settings.type) ({ type } = this._settings);
