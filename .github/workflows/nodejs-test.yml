@@ -34,8 +34,8 @@ jobs:
             matrix:
                 node:
                     - 22.19.0
-                    - 22
                     - 24
+                    - 26
                     - lts/*
 
         steps:
