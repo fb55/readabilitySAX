@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prefer-https -- these are test fixtures: the `http://` URLs are inputs/expected outputs that assert the parser preserves the original protocol; rewriting them to https would invalidate the assertions. */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
@@ -30,6 +31,17 @@ function parseFixture(settings = {}) {
 
 test("supports default constructor settings", () => {
     assert.doesNotThrow(() => new Readability());
+});
+
+test("preserves subclass settings hooks and public title state", () => {
+    class CustomReadability extends Readability {
+        override _processSettings(settings = {}) {
+            super._processSettings(settings);
+            this._origTitle = "Custom title";
+        }
+    }
+
+    assert.equal(new CustomReadability().getTitle(), "Custom title");
 });
 
 test("extracts article metadata and content from fixture", () => {

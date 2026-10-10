@@ -29,10 +29,10 @@ export default function getURL(
         settings = { type: settings };
     }
 
-    let callbackHasRun = false;
+    let hasCallbackRun = false;
     function onError(error: Error | string) {
-        if (callbackHasRun) return;
-        callbackHasRun = true;
+        if (hasCallbackRun) return;
+        hasCallbackRun = true;
 
         const message = String(error);
         callback?.({
@@ -87,7 +87,7 @@ export default function getURL(
                 return new WritableStream(
                     settings,
                     (article: ArticleResult) => {
-                        if (callbackHasRun) {
+                        if (hasCallbackRun) {
                             console.log("got article with called callback");
                             return;
                         }

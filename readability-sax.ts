@@ -28,7 +28,7 @@ const tagsToSkip = new Set([
     "textarea",
 ]);
 
-const removeIfEmpty = new Set([
+const removableIfEmpty = new Set([
     "blockquote",
     "li",
     "p",
@@ -180,13 +180,21 @@ const defaultSettings: InternalSettings = {
 // 3. the readability class
 /** HTML parser handler that scores and extracts the main article content. */
 export default class Readability implements ReadabilityLike {
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- preserve the exported class member and subclass API.
     _currentElement: Element = new Element("document");
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- preserve the exported class member and subclass API.
     _topCandidate: Element | null = null;
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- preserve the exported class member and subclass API.
     _origTitle = "";
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- preserve the exported class member and subclass API.
     _headerTitle = "";
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- read by tests/readability.test.ts; must stay a public underscore field.
     _scannedLinks: Map<string, ScannedLink> = new Map();
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- accessed via `Readability.prototype._settings` in setSkipLevel(); making it private would break that reference and change behavior.
     _settings: InternalSettings = { ...defaultSettings };
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- read by tests/readability.test.ts; must stay a public underscore field.
     _url: URLInfo | null = null;
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- read by tests/readability.test.ts; must stay a public underscore field.
     _baseURL = "";
 
     constructor(settings: ReadabilitySettings = {}) {
@@ -202,6 +210,7 @@ export default class Readability implements ReadabilityLike {
         this._scannedLinks = new Map();
     }
 
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- preserve the exported class member and subclass API.
     _processSettings(settings: ReadabilitySettings = {}): void {
         this._settings = {
             stripUnlikelyCandidates:
@@ -223,9 +232,8 @@ export default class Readability implements ReadabilityLike {
             type: settings.type ?? defaultSettings.type,
         };
 
-        let path: string[] | undefined;
         if (settings.pageURL) {
-            path = settings.pageURL.split(re_slashes);
+            const path = settings.pageURL.split(re_slashes);
             this._url = {
                 protocol: path[0],
                 domain: path[1],
@@ -237,6 +245,7 @@ export default class Readability implements ReadabilityLike {
         if (settings.type) this._settings.type = settings.type;
     }
 
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- called by tests/readability.test.ts; must stay a public underscore method.
     _convertLinks(path: string): string {
         if (!this._url) return path;
         if (!path) return this._url.full;
@@ -268,12 +277,14 @@ export default class Readability implements ReadabilityLike {
         return `${this._url.protocol}//${this._url.domain}/${path}`;
     }
 
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- preserve the exported class member and subclass API.
     _scanLink(element: Element): void {
         let { href } = element.attributes;
 
         if (!href) return;
         href = href.replace(re_closing, "");
 
+        // eslint-disable-next-line unicorn/no-computed-property-existence-check -- `Object.hasOwn` needs lib es2022 (project targets es2019); `in` preserves the existing lookup semantics.
         if (href in this._settings.linksToSkip) return;
         if (href === this._baseURL || (this._url && href === this._url.full)) {
             return;
@@ -310,33 +321,34 @@ export default class Readability implements ReadabilityLike {
         if (re_extraneous.test(href)) score -= 15;
 
         let current: Element | null = element;
-        let posMatch = true;
-        let negMatch = true;
+        let isPosMatch = true;
+        let isNegMatch = true;
 
         while ((current = current.parent)) {
             if (current.elementData === "") continue;
-            if (posMatch && re_pages.test(current.elementData)) {
+            if (isPosMatch && re_pages.test(current.elementData)) {
                 score += 25;
-                if (negMatch) {
-                    posMatch = false;
+                if (isNegMatch) {
+                    isPosMatch = false;
                 } else {
                     break;
                 }
             }
             if (
-                negMatch &&
+                isNegMatch &&
                 re_negative.test(current.elementData) &&
                 !re_positive.test(current.elementData)
             ) {
                 score -= 25;
-                if (posMatch) {
-                    negMatch = false;
+                if (isPosMatch) {
+                    isNegMatch = false;
                 } else {
                     break;
                 }
             }
         }
 
+        // eslint-disable-next-line unicorn/prefer-number-coercion -- parseInt's lenient leading-digit parsing (e.g. "12 comments" -> 12) is intentional; Number() would yield NaN.
         const parsedNumber = Number.parseInt(text, 10);
         if (parsedNumber < 10) {
             if (parsedNumber === 1) score -= 10;
@@ -392,6 +404,7 @@ export default class Readability implements ReadabilityLike {
             element.name === "img" &&
             (name === "width" || name === "height")
         ) {
+            // eslint-disable-next-line unicorn/prefer-number-coercion -- parseInt's lenient parsing of dimension strings (e.g. "100px" -> 100) is intentional; Number() would yield NaN.
             const numericValue = Number.parseInt(value, 10);
             if (Number.isNaN(numericValue)) {
                 // Empty
@@ -402,15 +415,11 @@ export default class Readability implements ReadabilityLike {
                  * (use a tagname that's part of tagsToSkip)
                  */
                 element.name = "script";
-            } else if (
-                name === "width" ? numericValue >= 390 : numericValue >= 290
-            ) {
+            } else if (numericValue >= (name === "width" ? 390 : 290)) {
                 // Increase score of parent
                 if (element.parent) element.parent.attributeScore += 20;
             } else if (
-                (name === "width"
-                    ? numericValue >= 200
-                    : numericValue >= 150) &&
+                numericValue >= (name === "width" ? 200 : 150) &&
                 element.parent
             ) {
                 element.parent.attributeScore += 5;
@@ -535,13 +544,13 @@ export default class Readability implements ReadabilityLike {
         }
 
         if (
-            (removeIfEmpty.has(tagName) ||
+            (removableIfEmpty.has(tagName) ||
                 (!this._settings.cleanConditionally &&
                     cleanConditionally.has(tagName))) &&
             element.info.linkLength === 0 &&
             element.info.textLength === 0 &&
             element.children.length > 0 &&
-            !okayIfEmpty.some((tag) => element.info.tagCount.has(tag))
+            okayIfEmpty.every((tag) => !element.info.tagCount.has(tag))
         ) {
             return;
         }
@@ -565,7 +574,7 @@ export default class Readability implements ReadabilityLike {
         element.parent.children.push(element);
 
         // Should node be scored?
-        if (tagName === "p" || tagName === "pre" || tagName === "td") {
+        if (["p", "pre", "td"].includes(tagName)) {
             // Empty
         } else if (tagName === "div") {
             // Check if div should be converted to a p
@@ -581,7 +590,7 @@ export default class Readability implements ReadabilityLike {
             const parentElement = element.parent as Element;
             const grandparentElement = parentElement.parent;
             parentElement.isCandidate = true;
-            const addScore =
+            const scoreIncrement =
                 1 +
                 element.info.commas +
                 Math.min(
@@ -591,24 +600,24 @@ export default class Readability implements ReadabilityLike {
                     ),
                     3,
                 );
-            parentElement.tagScore += addScore;
+            parentElement.tagScore += scoreIncrement;
             if (grandparentElement) {
                 grandparentElement.isCandidate = true;
-                grandparentElement.tagScore += addScore / 2;
+                grandparentElement.tagScore += scoreIncrement / 2;
             }
         }
     }
 
+    // eslint-disable-next-line unicorn/prefer-private-class-fields -- part of the public `ReadabilityLike` API; consumed by lib/writable-stream.ts and tests, so cannot be a private field.
     _getCandidateNode(): Element {
         let element = this._topCandidate;
-        let elements: Element[];
         element ??= this._topCandidate = this._currentElement.getTopCandidate();
 
         if (!element) {
             // Select root node
             element = this._currentElement;
         } else if (element.parent && element.parent.children.length > 1) {
-            elements = getCandidateSiblings(element);
+            const elements = getCandidateSiblings(element);
 
             // Create a new object so that the prototype methods are callable
             element = new Element("div");
@@ -674,10 +683,12 @@ export default class Readability implements ReadabilityLike {
         let topScore = 49;
         let topLink = "";
         for (const [href, link] of this._scannedLinks) {
-            if (link.score > topScore) {
-                topLink = href;
-                topScore = link.score;
+            if (link.score <= topScore) {
+                continue;
             }
+
+            topLink = href;
+            topScore = link.score;
         }
 
         return topLink;
