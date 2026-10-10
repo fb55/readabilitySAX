@@ -17,7 +17,7 @@
         "url": "https://github.com/fb55/readabilitysax.git"
     },
     "dependencies": {
-        "entities": "^7.0.1",
+        "entities": "^8.0.0",
         "htmlparser2": "^12.0.0",
         "undici": "^8.10.0"
     },
@@ -27,7 +27,7 @@
         "@types/node": "^26.4.0",
         "eslint": "^10.5.0",
         "globals": "^17.11.0",
-        "prettier": "^3.8.4",
+        "prettier": "^3.9.6",
         "typescript": "^6.0.2",
         "typescript-eslint": "^8.68.0"
     },

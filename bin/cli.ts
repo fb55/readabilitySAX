@@ -1,4 +1,4 @@
-import { decodeHTML5 } from "entities";
+import { decodeHTML } from "entities";
 import getURL from "../lib/get-url";
 
 interface CLIResult {
@@ -33,7 +33,7 @@ function main() {
 
         const text =
             "text" in result
-                ? decodeHTML5(result.text ?? "")
+                ? decodeHTML(result.text ?? "")
                 : (result.html ?? "").replace(/\s+/g, " ");
         process.stdout.write(`${text}\n`);
     });

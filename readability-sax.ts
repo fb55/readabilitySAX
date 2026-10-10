@@ -483,12 +483,10 @@ export default class Readability implements ReadabilityLike {
         // Clean conditionally
         if (embeds.has(tagName)) {
             // Check if tag is wanted (youtube or vimeo)
-            if (
-                !(
-                    "src" in element.attributes &&
-                    re_videos.test(element.attributes.src)
-                )
-            ) {
+            if (!(
+                "src" in element.attributes &&
+                re_videos.test(element.attributes.src)
+            )) {
                 return;
             }
         } else if (tagName === "h2" || tagName === "h3") {
