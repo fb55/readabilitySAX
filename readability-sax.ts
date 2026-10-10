@@ -4,8 +4,6 @@
  *	3. The Readability class that provides the interface & logic (usable as a htmlparser2 handler)
  */
 
-/* eslint-disable unicorn/better-dom-traversing -- `Element` here is a custom tree node, not a DOM node; it has no `firstElementChild`, and `children` mixes elements and strings, so `.children[0]` (with a `typeof === "object"` guard) is the correct access. */
-
 import { Element, formatTags, headerTags, reWhitespace } from "./lib/element";
 import type { URLInfo } from "./lib/get-base-url";
 import { getBaseURL } from "./lib/get-base-url";
