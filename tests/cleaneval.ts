@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
-import { decodeHTML5 } from "entities";
+import { decodeHTML } from "entities";
 import { process as getReadableContent } from "../lib";
 
 const directory = "/Users/felix/Downloads/CleanEval/";
@@ -22,7 +22,7 @@ for (const name of fs.readdirSync(input)) {
     fs.writeFileSync(
         output + name.replace(".html", ".txt"),
         (article.title ? `${article.title}\n\n` : "") +
-            decodeHTML5(article.text ?? ""),
+            decodeHTML(article.text ?? ""),
     );
 }
 

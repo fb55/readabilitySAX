@@ -321,27 +321,27 @@ export default class Readability implements ReadabilityLike {
         if (re_extraneous.test(href)) score -= 15;
 
         let current: Element | null = element;
-        let isPosMatch = true;
-        let isNegMatch = true;
+        let shouldCheckPositive = true;
+        let shouldCheckNegative = true;
 
         while ((current = current.parent)) {
             if (current.elementData === "") continue;
-            if (isPosMatch && re_pages.test(current.elementData)) {
+            if (shouldCheckPositive && re_pages.test(current.elementData)) {
                 score += 25;
-                if (isNegMatch) {
-                    isPosMatch = false;
+                if (shouldCheckNegative) {
+                    shouldCheckPositive = false;
                 } else {
                     break;
                 }
             }
             if (
-                isNegMatch &&
+                shouldCheckNegative &&
                 re_negative.test(current.elementData) &&
                 !re_positive.test(current.elementData)
             ) {
                 score -= 25;
-                if (isPosMatch) {
-                    isNegMatch = false;
+                if (shouldCheckPositive) {
+                    shouldCheckNegative = false;
                 } else {
                     break;
                 }
@@ -492,12 +492,10 @@ export default class Readability implements ReadabilityLike {
         // Clean conditionally
         if (embeds.has(tagName)) {
             // Check if tag is wanted (youtube or vimeo)
-            if (
-                !(
-                    "src" in element.attributes &&
-                    re_videos.test(element.attributes.src)
-                )
-            ) {
+            if (!(
+                "src" in element.attributes &&
+                re_videos.test(element.attributes.src)
+            )) {
                 return;
             }
         } else if (tagName === "h2" || tagName === "h3") {
