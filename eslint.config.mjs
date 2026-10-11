@@ -32,6 +32,8 @@ export default defineConfig([
         },
         rules: {
             ...commonTypeScriptRules,
+            // This module uses custom tree nodes, not browser DOM nodes.
+            "unicorn/better-dom-traversing": "off",
         },
     },
     {

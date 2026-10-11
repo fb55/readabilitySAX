@@ -13,11 +13,12 @@ const originalClose = undici.Client.prototype.close;
 
 test.before(() => {
     undici.Client.prototype.compose = function compose() {
+        // eslint-disable-next-line unicorn/no-this-outside-of-class -- mock assigned to `undici.Client.prototype`; `this` is the Client instance returned for the fluent API and must use a dynamic `function`.
         return this;
     };
 
-    undici.Client.prototype.stream = function stream(options, factory) {
-        const path = String(options.path);
+    undici.Client.prototype.stream = async function stream(options, factory) {
+        const { path } = options;
         let statusCode = 200;
         let headers: Record<string, string | string[]> = {
             "content-type": "text/html",
@@ -42,24 +43,18 @@ test.before(() => {
             }
         }
 
-        let writable;
-        try {
-            writable = factory({
-                statusCode,
-                headers,
-                context,
-                opaque: undefined as never,
-            });
-        } catch (error) {
-            return Promise.reject(error);
-        }
+        const writable = factory({
+            statusCode,
+            headers,
+            context,
+            opaque: undefined as never,
+        });
 
         writable.write(htmlBody);
         writable.end();
 
-        return once(writable, "finish").then(
-            () => ({ opaque: undefined as never, trailers: {} }) as never,
-        );
+        await once(writable, "finish");
+        return { opaque: undefined as never, trailers: {} } as never;
     };
 
     undici.Client.prototype.close = function close() {

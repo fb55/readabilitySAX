@@ -49,32 +49,29 @@ const processContent = function (data: string, settings: ReadabilitySettings) {
 if (process.argv.length > 2) {
     console.log("connecting to:", process.argv[2]);
 
-    fetch(process.argv[2])
-        .then((response) => {
+    void (async () => {
+        try {
+            const response = await fetch(process.argv[2]);
             if (!response.ok) {
                 throw new Error(
                     `Failed to fetch ${process.argv[2]}: ${response.status}`,
                 );
             }
-            return response
-                .text()
-                .then((body) => ({ body, url: response.url }));
-        })
-        .then(({ body, url }) => {
+            const body = await response.text();
             processContent(body, {
-                pageURL: url,
+                pageURL: response.url,
             });
-        })
-        .catch((error: unknown) => {
+        } catch (error: unknown) {
             console.error(error);
             process.exitCode = 1;
-        });
+        }
+    })();
 } else {
     const file = fs.readFileSync(
         `${__dirname}/../../tests/testpage.html`,
         "utf8",
     );
     processContent(file, {
-        pageURL: "http://howtonode.org/heat-tracer",
+        pageURL: "https://howtonode.org/heat-tracer",
     });
 }
