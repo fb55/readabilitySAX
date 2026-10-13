@@ -29,7 +29,7 @@
         "globals": "^17.11.0",
         "prettier": "^3.9.9",
         "typescript": "^6.0.2",
-        "typescript-eslint": "^8.68.0"
+        "typescript-eslint": "^8.71.1"
     },
     "bin": {
         "readability": "./dist/bin/cli.js"
